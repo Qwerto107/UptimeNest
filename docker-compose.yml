@@ -1,0 +1,24 @@
+name: uptimenest
+
+services:
+  uptimenest:
+    image: ghcr.io/qwerto107/uptimenest:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:8090"
+    environment:
+      UPTIMENEST_ADDRESS: 0.0.0.0:8090
+      UPTIMENEST_DB_TYPE: ${UPTIMENEST_DB_TYPE:-sqlite}
+      UPTIMENEST_DB_DSN: ${UPTIMENEST_DB_DSN:-/app/data/uptimenest.db}
+      UPTIMENEST_COOKIE_SECURE: "${UPTIMENEST_COOKIE_SECURE:-false}"
+    volumes:
+      - ./data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=1g,mode=1777
+    healthcheck:
+      test: ["CMD", "/app/uptimenest", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

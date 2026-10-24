@@ -68,6 +68,6 @@ RUN platform="${TARGETARCH}" \
 FROM runtime AS release
 COPY --from=release-binary /uptimenest /app/uptimenest
 
-# 默认目标保留 docker compose --build 的源码构建方式。
+# 默认目标供 docker build 从源码构建。
 FROM runtime AS standalone
 COPY --from=backend /out/uptimenest /app/uptimenest

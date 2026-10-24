@@ -1,0 +1,137 @@
+# 开发指南
+
+[文档中心](README.md) · [API 参考](api.md) · [发布流程](releasing.md)
+
+[环境](#环境与结构) · [本地运行](#分离开发) · [构建](#完整程序与镜像) · [验证](#按需验证) · [数据与并发](#数据库与并发约定) · [检测逻辑](#监控检测与扩展)
+
+## 环境与结构
+
+使用 Go 1.27.3 或更高版本（工具链见 `go.mod`）、Node.js 24 和 npm。数据库驱动支持无 CGO 发行构建；Ping 依赖系统 `ping` 命令。依赖由 `go.sum` 和 `web/package-lock.json` 固定。
+
+```text
+cmd/uptimenest/       启动与健康检查命令
+internal/api/         认证、管理接口、访客接口与静态页面
+internal/config/      环境变量配置
+internal/model/       监控、心跳、分组、面板与设置模型
+internal/store/       SQLite / PostgreSQL、迁移、历史与统计
+internal/monitor/     检测、任务调度、历史清理与状态事件
+internal/webui/       按构建标签内嵌前端
+web/src/              Vue、TypeScript、路由与中文语言资源
+scripts/              内嵌前端准备脚本
+.github/              检查、打包与发布
+docker-compose.yml    统一镜像运行配置
+docs/                 使用与维护文档
+```
+
+## 分离开发
+
+第一个 PowerShell 终端从仓库根目录启动后端：
+
+```powershell
+go run ./cmd/uptimenest
+```
+
+第二个终端从仓库根目录启动前端：
+
+```powershell
+cd web
+npm ci
+npm run dev
+```
+
+访问 <http://127.0.0.1:5173>。Vite 将 `/api` 代理到 `127.0.0.1:8090`。Go 不自动读取 `.env`，数据库默认位于仓库的 `data/uptimenest.db`，首次通过页面设置密码。
+
+未启用 `with_frontend` 且未设置 `UPTIMENEST_WEB_DIR` 时，后端回退到 `web/dist`；该目录不存在时 API 仍可用，页面请求会提示先构建前端。开发页面由 Vite 提供，不要求预先构建。
+
+## 完整程序与镜像
+
+### 构建完整程序
+
+从仓库根目录构建前端并准备内嵌目录：
+
+```sh
+npm --prefix web ci
+npm --prefix web run build
+node scripts/prepare-webui.mjs
+```
+
+在仓库根目录执行：
+
+```sh
+CGO_ENABLED=0 go build -tags=with_frontend -trimpath -ldflags='-s -w' -o bin/uptimenest ./cmd/uptimenest
+```
+
+PowerShell 使用：
+
+```powershell
+$env:CGO_ENABLED = '0'
+go build -tags=with_frontend -trimpath -ldflags='-s -w' -o bin/uptimenest.exe ./cmd/uptimenest
+```
+
+`with_frontend` 内嵌页面。准备脚本只替换固定的 `internal/webui/dist` 生成目录，并拒绝隐藏配置、源码映射、依赖目录及符号链接。生成的程序与 [发行程序](binary.md) 使用同一启动配置。
+
+### 构建本地镜像
+
+在仓库根目录执行：
+
+```sh
+docker build -t uptimenest:local .
+```
+
+按 [部署指南](deployment.md) 准备可写的数据目录。把运行目录中 Compose 的 `image` 改为 `uptimenest:local`，执行 `docker compose up -d --pull never`。
+
+Dockerfile 默认 `standalone` 目标从源码构建；CI 的 `release` 目标复用打包程序。镜像保留 Alpine 和系统 Ping，平台范围见 [发布流程](releasing.md#统一镜像)。
+
+## 按需验证
+
+仓库根目录的常用命令：
+
+```sh
+go vet ./...
+go test ./...
+```
+
+前端目录执行 `npm run build`，包含 TypeScript 检查和生产构建。按改动影响选择检查；纯文档调整检查链接、命令和截图即可。项目不额外添加测试框架或数据库测试服务，CI 常规检查及可选 `full_checks` 见 [发布流程](releasing.md#触发方式)。
+
+## 数据库与并发约定
+
+### 连接、事务与迁移
+
+| 配置 | SQLite | PostgreSQL |
+| --- | --- | --- |
+| 驱动 | modernc.org/sqlite | pgx |
+| 最大连接数 | 1 | 12 |
+| 占位符 | `?` | 由 Store.Q 转换为 `$1` 等 |
+| 运行方式 | WAL、本机文件 | 独立数据库服务 |
+
+多语句原子操作显式使用事务，事务内使用同一个 tx。SQL 来自内部固定语句，用户值通过参数传递。数据库结构版本独立于应用版本，新增变更使用新迁移。
+
+数据库 v2 增加后台父级和独立面板展示分组。升级时冻结旧面板名称及顺序，后续后台分组变化不影响面板。分组调整禁止形成循环；面板保存及监控删除保持引用一致。
+
+### 时间与历史
+
+心跳和日志时间使用 Unix 毫秒。每次统计从数据库读取近 24 小时记录；公开摘要取最近 90 条心跳，后台摘要取最近 60 条，不把条数当作天数。
+
+应用启动时及每小时清理超出保留期限的心跳和日志。按项清空仅删除指定监控的对应记录，统计根据剩余数据重新计算。
+
+### 账户与公开边界
+
+管理员密码使用 bcrypt，数据库只保存会话令牌摘要。写请求校验同源 Origin，管理接口使用 HttpOnly、SameSite=Strict Cookie。密码尝试按连接地址限流，当前不从代理头解析真实客户端 IP。
+
+访客接口使用字段白名单。完整检测目标、请求配置及验证凭据保留在管理接口；启用隐藏地址时，访客接口也省略地址字段。所有状态面板均公开，描述与标签属于公开内容。
+
+## 监控检测与扩展
+
+每项监控独立调度，总并发上限 32；完整检测结束后再等待正常间隔。重试期间不提前记录故障，耗尽重试后只写入最终心跳。停用或修改配置会取消旧任务，旧配置的检测结果不会写回新配置。
+
+HTTP/3 优先模式只在 QUIC 连接建立失败时回退。跨来源跳转移除自定义头与验证信息，mTLS 拒绝跨来源跳转。TLS 与 QUIC 元数据取自真实连接，不从配置推断。
+
+监控检测与未来通知逻辑通过简单的 `StateHandler` 状态变化入口解耦。当前不实现通知配置、管理界面或发送渠道，新增检测或订阅时保持模块职责清晰。
+
+前端使用 Vue 3、Vue Router、vue-i18n、Tailwind CSS 和基于 Reka UI 的本地 shadcn-vue 组件。当前中文文案集中在 `web/src/locales/zh-CN.ts`。状态页与后台样式分别维护；字体版权及 OFL 许可见 `web/public/fonts/OFL.txt`。
+
+## 协作约定
+
+自写代码和关键逻辑注释使用中文，保持代码简洁、可读。功能变更同步更新使用说明或 API 文档，发布变化记录在 [更新记录](changelog.md)。
+
+凭据、私钥、本地数据库、临时工具、协作规则及设计过程文件不写入日志、截图或仓库。提交、推送和发布需先按项目协作约定取得确认。
