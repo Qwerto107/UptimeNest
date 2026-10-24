@@ -22,7 +22,6 @@ const route = useRoute()
 const router = useRouter()
 const updatedAt = ref<number>()
 const expanded = ref<number[]>([])
-const year = new Date().getFullYear()
 const { heartbeatCount, resizeHeartbeat } = useHeartbeatCount(90, () => void refresh())
 
 const { data, loading, error, refresh, refreshing } = useResource(async (signal) => {
@@ -179,7 +178,7 @@ function protocol(monitor: PublicMonitor) {
             type="button"
             :disabled="refreshing"
             :aria-label="t('common.refresh')"
-            :title="t('status.autoUpdate')"
+            :title="t('common.refresh')"
             @click="refresh"
           >
             <RefreshCw :size="14" :class="{ 'animate-spin': refreshing }" />
@@ -249,18 +248,12 @@ function protocol(monitor: PublicMonitor) {
           </section>
 
           <div v-if="monitors.length" class="pulse-history-note">
-            <span>{{ t('status.heartbeatHint') }}</span>
             <span>{{ t('status.uptimeShort') }}</span>
           </div>
         </main>
 
         <footer class="pulse-footer">
-          <span>{{ t('status.copyright', { year }) }}</span>
-          <span class="pulse-update-setting">
-            {{ t('status.autoUpdate') }}
-            <span class="pulse-timezone pulse-mono">{{ data.timezone }}</span>
-          </span>
-          <span class="pulse-mono">{{ t('status.poweredBy') }}</span>
+          <span>{{ t('status.copyright') }}</span>
         </footer>
       </template>
     </div>

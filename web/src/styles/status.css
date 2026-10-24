@@ -508,7 +508,7 @@
 .pulse-history-note {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px 24px;
   margin-top: -16px;
   color: var(--pulse-muted);
@@ -524,15 +524,6 @@
   padding-top: 24px;
   border-top: 1px solid var(--pulse-border);
   color: var(--pulse-muted);
-  font-size: 13px;
-}
-.pulse-update-setting {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  font-size: 11px;
-}
-.pulse-timezone {
   font-size: 11px;
 }
 .pulse-page .load-state,
