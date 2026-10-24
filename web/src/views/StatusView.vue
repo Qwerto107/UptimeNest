@@ -44,8 +44,8 @@ const monitors = computed(() => data.value?.monitors || [])
 const overall = computed<MonitorStatus>(() => {
   if (!monitors.value.length) return 'unknown'
   if (monitors.value.some((monitor) => monitor.summary.status === 'down')) return 'down'
-  if (monitors.value.every((monitor) => monitor.summary.status === 'paused')) return 'paused'
   if (monitors.value.some((monitor) => monitor.summary.status === 'unknown')) return 'unknown'
+  // 停用只代表暂停检测，不影响状态面板的正常汇总。
   return 'up'
 })
 
@@ -56,13 +56,8 @@ const statusCopy = computed(() => {
     const count = monitors.value.filter((monitor) => monitor.summary.status === 'down').length
     return { title: t('status.someDown'), description: t('status.downDescription', { count }) }
   }
-  if (overall.value === 'paused')
-    return { title: t('status.paused'), description: t('status.pausedDescription') }
   if (overall.value === 'unknown')
     return { title: t('status.waiting'), description: t('status.waitingDescription') }
-  const count = monitors.value.filter((monitor) => monitor.summary.status === 'paused').length
-  if (count)
-    return { title: t('status.activeUp'), description: t('status.activeUpDescription', { count }) }
   return { title: t('status.allUp'), description: '' }
 })
 
