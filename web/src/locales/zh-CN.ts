@@ -109,6 +109,7 @@ export default {
     averageHint: '最近 24 小时正常检测的响应时间均值，不含反转监控。',
     uptimeHint: '对本面板有数据的服务取近 24 小时可用率的平均值。',
     heartbeat: '最近 {count} 次检测',
+    recentChecks: '最近检测',
     serviceName: '服务名称',
     legendUp: '正常',
     legendDown: '故障',

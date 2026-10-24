@@ -7,6 +7,7 @@ import { Plus, Search, Pencil, Pause, Play, Trash2, ArrowUpRight, RefreshCw } fr
 import type { MonitorView, Group } from '@/types'
 import { request, send } from '@/lib/api'
 import { useResource } from '@/composables/useResource'
+import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
 import { useAction, notify } from '@/composables/useFeedback'
 import { percent, latency } from '@/lib/format'
 import LoadState from '@/components/LoadState.vue'
@@ -40,9 +41,10 @@ const selected = ref<MonitorView | null>(null)
 const deleteOpen = ref(false)
 const deleting = ref<MonitorView | null>(null)
 const { busy, run } = useAction()
+const { heartbeatCount, resizeHeartbeat } = useHeartbeatCount(60, () => void refresh())
 const { data, loading, error, refresh, refreshing } = useResource(async (signal) => {
   const [monitors, groups] = await Promise.all([
-    request<MonitorView[]>('/admin/monitors', { signal }),
+    request<MonitorView[]>(`/admin/monitors?heartbeatCount=${heartbeatCount.value}`, { signal }),
     request<Group[]>('/admin/groups', { signal }),
   ])
   return { monitors, groups }
@@ -208,7 +210,7 @@ async function toggle(monitor: MonitorView) {
               </span>
             </div>
             <div class="monitor-list-history">
-              <HeartbeatStrip :beats="monitor.summary.heartbeats" />
+              <HeartbeatStrip :beats="monitor.summary.heartbeats" @capacity="resizeHeartbeat" />
               <span>{{ percent(monitor.summary.uptime) }}</span>
             </div>
             <div class="row-actions">

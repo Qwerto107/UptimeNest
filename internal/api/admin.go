@@ -14,8 +14,9 @@ func (a *Server) monitors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	views := []model.MonitorView{}
+	count := heartbeatCount(r, 60)
 	for _, m := range items {
-		summary, err := a.store.Summary(r.Context(), m, 60)
+		summary, err := a.store.Summary(r.Context(), m, count)
 		if err != nil {
 			fail(w, err)
 			return

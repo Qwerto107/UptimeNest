@@ -627,19 +627,22 @@ svg {
   border: 1px solid currentColor;
 }
 
+/* 条宽和间距由组件固定，显示数量随容器宽度变化。 */
 .heartbeat-strip {
-  display: grid;
-  grid-template-columns: repeat(60, minmax(0, 1fr));
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 3px;
+  justify-content: space-between;
   min-width: 0;
-  height: 29px;
+  height: 16px;
 }
 .heartbeat {
   display: block;
   position: relative;
-  height: 24px;
-  border-radius: 3px;
+  flex: 0 0 3px;
+  width: 3px;
+  height: 14px;
+  border-radius: 1px;
   outline-offset: 2px;
 }
 .beat-up {
@@ -650,6 +653,36 @@ svg {
 }
 .beat-empty {
   background: var(--heartbeat-empty);
+}
+.heartbeat-strip-aligned .heartbeat {
+  position: absolute;
+  top: 1px;
+  min-width: 0;
+  max-width: none;
+  background: transparent;
+}
+.heartbeat-shapes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.heartbeat-shape {
+  fill: var(--heartbeat-empty);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 120ms ease-out;
+}
+.heartbeat-shape.beat-up {
+  fill: var(--heartbeat);
+}
+.heartbeat-shape.beat-down {
+  fill: var(--heartbeat-down);
+}
+.heartbeat-shape-active {
+  transform: scaleY(1.2);
 }
 .heartbeat::after {
   display: none;

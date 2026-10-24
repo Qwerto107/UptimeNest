@@ -76,12 +76,13 @@ func (a *Server) publicPanel(w http.ResponseWriter, r *http.Request) {
 		index[m.ID] = m
 	}
 	views := []publicMonitor{}
+	count := heartbeatCount(r, 90)
 	for _, id := range panel.MonitorIDs {
 		m, exists := index[id]
 		if !exists {
 			continue
 		}
-		summary, err := a.store.Summary(r.Context(), m, 90)
+		summary, err := a.store.Summary(r.Context(), m, count)
 		if err != nil {
 			fail(w, err)
 			return

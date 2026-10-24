@@ -195,6 +195,18 @@ func pathID(w http.ResponseWriter, r *http.Request) (int64, bool) {
 	return id, true
 }
 
+// heartbeatCount 允许页面按可用宽度补取心跳，并限制单次返回规模。
+func heartbeatCount(r *http.Request, fallback int) int {
+	count, err := strconv.Atoi(r.URL.Query().Get("heartbeatCount"))
+	if err != nil || count < 1 {
+		return fallback
+	}
+	if count > 1000 {
+		return 1000
+	}
+	return count
+}
+
 func page(r *http.Request) (int64, int) {
 	before, _ := strconv.ParseInt(r.URL.Query().Get("before"), 10, 64)
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))

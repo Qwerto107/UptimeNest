@@ -7,6 +7,7 @@ import type { PublicPanel, PublicMonitor, MonitorStatus } from '@/types'
 import { request } from '@/lib/api'
 import { bootstrap, loadBootstrap, timezone } from '@/composables/useApp'
 import { useResource } from '@/composables/useResource'
+import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
 import { formatTime, percent } from '@/lib/format'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import LoadState from '@/components/LoadState.vue'
@@ -21,14 +22,19 @@ const route = useRoute()
 const router = useRouter()
 const updatedAt = ref<number>()
 const expanded = ref<number[]>([])
-const heartbeatCount = 90
 const year = new Date().getFullYear()
+const { heartbeatCount, resizeHeartbeat } = useHeartbeatCount(90, () => void refresh())
 
 const { data, loading, error, refresh, refreshing } = useResource(async (signal) => {
   const [value] = await Promise.all([
-    request<PublicPanel>('/public/panels/' + encodeURIComponent(String(route.params.slug)), {
-      signal,
-    }),
+    request<PublicPanel>(
+      '/public/panels/' +
+        encodeURIComponent(String(route.params.slug)) +
+        `?heartbeatCount=${heartbeatCount.value}`,
+      {
+        signal,
+      },
+    ),
     loadBootstrap(),
   ])
   timezone.value = value.timezone
@@ -189,7 +195,7 @@ function protocol(monitor: PublicMonitor) {
           <section v-for="group in groups" :key="group.id" class="pulse-group">
             <div class="pulse-group-heading">
               <h2>{{ group.name }}</h2>
-              <span>{{ t('status.heartbeat', { count: heartbeatCount }) }}</span>
+              <span>{{ t('status.recentChecks') }}</span>
             </div>
             <div class="pulse-service-list">
               <article v-for="monitor in group.monitors" :key="monitor.id" class="pulse-service">
@@ -230,11 +236,7 @@ function protocol(monitor: PublicMonitor) {
                   <span v-for="tag in monitor.tags" :key="tag">{{ tag }}</span>
                 </div>
                 <StatusConnectionMeta :beat="monitor.summary.latest" />
-                <HeartbeatStrip
-                  :beats="monitor.summary.heartbeats"
-                  :count="heartbeatCount"
-                  align-pixels
-                />
+                <HeartbeatStrip :beats="monitor.summary.heartbeats" @capacity="resizeHeartbeat" />
                 <div
                   v-if="expanded.includes(monitor.id)"
                   :id="'connection-' + monitor.id"

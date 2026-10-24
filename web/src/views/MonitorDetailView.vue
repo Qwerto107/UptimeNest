@@ -6,6 +6,7 @@ import { ArrowLeft, Pencil, Pause, Play, Trash2 } from 'lucide-vue-next'
 import type { MonitorView, Group, Heartbeat, MonitorLog, Settings } from '@/types'
 import { request, send } from '@/lib/api'
 import { useResource } from '@/composables/useResource'
+import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
 import { useAction, notify } from '@/composables/useFeedback'
 import { percent, latency, formatTime } from '@/lib/format'
 import LoadState from '@/components/LoadState.vue'
@@ -28,9 +29,10 @@ const olderBeats = ref<Heartbeat[]>([])
 const olderLogs = ref<MonitorLog[]>([])
 const hasMoreBeats = ref(true)
 const hasMoreLogs = ref(true)
+const { heartbeatCount, resizeHeartbeat } = useHeartbeatCount(60, () => void refresh())
 const { data, loading, error, refresh } = useResource(async (signal) => {
   const [monitors, groups, beats, logs, settings] = await Promise.all([
-    request<MonitorView[]>('/admin/monitors', { signal }),
+    request<MonitorView[]>(`/admin/monitors?heartbeatCount=${heartbeatCount.value}`, { signal }),
     request<Group[]>('/admin/groups', { signal }),
     request<Heartbeat[]>(`/admin/monitors/${id}/heartbeats`, { signal }),
     request<MonitorLog[]>(`/admin/monitors/${id}/logs`, { signal }),
@@ -150,7 +152,7 @@ async function clearHistory() {
           </strong>
         </div>
       </div>
-      <HeartbeatStrip :beats="data.monitor.summary.heartbeats" />
+      <HeartbeatStrip :beats="data.monitor.summary.heartbeats" @capacity="resizeHeartbeat" />
       <p class="field-hint mt-2">{{ t('status.heartbeatHint') }}</p>
       <ConnectionDetails :beat="data.monitor.summary.latest" />
       <p v-if="data.monitor.description" class="detail-description">

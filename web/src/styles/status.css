@@ -424,7 +424,7 @@
   background: var(--pulse-warning-soft);
 }
 
-/* 前台用 90 条真实检测匹配原稿密度；后台仍使用共享组件的 60 条默认值。 */
+/* 前后台共用固定细条，按可用宽度显示最近一段真实检测。 */
 .pulse-page .heartbeat-strip {
   position: relative;
   display: flex;
@@ -434,10 +434,8 @@
   height: 16px;
 }
 .pulse-page .heartbeat {
-  flex: 0 1 3px;
+  flex: 0 0 3px;
   width: 3px;
-  min-width: 1px;
-  max-width: 3px;
   height: 14px;
   border-radius: 1px;
   transition: transform 120ms ease-out;
