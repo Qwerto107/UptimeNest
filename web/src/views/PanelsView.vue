@@ -26,6 +26,7 @@ const selected = ref<Panel | null>(null)
 const form = reactive<Panel>({
   id: 0,
   name: '',
+  pageTitle: '',
   slug: '',
   description: '',
   monitorIds: [],
@@ -43,6 +44,7 @@ function edit(panel: Panel | null) {
   Object.assign(form, {
     id: 0,
     name: '',
+    pageTitle: '',
     slug: '',
     description: '',
     monitorIds: [],
@@ -124,7 +126,12 @@ async function setDefault(panel: Panel) {
       </Button>
     </EmptyState>
     <div v-else class="entity-list">
-      <article v-for="panel in data.panels" :key="panel.id" class="entity-row">
+      <article
+        v-for="panel in data.panels"
+        :key="panel.id"
+        class="entity-row"
+        :class="{ 'entity-row-default': panel.isDefault }"
+      >
         <span class="entity-icon"><PanelsTopLeft :size="20" /></span>
         <div class="entity-info">
           <div class="flex flex-wrap items-center gap-2">
@@ -183,10 +190,11 @@ async function setDefault(panel: Panel) {
   <Modal
     v-model:open="editorOpen"
     :title="form.id ? t('panel.edit') : t('panel.add')"
+    :description="t('panel.editorHint')"
     wide
     :busy="busy"
   >
-    <form class="editor-form" @submit.prevent="save">
+    <form class="editor-form panel-editor-form" @submit.prevent="save">
       <fieldset :disabled="busy" class="form-grid">
         <Field id="panel-name" :label="t('common.name')" required>
           <Input
@@ -205,6 +213,9 @@ async function setDefault(panel: Panel) {
             :placeholder="t('panel.slugExample')"
           />
         </Field>
+        <Field id="panel-page-title" :label="t('panel.pageTitle')" :hint="t('panel.pageTitleHint')">
+          <Input id="panel-page-title" v-model="form.pageTitle" maxlength="200" />
+        </Field>
         <Field id="panel-description" :label="t('common.description')" class="col-span-full">
           <Textarea id="panel-description" v-model="form.description" maxlength="4000" />
         </Field>
@@ -216,7 +227,12 @@ async function setDefault(panel: Panel) {
         </div>
         <Switch id="panel-default" v-model="form.isDefault" :disabled="busy" />
       </div>
-      <PanelGroupsEditor v-model="form.groups" :monitors="data?.monitors || []" :busy="busy" />
+      <PanelGroupsEditor
+        v-if="editorOpen"
+        v-model="form.groups"
+        :monitors="data?.monitors || []"
+        :busy="busy"
+      />
       <div class="form-actions">
         <Button type="button" variant="outline" :disabled="busy" @click="editorOpen = false">
           {{ t('common.cancel') }}

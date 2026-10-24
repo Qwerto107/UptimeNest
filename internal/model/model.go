@@ -3,7 +3,7 @@ package model
 
 import "time"
 
-const DefaultUserAgent = "UptimeNest/0.1"
+const DefaultUserAgent = "UptimeNest"
 
 // Monitor 保存检测配置；访客仅能看到未隐藏的主机地址，不返回完整目标配置。
 type Monitor struct {
@@ -31,6 +31,7 @@ type Monitor struct {
 // HTTPOptions 保存单项 HTTP 检测配置；省略时保持旧监控的默认行为。
 type HTTPOptions struct {
 	Version          string   `json:"version"`
+	IgnoreTLS        bool     `json:"ignoreTLS"`
 	MaxRedirects     *int     `json:"maxRedirects,omitempty"`
 	ValidStatusCodes []string `json:"validStatusCodes"`
 	Method           string   `json:"method"`
@@ -103,6 +104,7 @@ type PanelGroup struct {
 type Panel struct {
 	ID          int64        `json:"id"`
 	Name        string       `json:"name"`
+	PageTitle   string       `json:"pageTitle"`
 	Slug        string       `json:"slug"`
 	Description string       `json:"description"`
 	MonitorIDs  []int64      `json:"monitorIds"`
@@ -111,6 +113,7 @@ type Panel struct {
 }
 
 type Settings struct {
+	SiteName      string `json:"siteName"`
 	Timezone      string `json:"timezone"`
 	Language      string `json:"language"`
 	EntryPage     string `json:"entryPage"`
@@ -118,8 +121,9 @@ type Settings struct {
 	RetentionDays int    `json:"retentionDays"`
 }
 
+// DefaultSettings 为首次安装及缺少配置字段时提供默认展示设置。
 func DefaultSettings() Settings {
-	return Settings{Timezone: "Asia/Shanghai", Language: "zh-CN", EntryPage: "status", RetentionDays: 90}
+	return Settings{SiteName: "UptimeNest", Timezone: "Asia/Singapore", Language: "zh-CN", EntryPage: "status", RetentionDays: 30}
 }
 
 // Heartbeat 只记录一次完整检测（含重试）后的最终结果。

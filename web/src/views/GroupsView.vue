@@ -89,7 +89,7 @@ async function remove() {
         {{ t('group.add') }}
       </Button>
     </EmptyState>
-    <MonitorGroupTree v-else :groups="data.groups" :monitors="data.monitors">
+    <MonitorGroupTree v-else class="group-tree" :groups="data.groups" :monitors="data.monitors">
       <template #group-actions="{ group }">
         <Button
           variant="ghost"

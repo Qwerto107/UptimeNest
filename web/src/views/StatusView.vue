@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { RefreshCw } from 'lucide-vue-next'
 import type { PublicPanel, PublicMonitor, MonitorStatus } from '@/types'
 import { request } from '@/lib/api'
-import { bootstrap, loadBootstrap, timezone } from '@/composables/useApp'
+import { loadBootstrap, siteName, timezone } from '@/composables/useApp'
 import { useResource } from '@/composables/useResource'
+import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
 import { formatTime, percent } from '@/lib/format'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import LoadState from '@/components/LoadState.vue'
@@ -18,17 +19,20 @@ import '@/styles/status.css'
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
 const updatedAt = ref<number>()
 const expanded = ref<number[]>([])
-const heartbeatCount = 90
-const year = new Date().getFullYear()
+const { heartbeatCount, resizeHeartbeat } = useHeartbeatCount(90, () => void refresh())
 
 const { data, loading, error, refresh, refreshing } = useResource(async (signal) => {
   const [value] = await Promise.all([
-    request<PublicPanel>('/public/panels/' + encodeURIComponent(String(route.params.slug)), {
-      signal,
-    }),
+    request<PublicPanel>(
+      '/public/panels/' +
+        encodeURIComponent(String(route.params.slug)) +
+        `?heartbeatCount=${heartbeatCount.value}`,
+      {
+        signal,
+      },
+    ),
     loadBootstrap(),
   ])
   timezone.value = value.timezone
@@ -40,8 +44,8 @@ const monitors = computed(() => data.value?.monitors || [])
 const overall = computed<MonitorStatus>(() => {
   if (!monitors.value.length) return 'unknown'
   if (monitors.value.some((monitor) => monitor.summary.status === 'down')) return 'down'
-  if (monitors.value.every((monitor) => monitor.summary.status === 'paused')) return 'paused'
   if (monitors.value.some((monitor) => monitor.summary.status === 'unknown')) return 'unknown'
+  // 停用只代表暂停检测，不影响状态面板的正常汇总。
   return 'up'
 })
 
@@ -52,13 +56,8 @@ const statusCopy = computed(() => {
     const count = monitors.value.filter((monitor) => monitor.summary.status === 'down').length
     return { title: t('status.someDown'), description: t('status.downDescription', { count }) }
   }
-  if (overall.value === 'paused')
-    return { title: t('status.paused'), description: t('status.pausedDescription') }
   if (overall.value === 'unknown')
     return { title: t('status.waiting'), description: t('status.waitingDescription') }
-  const count = monitors.value.filter((monitor) => monitor.summary.status === 'paused').length
-  if (count)
-    return { title: t('status.activeUp'), description: t('status.activeUpDescription', { count }) }
   return { title: t('status.allUp'), description: '' }
 })
 
@@ -79,10 +78,6 @@ const groups = computed(() => {
 function toggle(id: number) {
   if (expanded.value.includes(id)) expanded.value = expanded.value.filter((value) => value !== id)
   else expanded.value.push(id)
-}
-
-function selectPanel(event: Event) {
-  void router.push('/status/' + (event.target as HTMLSelectElement).value)
 }
 
 function statusLabel(status: MonitorStatus) {
@@ -119,26 +114,16 @@ function protocol(monitor: PublicMonitor) {
               stroke-linejoin="round"
             />
           </svg>
-          <span>{{ t('common.brand') }}</span>
+          <span :title="data?.panel.pageTitle || siteName">
+            {{ data?.panel.pageTitle || siteName }}
+          </span>
         </RouterLink>
         <div class="pulse-tools">
-          <select
-            v-if="bootstrap && bootstrap.panels.length > 1"
-            class="pulse-panel-select"
-            :aria-label="t('status.panel')"
-            :value="route.params.slug"
-            @change="selectPanel"
-          >
-            <option v-for="panel in bootstrap.panels" :key="panel.slug" :value="panel.slug">
-              {{ panel.name }}
-            </option>
-          </select>
-          <span v-else-if="data" class="pulse-panel-name">{{ data.panel.name }}</span>
           <ThemeToggle />
           <RouterLink class="pulse-admin-link" to="/admin">{{ t('nav.admin') }}</RouterLink>
         </div>
         <p v-if="data?.panel.description" class="pulse-panel-description">
-          {{ data.panel.description }}
+          <span>{{ data.panel.description }}</span>
         </p>
       </header>
 
@@ -152,7 +137,7 @@ function protocol(monitor: PublicMonitor) {
               <span class="pulse-signal-dot" />
             </span>
             <div>
-              <h1>{{ statusCopy.title }}</h1>
+              <h1 class="pulse-summary-title">{{ statusCopy.title }}</h1>
               <p class="pulse-updated">
                 {{ t('status.lastUpdated') }}
                 <time
@@ -173,7 +158,7 @@ function protocol(monitor: PublicMonitor) {
             type="button"
             :disabled="refreshing"
             :aria-label="t('common.refresh')"
-            :title="t('status.autoUpdate')"
+            :title="t('common.refresh')"
             @click="refresh"
           >
             <RefreshCw :size="14" :class="{ 'animate-spin': refreshing }" />
@@ -189,7 +174,7 @@ function protocol(monitor: PublicMonitor) {
           <section v-for="group in groups" :key="group.id" class="pulse-group">
             <div class="pulse-group-heading">
               <h2>{{ group.name }}</h2>
-              <span>{{ t('status.heartbeat', { count: heartbeatCount }) }}</span>
+              <span>{{ t('status.recentChecks') }}</span>
             </div>
             <div class="pulse-service-list">
               <article v-for="monitor in group.monitors" :key="monitor.id" class="pulse-service">
@@ -230,11 +215,7 @@ function protocol(monitor: PublicMonitor) {
                   <span v-for="tag in monitor.tags" :key="tag">{{ tag }}</span>
                 </div>
                 <StatusConnectionMeta :beat="monitor.summary.latest" />
-                <HeartbeatStrip
-                  :beats="monitor.summary.heartbeats"
-                  :count="heartbeatCount"
-                  align-pixels
-                />
+                <HeartbeatStrip :beats="monitor.summary.heartbeats" @capacity="resizeHeartbeat" />
                 <div
                   v-if="expanded.includes(monitor.id)"
                   :id="'connection-' + monitor.id"
@@ -247,18 +228,12 @@ function protocol(monitor: PublicMonitor) {
           </section>
 
           <div v-if="monitors.length" class="pulse-history-note">
-            <span>{{ t('status.heartbeatHint') }}</span>
             <span>{{ t('status.uptimeShort') }}</span>
           </div>
         </main>
 
         <footer class="pulse-footer">
-          <span>{{ t('status.copyright', { year }) }}</span>
-          <span class="pulse-update-setting">
-            {{ t('status.autoUpdate') }}
-            <span class="pulse-timezone pulse-mono">{{ data.timezone }}</span>
-          </span>
-          <span class="pulse-mono">{{ t('status.poweredBy') }}</span>
+          <span>{{ t('status.copyright') }}</span>
         </footer>
       </template>
     </div>

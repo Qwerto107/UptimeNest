@@ -44,8 +44,8 @@ const { t } = useI18n()
           }
         "
       >
-        <AlertDialogTitle class="text-xl font-semibold">{{ title }}</AlertDialogTitle>
-        <AlertDialogDescription class="mt-3 text-sm leading-7 text-muted-foreground">
+        <AlertDialogTitle class="modal-title">{{ title }}</AlertDialogTitle>
+        <AlertDialogDescription class="confirm-description">
           {{ description }}
         </AlertDialogDescription>
         <div class="mt-6 flex justify-end gap-3">

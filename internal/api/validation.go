@@ -108,7 +108,7 @@ func validateMonitor(m *model.Monitor) error {
 
 func validateSettings(v model.Settings) error {
 	if v.Timezone == "" || v.Timezone == "Local" {
-		return fmt.Errorf("请填写明确的 IANA 时区名称，例如 Asia/Shanghai 或 UTC")
+		return fmt.Errorf("请选择明确的 IANA 时区名称，例如 Asia/Singapore 或 UTC")
 	}
 	if _, err := time.LoadLocation(v.Timezone); err != nil {
 		return fmt.Errorf("时区无效，请使用 IANA 时区名称")

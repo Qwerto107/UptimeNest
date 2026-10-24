@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, useId } from 'vue'
+import { useEventListener, useMediaQuery } from '@vueuse/core'
+import { VueDraggable } from 'vue-draggable-plus'
+import type { DraggableEvent } from 'vue-draggable-plus'
 import { useI18n } from 'vue-i18n'
 import { Plus, GripVertical, ArrowUp, ArrowDown, X, Trash2 } from 'lucide-vue-next'
 import type { PanelGroup, MonitorView } from '@/types'
@@ -13,10 +16,61 @@ const assigned = computed(() => new Set(groups.value.flatMap((group) => group.mo
 const available = computed(() =>
   props.monitors.filter((monitor) => !assigned.value.has(monitor.id)),
 )
-type Drag =
-  | { kind: 'group'; groupId: string }
-  | { kind: 'monitor'; groupId: string; monitorId: number }
-const drag = ref<Drag>()
+const monitorDragGroup = `panel-monitors-${useId()}`
+const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+const dragAnimation = computed(() => {
+  if (reducedMotion.value) return 0
+  return 180
+})
+// 使用整项浮层跟随指针；让位时只移动相邻项，触屏和滚动容器采用同一套排序行为。
+const dragOptions = {
+  forceFallback: true,
+  // 浮层留在编辑区域内，弹窗关闭时随其一起移除。
+  fallbackOnBody: false,
+  fallbackTolerance: 4,
+  ghostClass: 'panel-sort-placeholder',
+  chosenClass: 'panel-sort-chosen',
+  fallbackClass: 'panel-sort-preview',
+  easing: 'cubic-bezier(0.16, 1, 0.3, 1)' as const,
+  scroll: false,
+}
+let scrollParent: HTMLElement | null = null
+let scrollFrame: number | undefined
+let pointerY = 0
+let lastScrollAt = 0
+function trackPointer(event: MouseEvent | TouchEvent) {
+  if ('touches' in event) {
+    pointerY = event.touches[0]?.clientY ?? pointerY
+    return
+  }
+  pointerY = event.clientY
+}
+function scrollDuringDrag(time: number) {
+  if (!scrollParent) return
+  const step = Math.min(time - lastScrollAt, 32) * 0.5
+  lastScrollAt = time
+  const bounds = scrollParent.getBoundingClientRect()
+  const footer = scrollParent.querySelector('.form-actions')?.getBoundingClientRect()
+  const bottom = footer?.top ?? bounds.bottom
+  // 固定操作栏上方才是列表的可见下边缘，不能按整个表单底部判断。
+  if (pointerY < bounds.top + 48) scrollParent.scrollTop -= step
+  else if (pointerY > bottom - 48) scrollParent.scrollTop += step
+  scrollFrame = requestAnimationFrame(scrollDuringDrag)
+}
+function stopScrolling() {
+  if (scrollFrame !== undefined) cancelAnimationFrame(scrollFrame)
+  scrollFrame = undefined
+  scrollParent = null
+}
+function startScrolling(event: DraggableEvent) {
+  stopScrolling()
+  scrollParent = event.from.closest<HTMLElement>('.editor-form')
+  lastScrollAt = performance.now()
+  scrollFrame = requestAnimationFrame(scrollDuringDrag)
+}
+useEventListener(window, 'pointermove', trackPointer, { capture: true, passive: true })
+useEventListener(window, 'touchmove', trackPointer, { capture: true, passive: true })
+onBeforeUnmount(stopScrolling)
 
 function addGroup() {
   groups.value.push({
@@ -40,44 +94,17 @@ function addMonitor(group: PanelGroup, event: Event) {
   if (id && !assigned.value.has(id)) group.monitorIds.push(id)
   select.value = ''
 }
-function moveMonitor(source: PanelGroup, id: number, targetId: string, index?: number) {
+function moveMonitor(source: PanelGroup, id: number, targetId: string) {
   const target = groups.value.find((group) => group.id === targetId)
   const current = source.monitorIds.indexOf(id)
   if (!target || current < 0) return
-  let next = index ?? target.monitorIds.length
   source.monitorIds.splice(current, 1)
-  if (source === target && current < next) next--
-  target.monitorIds.splice(next, 0, id)
+  target.monitorIds.push(id)
 }
 function changeGroup(source: PanelGroup, id: number, event: Event) {
   const select = event.target as HTMLSelectElement
   moveMonitor(source, id, select.value)
   select.value = ''
-}
-function start(event: DragEvent, value: Drag) {
-  if (props.busy) return
-  drag.value = value
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', value.groupId)
-  }
-}
-function drop(target: PanelGroup, index?: number) {
-  if (props.busy) return
-  const value = drag.value
-  if (!value) return
-  if (value.kind === 'group') {
-    const current = groups.value.findIndex((group) => group.id === value.groupId)
-    const next = groups.value.indexOf(target)
-    if (current >= 0 && next >= 0 && current !== next) {
-      const [group] = groups.value.splice(current, 1)
-      if (group) groups.value.splice(next, 0, group)
-    }
-  } else {
-    const source = groups.value.find((group) => group.id === value.groupId)
-    if (source) moveMonitor(source, value.monitorId, target.id, index)
-  }
-  drag.value = undefined
 }
 </script>
 
@@ -85,21 +112,28 @@ function drop(target: PanelGroup, index?: number) {
   <fieldset class="form-section" :disabled="busy">
     <legend>{{ t('panel.displayGroups') }}</legend>
     <p class="field-hint">{{ t('panel.groupHint') }}</p>
-    <div class="panel-groups-editor">
+    <VueDraggable
+      v-model="groups"
+      v-bind="dragOptions"
+      class="panel-groups-editor"
+      draggable=".panel-display-group"
+      handle=".panel-group-drag-handle"
+      :animation="dragAnimation"
+      :disabled="busy"
+      @start="startScrolling"
+      @end="stopScrolling"
+    >
       <section
         v-for="(group, groupIndex) in groups"
         :key="group.id"
         class="panel-display-group"
         :data-group-id="group.id"
       >
-        <div class="panel-group-heading" @dragover.prevent @drop.prevent="drop(group)">
+        <div class="panel-group-heading">
           <button
             type="button"
-            class="panel-drag-handle"
-            draggable="true"
+            class="panel-drag-handle panel-group-drag-handle"
             :aria-label="t('panel.dragGroup', { name: group.name })"
-            @dragstart="start($event, { kind: 'group', groupId: group.id })"
-            @dragend="drag = undefined"
           >
             <GripVertical :size="16" />
           </button>
@@ -143,21 +177,29 @@ function drop(target: PanelGroup, index?: number) {
             </Button>
           </div>
         </div>
-        <div class="panel-group-monitors" @dragover.prevent @drop.stop.prevent="drop(group)">
+        <VueDraggable
+          v-model="group.monitorIds"
+          v-bind="dragOptions"
+          class="panel-group-monitors"
+          draggable=".panel-group-monitor"
+          handle=".panel-monitor-drag-handle"
+          :group="monitorDragGroup"
+          :animation="dragAnimation"
+          :disabled="busy"
+          :empty-insert-threshold="24"
+          @start="startScrolling"
+          @end="stopScrolling"
+        >
           <div
             v-for="(id, index) in group.monitorIds"
             :key="id"
             class="panel-group-monitor"
-            @dragover.prevent
-            @drop.stop.prevent="drop(group, index)"
+            :data-monitor-id="id"
           >
             <button
               type="button"
-              class="panel-drag-handle"
-              draggable="true"
+              class="panel-drag-handle panel-monitor-drag-handle"
               :aria-label="t('panel.dragMonitor', { name: monitorName(id) })"
-              @dragstart.stop="start($event, { kind: 'monitor', groupId: group.id, monitorId: id })"
-              @dragend="drag = undefined"
             >
               <GripVertical :size="15" />
             </button>
@@ -170,7 +212,7 @@ function drop(target: PanelGroup, index?: number) {
                 :aria-label="t('panel.moveToGroup', { name: monitorName(id) })"
                 @change="changeGroup(group, id, $event)"
               >
-                <option value="" disabled>{{ t('panel.moveTo') }}</option>
+                <option value="" disabled selected>{{ t('panel.moveTo') }}</option>
                 <option
                   v-for="target in groups.filter((item) => item.id !== group.id)"
                   :key="target.id"
@@ -213,7 +255,7 @@ function drop(target: PanelGroup, index?: number) {
           <p v-if="!group.monitorIds.length" class="field-hint panel-group-empty">
             {{ t('panel.emptyGroup') }}
           </p>
-        </div>
+        </VueDraggable>
         <select
           class="control"
           value=""
@@ -221,7 +263,7 @@ function drop(target: PanelGroup, index?: number) {
           :aria-label="t('panel.addMonitorTo', { name: group.name })"
           @change="addMonitor(group, $event)"
         >
-          <option value="" disabled>
+          <option value="" disabled selected>
             {{ available.length ? t('panel.addMonitor') : t('panel.allSelected') }}
           </option>
           <option v-for="monitor in available" :key="monitor.id" :value="monitor.id">
@@ -229,7 +271,7 @@ function drop(target: PanelGroup, index?: number) {
           </option>
         </select>
       </section>
-    </div>
+    </VueDraggable>
     <Button type="button" variant="outline" :disabled="groups.length >= 100" @click="addGroup">
       <Plus />
       {{ t('panel.addGroup') }}

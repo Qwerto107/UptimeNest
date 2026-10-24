@@ -61,6 +61,7 @@ function toggle(id: number) {
       v-for="row in rows"
       :key="row.kind + '-' + (row.kind === 'group' ? row.branch.group.id : row.monitor.id)"
       class="tree-entry"
+      :class="{ 'tree-entry-nested': row.depth > 0 }"
       :style="{ '--tree-depth': row.depth }"
     >
       <div v-if="row.kind === 'group'" class="monitor-group-row">

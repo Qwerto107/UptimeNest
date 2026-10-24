@@ -4,6 +4,7 @@ import type { HTTPOptions } from '@/types'
 export function defaultHTTPOptions(): HTTPOptions {
   return {
     version: 'standard',
+    ignoreTLS: false,
     maxRedirects: 10,
     validStatusCodes: ['200-299', '300-399'],
     method: 'GET',

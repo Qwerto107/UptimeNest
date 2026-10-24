@@ -34,7 +34,7 @@ func (a *Server) bootstrap(w http.ResponseWriter, r *http.Request) {
 			defaultSlug = p.Slug
 		}
 	}
-	writeJSON(w, 200, map[string]any{"timezone": v.Timezone, "language": v.Language, "entryPage": v.EntryPage, "defaultPanel": defaultSlug, "panels": items})
+	writeJSON(w, 200, map[string]any{"siteName": v.SiteName, "timezone": v.Timezone, "language": v.Language, "entryPage": v.EntryPage, "defaultPanel": defaultSlug, "panels": items})
 }
 
 type publicMonitor struct {
@@ -76,12 +76,13 @@ func (a *Server) publicPanel(w http.ResponseWriter, r *http.Request) {
 		index[m.ID] = m
 	}
 	views := []publicMonitor{}
+	count := heartbeatCount(r, 90)
 	for _, id := range panel.MonitorIDs {
 		m, exists := index[id]
 		if !exists {
 			continue
 		}
-		summary, err := a.store.Summary(r.Context(), m, 90)
+		summary, err := a.store.Summary(r.Context(), m, count)
 		if err != nil {
 			fail(w, err)
 			return
@@ -102,7 +103,7 @@ func (a *Server) publicPanel(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, 200, map[string]any{"panel": map[string]any{"name": panel.Name, "slug": panel.Slug, "description": panel.Description}, "monitors": views, "groups": panel.Groups, "timezone": settings.Timezone})
+	writeJSON(w, 200, map[string]any{"panel": map[string]any{"name": panel.Name, "pageTitle": panel.PageTitle, "slug": panel.Slug, "description": panel.Description}, "monitors": views, "groups": panel.Groups, "timezone": settings.Timezone})
 }
 
 // publicEndpoint 只公开主机和端口，隐藏项不返回地址；URL 路径、查询参数等始终保留在后台。

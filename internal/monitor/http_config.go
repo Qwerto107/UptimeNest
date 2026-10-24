@@ -173,7 +173,7 @@ func httpHeaders(value string) (http.Header, error) {
 	return result, nil
 }
 
-// httpTLSConfig 解析 PEM 客户端证书；附加 CA 与系统信任库合并，始终校验服务端证书。
+// httpTLSConfig 解析 PEM 客户端证书，附加 CA 与系统信任库合并，默认校验服务端证书。
 func httpTLSConfig(a model.HTTPAuth) (*tls.Config, error) {
 	config := &tls.Config{MinVersion: tls.VersionTLS12}
 	if a.Type != "mtls" {
