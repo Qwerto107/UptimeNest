@@ -3,7 +3,7 @@ package model
 
 import "time"
 
-const DefaultUserAgent = "UptimeNest/0.1"
+const DefaultUserAgent = "UptimeNest"
 
 // Monitor 保存检测配置；访客仅能看到未隐藏的主机地址，不返回完整目标配置。
 type Monitor struct {

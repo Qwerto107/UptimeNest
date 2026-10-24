@@ -370,7 +370,7 @@ export default {
     themeHint: '主题偏好保存在当前浏览器。',
     monitoring: '全局检测设置',
     ua: 'User-Agent',
-    uaHint: '用于所有 HTTP/HTTPS 检测；留空使用 UptimeNest/0.1，下一次检测起生效。',
+    uaHint: '用于所有 HTTP/HTTPS 检测；留空使用 UptimeNest，下一次检测起生效。',
     history: '历史数据管理',
     retention: '历史保留期限（天）',
     retentionHint: '保留 1–3650 天；启动时及每小时自动清理过期心跳和日志。',

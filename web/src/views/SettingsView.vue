@@ -155,7 +155,7 @@ async function cleanup() {
           <Input
             id="user-agent"
             v-model="form.userAgent"
-            placeholder="UptimeNest/0.1"
+            placeholder="UptimeNest"
             maxlength="500"
           />
         </Field>
