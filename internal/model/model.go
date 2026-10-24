@@ -31,6 +31,7 @@ type Monitor struct {
 // HTTPOptions 保存单项 HTTP 检测配置；省略时保持旧监控的默认行为。
 type HTTPOptions struct {
 	Version          string   `json:"version"`
+	IgnoreTLS        bool     `json:"ignoreTLS"`
 	MaxRedirects     *int     `json:"maxRedirects,omitempty"`
 	ValidStatusCodes []string `json:"validStatusCodes"`
 	Method           string   `json:"method"`

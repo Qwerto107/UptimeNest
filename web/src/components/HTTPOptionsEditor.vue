@@ -5,6 +5,7 @@ import type { HTTPOptions } from '@/types'
 import Field from '@/components/Field.vue'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 
 const model = defineModel<HTTPOptions>({ required: true })
 defineProps<{ busy: boolean }>()
@@ -51,6 +52,17 @@ watch(customCodes, (value) => {
           required
         />
       </Field>
+      <div class="toggle-row col-span-full">
+        <div>
+          <label for="http-ignore-tls">{{ t('http.ignoreTLS') }}</label>
+          <p id="http-ignore-tls-hint">{{ t('http.ignoreTLSHint') }}</p>
+        </div>
+        <Switch
+          id="http-ignore-tls"
+          v-model="model.ignoreTLS"
+          aria-describedby="http-ignore-tls-hint"
+        />
+      </div>
       <div class="field col-span-full">
         <span id="http-codes-label" class="field-label">{{ t('http.statusCodes') }}</span>
         <div class="flex flex-wrap gap-x-4 gap-y-2" role="group" aria-labelledby="http-codes-label">

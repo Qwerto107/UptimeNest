@@ -144,6 +144,8 @@ export default {
     panel: '切换状态面板',
   },
   http: {
+    ignoreTLS: '忽略 HTTPS 站点的 TLS/SSL 错误',
+    ignoreTLSHint: '跳过检测目标的证书链及域名校验；仅对本监控的 HTTPS 请求生效，默认关闭。',
     options: 'HTTP 选项',
     version: 'HTTP 协议模式',
     version_standard: 'HTTP/1.1 / HTTP/2 自动协商',

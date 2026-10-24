@@ -33,6 +33,8 @@ func probeHTTP(ctx context.Context, m model.Monitor, ua string, h *model.Heartbe
 	if err != nil {
 		return err
 	}
+	// 仅按单项配置跳过检测目标的证书校验；OAuth2 令牌请求仍单独校验证书。
+	tlsConfig.InsecureSkipVerify = options.IgnoreTLS
 	var tlsStart time.Time
 	trace := &httptrace.ClientTrace{
 		TLSHandshakeStart: func() { resetTLS(h); tlsStart = time.Now() },
