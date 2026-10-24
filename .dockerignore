@@ -1,0 +1,14 @@
+.git
+.tools
+.impeccable
+PRODUCT.md
+DESIGN.md
+AGENTS.md
+docs/validation.md
+data
+bin
+web/node_modules
+web/dist
+internal/webui/dist
+.env
+*.log
