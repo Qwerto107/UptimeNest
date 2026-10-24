@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useEventListener, useMediaQuery } from '@vueuse/core'
 import {
   Activity,
   Folder,
@@ -21,7 +22,15 @@ import ThemeToggle from '@/components/ThemeToggle.vue'
 import { Button } from '@/components/ui/button'
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
+const autoRefresh = computed(
+  () => route.path.startsWith('/admin/monitors') || route.path === '/admin/groups',
+)
 const mobileMenu = ref(false)
+const compactNav = useMediaQuery('(max-width: 900px)')
+useEventListener(window, 'keydown', (event) => {
+  if (event.key === 'Escape') mobileMenu.value = false
+})
 const { busy, run } = useAction()
 const links = [
   { path: '/admin/monitors', label: 'nav.monitors', icon: Activity },
@@ -45,13 +54,19 @@ async function logout() {
     <header class="admin-header">
       <RouterLink to="/admin"><Brand /></RouterLink>
       <span class="admin-label">{{ t('nav.admin') }}</span>
+      <span class="admin-live" :aria-label="autoRefresh ? t('nav.refreshHint') : t('nav.admin')">
+        <span aria-hidden="true" />
+        {{ t('nav.live') }}
+        <template v-if="autoRefresh">· {{ t('nav.refreshSeconds', { seconds: 15 }) }}</template>
+      </span>
       <div class="header-spacer" />
       <Button as-child variant="ghost" class="public-link">
         <RouterLink
           :to="bootstrap?.defaultPanel ? `/status/${bootstrap.defaultPanel}` : '/'"
           target="_blank"
+          :aria-label="t('nav.public')"
         >
-          {{ t('nav.public') }}
+          <span>{{ t('nav.public') }}</span>
           <ArrowUpRight />
         </RouterLink>
       </Button>
@@ -68,7 +83,11 @@ async function logout() {
         <Menu v-else />
       </Button>
     </header>
-    <aside class="admin-sidebar" :class="{ 'sidebar-open': mobileMenu }">
+    <aside
+      class="admin-sidebar"
+      :class="{ 'sidebar-open': mobileMenu }"
+      :inert="compactNav && !mobileMenu"
+    >
       <nav :aria-label="t('nav.menu')">
         <RouterLink
           v-for="link in links"
@@ -77,7 +96,7 @@ async function logout() {
           class="sidebar-link"
           @click="mobileMenu = false"
         >
-          <component :is="link.icon" :size="18" />
+          <component :is="link.icon" :size="15" />
           <span>{{ t(link.label) }}</span>
         </RouterLink>
       </nav>

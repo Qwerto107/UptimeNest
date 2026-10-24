@@ -152,7 +152,7 @@ function protocol(monitor: PublicMonitor) {
               <span class="pulse-signal-dot" />
             </span>
             <div>
-              <h1>{{ statusCopy.title }}</h1>
+              <h1 class="pulse-summary-title">{{ statusCopy.title }}</h1>
               <p class="pulse-updated">
                 {{ t('status.lastUpdated') }}
                 <time

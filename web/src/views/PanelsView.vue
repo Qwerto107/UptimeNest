@@ -124,7 +124,12 @@ async function setDefault(panel: Panel) {
       </Button>
     </EmptyState>
     <div v-else class="entity-list">
-      <article v-for="panel in data.panels" :key="panel.id" class="entity-row">
+      <article
+        v-for="panel in data.panels"
+        :key="panel.id"
+        class="entity-row"
+        :class="{ 'entity-row-default': panel.isDefault }"
+      >
         <span class="entity-icon"><PanelsTopLeft :size="20" /></span>
         <div class="entity-info">
           <div class="flex flex-wrap items-center gap-2">
@@ -183,10 +188,11 @@ async function setDefault(panel: Panel) {
   <Modal
     v-model:open="editorOpen"
     :title="form.id ? t('panel.edit') : t('panel.add')"
+    :description="t('panel.editorHint')"
     wide
     :busy="busy"
   >
-    <form class="editor-form" @submit.prevent="save">
+    <form class="editor-form panel-editor-form" @submit.prevent="save">
       <fieldset :disabled="busy" class="form-grid">
         <Field id="panel-name" :label="t('common.name')" required>
           <Input

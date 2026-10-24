@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { ArrowUpRight, Eye, EyeOff, LockKeyhole } from 'lucide-vue-next'
 import type { Session } from '@/types'
 import { request, send } from '@/lib/api'
 import { useResource } from '@/composables/useResource'
@@ -17,6 +18,7 @@ const { t } = useI18n()
 const router = useRouter()
 const password = ref('')
 const confirmation = ref('')
+const showPassword = ref(false)
 const { data, loading, error, refresh } = useResource((signal) =>
   request<Session>('/admin/session', { signal }),
 )
@@ -49,15 +51,31 @@ async function submit() {
           {{ data.initialized ? t('auth.loginDescription') : t('auth.setupDescription') }}
         </p>
         <Field id="login-password" :label="t('auth.password')" required>
-          <Input
-            id="login-password"
-            v-model="password"
-            type="password"
-            required
-            :autocomplete="data.initialized ? 'current-password' : 'new-password'"
-            autofocus
-            :disabled="busy"
-          />
+          <div class="password-control">
+            <LockKeyhole :size="14" aria-hidden="true" />
+            <Input
+              id="login-password"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              :placeholder="t('auth.passwordPlaceholder')"
+              required
+              :autocomplete="data.initialized ? 'current-password' : 'new-password'"
+              autofocus
+              :disabled="busy"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              :disabled="busy"
+              :aria-label="showPassword ? t('auth.hidePassword') : t('auth.showPassword')"
+              :aria-pressed="showPassword"
+              @click="showPassword = !showPassword"
+            >
+              <EyeOff v-if="showPassword" />
+              <Eye v-else />
+            </Button>
+          </div>
         </Field>
         <Field
           v-if="!data.initialized"
@@ -81,7 +99,10 @@ async function submit() {
         <p v-if="!data.initialized" class="field-hint">
           {{ t('auth.localSetup') }}
         </p>
-        <RouterLink class="text-link text-sm" to="/">{{ t('nav.public') }}</RouterLink>
+        <RouterLink class="text-link login-public" to="/">
+          {{ t('nav.public') }}
+          <ArrowUpRight :size="13" />
+        </RouterLink>
       </form>
     </main>
     <footer class="login-footer">{{ t('common.brand') }}</footer>

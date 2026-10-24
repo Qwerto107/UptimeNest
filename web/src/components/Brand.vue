@@ -5,7 +5,7 @@ const { t } = useI18n()
 </script>
 <template>
   <span class="brand">
-    <span class="brand-mark"><Activity :size="20" :stroke-width="2.5" /></span>
+    <span class="brand-mark"><Activity :size="17" :stroke-width="1.7" /></span>
     <span>{{ t('common.brand') }}</span>
   </span>
 </template>

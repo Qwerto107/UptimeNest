@@ -1,26 +1,4 @@
-/* 字体取自用户提供的状态页，原文件及许可证随本地资源分发。 */
-@font-face {
-  font-family: 'Pulse Inter';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/inter-latin.woff2') format('woff2');
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
-    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Pulse Mono';
-  font-style: normal;
-  font-weight: 100 800;
-  font-display: swap;
-  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
-    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-/* 所有变量与选择器限定在访客状态页，后台继续使用原有主题。 */
+/* 访客状态页保留独立变量与选择器，避免与后台组件互相覆盖。 */
 .pulse-page {
   --pulse-background: #f6f7f9;
   --pulse-surface: #ffffff;
@@ -133,6 +111,10 @@
   color: var(--pulse-text);
   background: var(--pulse-pill);
 }
+.pulse-tools > button svg {
+  width: 16px;
+  height: 16px;
+}
 .pulse-admin-link:hover {
   color: var(--pulse-text);
 }
@@ -179,7 +161,7 @@
   gap: 14px;
   min-width: 0;
 }
-.pulse-summary h1 {
+.pulse-summary-title {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
@@ -514,6 +496,7 @@
 .pulse-expanded .connection-details {
   margin: 0;
   padding-top: 14px;
+  gap: 16px 24px;
 }
 .pulse-expanded .connection-details dt {
   color: var(--pulse-muted);
@@ -522,6 +505,7 @@
 .pulse-expanded .connection-details dd {
   color: var(--pulse-text);
   font-size: 12px;
+  font-family: inherit;
 }
 .pulse-history-note {
   display: flex;
@@ -590,7 +574,7 @@
     gap: 12px;
     padding: 18px;
   }
-  .pulse-summary h1 {
+  .pulse-summary-title {
     font-size: 16px;
   }
   .pulse-updated {

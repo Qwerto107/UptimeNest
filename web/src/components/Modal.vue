@@ -52,10 +52,8 @@ const { t } = useI18n()
       >
         <div class="modal-heading">
           <div>
-            <DialogTitle class="text-xl font-semibold">{{ title }}</DialogTitle>
-            <DialogDescription
-              :class="description ? 'mt-2 text-sm text-muted-foreground' : 'sr-only'"
-            >
+            <DialogTitle class="modal-title">{{ title }}</DialogTitle>
+            <DialogDescription :class="description ? 'modal-description' : 'sr-only'">
               {{ description || title }}
             </DialogDescription>
           </div>

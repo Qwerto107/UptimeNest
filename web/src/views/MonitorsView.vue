@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useEventListener } from '@vueuse/core'
 import { Plus, Search, Pencil, Pause, Play, Trash2, ArrowUpRight, RefreshCw } from 'lucide-vue-next'
 import type { MonitorView, Group } from '@/types'
 import { request, send } from '@/lib/api'
@@ -22,6 +23,16 @@ import { Badge } from '@/components/ui/badge'
 const { t } = useI18n()
 const route = useRoute()
 const search = ref('')
+const searchBox = ref<HTMLDivElement>()
+const searchShortcut = navigator.userAgent.includes('Mac')
+  ? 'common.searchShortcutMac'
+  : 'common.searchShortcut'
+useEventListener(window, 'keydown', (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    searchBox.value?.querySelector('input')?.focus()
+  }
+})
 const groupId = ref(String(route.query.group || 'all'))
 const status = ref('all')
 const editorOpen = ref(false)
@@ -54,6 +65,15 @@ const selectedGroups = computed(() => {
 const searching = computed(
   () => !!search.value.trim() || groupId.value !== 'all' || status.value !== 'all',
 )
+const overview = computed(() => {
+  const monitors = data.value?.monitors || []
+  return [
+    { key: 'total', count: monitors.length },
+    { key: 'up', count: monitors.filter((monitor) => monitor.summary.status === 'up').length },
+    { key: 'down', count: monitors.filter((monitor) => monitor.summary.status === 'down').length },
+    { key: 'paused', count: monitors.filter((monitor) => !monitor.enabled).length },
+  ]
+})
 function edit(monitor: MonitorView | null) {
   selected.value = monitor
   editorOpen.value = true
@@ -95,28 +115,18 @@ async function toggle(monitor: MonitorView) {
   <LoadState :loading="loading" :error="error" :has-data="!!data" @retry="refresh" />
   <template v-if="data">
     <div class="monitor-overview">
-      <strong>{{ t('monitor.total', { count: data.monitors.length }) }}</strong>
-      <span class="text-success">
-        {{
-          t('monitor.up', {
-            count: data.monitors.filter((m) => m.summary.status === 'up').length,
-          })
-        }}
-      </span>
-      <span class="text-destructive">
-        {{
-          t('monitor.down', {
-            count: data.monitors.filter((m) => m.summary.status === 'down').length,
-          })
-        }}
-      </span>
-      <span>
-        {{
-          t('monitor.paused', {
-            count: data.monitors.filter((m) => !m.enabled).length,
-          })
-        }}
-      </span>
+      <div
+        v-for="item in overview"
+        :key="item.key"
+        class="overview-stat"
+        :class="'overview-' + item.key"
+      >
+        <span class="overview-caption">{{ t('monitor.' + item.key + 'Caption') }}</span>
+        <div>
+          <strong>{{ item.count }}</strong>
+          <span>{{ t('monitor.' + item.key + 'Label') }}</span>
+        </div>
+      </div>
     </div>
     <EmptyState
       v-if="!data.monitors.length && !data.groups.length"
@@ -130,23 +140,24 @@ async function toggle(monitor: MonitorView) {
     </EmptyState>
     <template v-else>
       <div class="list-toolbar">
-        <div class="search-input">
+        <div ref="searchBox" class="search-input">
           <Search :size="16" />
           <Input
             v-model="search"
             :placeholder="t('common.search')"
             :aria-label="t('common.search')"
           />
+          <kbd>{{ t(searchShortcut) }}</kbd>
         </div>
         <select v-model="groupId" class="control filter-select" :aria-label="t('monitor.group')">
-          <option value="all">{{ t('common.all') }} · {{ t('monitor.group') }}</option>
+          <option value="all">{{ t('monitor.allGroups') }}</option>
           <option value="0">{{ t('common.ungrouped') }}</option>
           <option v-for="group in choices" :key="group.id" :value="String(group.id)">
             {{ group.label }}
           </option>
         </select>
         <select v-model="status" class="control filter-select" :aria-label="t('common.status')">
-          <option value="all">{{ t('common.all') }} · {{ t('common.status') }}</option>
+          <option value="all">{{ t('monitor.allStates') }}</option>
           <option v-for="kind in ['up', 'down', 'unknown', 'paused']" :key="kind" :value="kind">
             {{ t(`state.${kind}`) }}
           </option>
@@ -170,13 +181,12 @@ async function toggle(monitor: MonitorView) {
         :searching="searching"
       >
         <template #monitor="{ monitor }">
-          <article class="monitor-list-row">
+          <article class="monitor-list-row" :data-state="monitor.summary.status">
             <div class="monitor-list-info">
               <div class="monitor-identity">
                 <RouterLink class="monitor-title" :to="`/admin/monitors/${monitor.id}`">
                   {{ monitor.name }}
                 </RouterLink>
-                <Badge>{{ t(`monitor.${monitor.type}`) }}</Badge>
               </div>
               <p class="monitor-target">
                 {{ monitor.target }}
@@ -186,9 +196,16 @@ async function toggle(monitor: MonitorView) {
                 <Badge v-for="tag in monitor.tags" :key="tag">{{ tag }}</Badge>
               </div>
             </div>
+            <Badge class="monitor-protocol">{{ t(`monitor.${monitor.type}`) }}</Badge>
             <div class="monitor-list-state">
               <StatusBadge :status="monitor.summary.status" />
-              <span>{{ latency(monitor.summary.latest?.latency) }}</span>
+              <span>
+                {{
+                  latency(
+                    monitor.summary.status === 'up' ? monitor.summary.latest?.latency : undefined,
+                  )
+                }}
+              </span>
             </div>
             <div class="monitor-list-history">
               <HeartbeatStrip :beats="monitor.summary.heartbeats" />

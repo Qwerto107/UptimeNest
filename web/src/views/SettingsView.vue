@@ -62,6 +62,7 @@ async function cleanup() {
   <form v-if="data" class="settings-form" @submit.prevent="save">
     <section class="settings-section">
       <div class="settings-section-title">
+        <span class="settings-code">{{ t('settings.displayCode') }}</span>
         <h2>{{ t('settings.display') }}</h2>
       </div>
       <fieldset :disabled="busy" class="settings-fields">
@@ -84,17 +85,19 @@ async function cleanup() {
             />
           </datalist>
         </Field>
-        <Field id="entry-page" :label="t('settings.entry')">
-          <select id="entry-page" v-model="form.entryPage" class="control">
-            <option value="status">{{ t('settings.statusEntry') }}</option>
-            <option value="admin">{{ t('settings.adminEntry') }}</option>
-          </select>
-        </Field>
-        <Field id="language" :label="t('settings.language')" :hint="t('settings.languageHint')">
-          <select id="language" v-model="form.language" class="control">
-            <option value="zh-CN">{{ t('settings.zhCN') }}</option>
-          </select>
-        </Field>
+        <div class="settings-row">
+          <Field id="entry-page" :label="t('settings.entry')">
+            <select id="entry-page" v-model="form.entryPage" class="control">
+              <option value="status">{{ t('settings.statusEntry') }}</option>
+              <option value="admin">{{ t('settings.adminEntry') }}</option>
+            </select>
+          </Field>
+          <Field id="language" :label="t('settings.language')" :hint="t('settings.languageHint')">
+            <select id="language" v-model="form.language" class="control">
+              <option value="zh-CN">{{ t('settings.zhCN') }}</option>
+            </select>
+          </Field>
+        </div>
         <div class="field">
           <span class="field-label">{{ t('settings.theme') }}</span>
           <div class="theme-options" role="group" :aria-label="t('settings.theme')">
@@ -123,6 +126,7 @@ async function cleanup() {
     </section>
     <section class="settings-section">
       <div class="settings-section-title">
+        <span class="settings-code">{{ t('settings.monitoringCode') }}</span>
         <h2>{{ t('settings.monitoring') }}</h2>
       </div>
       <fieldset :disabled="busy" class="settings-fields">
@@ -138,6 +142,7 @@ async function cleanup() {
     </section>
     <section class="settings-section">
       <div class="settings-section-title">
+        <span class="settings-code">{{ t('settings.historyCode') }}</span>
         <h2>{{ t('settings.history') }}</h2>
       </div>
       <fieldset :disabled="busy" class="settings-fields">

@@ -34,6 +34,7 @@ async function save() {
   <form class="settings-form" @submit.prevent="save">
     <section class="settings-section">
       <div class="settings-section-title">
+        <span class="settings-code">{{ t('settings.securityCode') }}</span>
         <h2>{{ t('settings.password') }}</h2>
         <p>{{ t('settings.passwordHint') }}</p>
       </div>
