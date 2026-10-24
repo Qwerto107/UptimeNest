@@ -103,6 +103,7 @@ type PanelGroup struct {
 type Panel struct {
 	ID          int64        `json:"id"`
 	Name        string       `json:"name"`
+	PageTitle   string       `json:"pageTitle"`
 	Slug        string       `json:"slug"`
 	Description string       `json:"description"`
 	MonitorIDs  []int64      `json:"monitorIds"`
@@ -111,6 +112,7 @@ type Panel struct {
 }
 
 type Settings struct {
+	SiteName      string `json:"siteName"`
 	Timezone      string `json:"timezone"`
 	Language      string `json:"language"`
 	EntryPage     string `json:"entryPage"`
@@ -118,8 +120,9 @@ type Settings struct {
 	RetentionDays int    `json:"retentionDays"`
 }
 
+// DefaultSettings 为首次安装及缺少配置字段时提供默认展示设置。
 func DefaultSettings() Settings {
-	return Settings{Timezone: "Asia/Shanghai", Language: "zh-CN", EntryPage: "status", RetentionDays: 90}
+	return Settings{SiteName: "UptimeNest", Timezone: "Asia/Shanghai", Language: "zh-CN", EntryPage: "status", RetentionDays: 90}
 }
 
 // Heartbeat 只记录一次完整检测（含重试）后的最终结果。

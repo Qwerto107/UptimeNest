@@ -90,6 +90,7 @@ export interface PanelGroup {
 export interface Panel {
   id: number
   name: string
+  pageTitle: string
   slug: string
   description: string
   monitorIds: number[]
@@ -97,6 +98,7 @@ export interface Panel {
   isDefault: boolean
 }
 export interface Settings {
+  siteName: string
   timezone: string
   language: string
   entryPage: 'status' | 'admin'
@@ -104,6 +106,7 @@ export interface Settings {
   retentionDays: number
 }
 export interface Bootstrap {
+  siteName: string
   timezone: string
   language: string
   entryPage: string
@@ -126,7 +129,7 @@ export type PublicMonitor = Pick<
   'id' | 'name' | 'type' | 'description' | 'tags' | 'summary'
 > & { address?: string; protocol: string }
 export interface PublicPanel {
-  panel: Pick<Panel, 'name' | 'slug' | 'description'>
+  panel: Pick<Panel, 'name' | 'slug' | 'description' | 'pageTitle'>
   monitors: PublicMonitor[]
   groups: PanelGroup[]
   timezone: string

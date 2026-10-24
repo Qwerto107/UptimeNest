@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/Qwerto107/UptimeNest/internal/model"
 )
@@ -229,6 +230,11 @@ func (a *Server) savePanel(w http.ResponseWriter, r *http.Request) {
 		p.ID = id
 	}
 	p.Name = strings.TrimSpace(p.Name)
+	p.PageTitle = strings.TrimSpace(p.PageTitle)
+	if utf8.RuneCountInString(p.PageTitle) > 200 {
+		writeError(w, 400, "面板标题最多 200 个字符")
+		return
+	}
 	p.Slug = strings.TrimSpace(p.Slug)
 	if p.Name == "" || len(p.Name) > 200 || !slugPattern.MatchString(p.Slug) || len(p.Description) > 4000 {
 		writeError(w, 400, "请填写名称和访问路径；路径最多 64 位，仅支持小写字母、数字和连字符")
@@ -285,8 +291,16 @@ func (a *Server) settings(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, value)
 }
 func (a *Server) saveSettings(w http.ResponseWriter, r *http.Request) {
-	var v model.Settings
+	v := model.DefaultSettings()
 	if !decode(w, r, &v) {
+		return
+	}
+	v.SiteName = strings.TrimSpace(v.SiteName)
+	if v.SiteName == "" {
+		v.SiteName = model.DefaultSettings().SiteName
+	}
+	if utf8.RuneCountInString(v.SiteName) > 100 {
+		writeError(w, 400, "站点名称最多 100 个字符")
 		return
 	}
 	if err := validateSettings(v); err != nil {

@@ -17,6 +17,7 @@ const { busy, run } = useAction()
 const cleanupOpen = ref(false)
 const savedDays = ref(90)
 const form = reactive<Settings>({
+  siteName: t('common.brand'),
   timezone: 'Asia/Shanghai',
   language: 'zh-CN',
   entryPage: 'status',
@@ -66,6 +67,14 @@ async function cleanup() {
         <h2>{{ t('settings.display') }}</h2>
       </div>
       <fieldset :disabled="busy" class="settings-fields">
+        <Field id="site-name" :label="t('settings.siteName')" :hint="t('settings.siteNameHint')">
+          <Input
+            id="site-name"
+            v-model="form.siteName"
+            maxlength="100"
+            :placeholder="t('common.brand')"
+          />
+        </Field>
         <Field id="timezone" :label="t('settings.timezone')" :hint="t('settings.timezoneHint')">
           <Input id="timezone" v-model="form.timezone" list="timezone-options" required />
           <datalist id="timezone-options">

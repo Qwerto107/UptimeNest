@@ -7,7 +7,7 @@ import type { Session } from '@/types'
 import { request, send } from '@/lib/api'
 import { useResource } from '@/composables/useResource'
 import { useAction, notify } from '@/composables/useFeedback'
-import { loadBootstrap } from '@/composables/useApp'
+import { loadBootstrap, siteName } from '@/composables/useApp'
 import Brand from '@/components/Brand.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import LoadState from '@/components/LoadState.vue'
@@ -46,7 +46,7 @@ async function submit() {
     <main class="login-main">
       <LoadState :loading="loading" :error="error" @retry="refresh" />
       <form v-if="data" class="login-form" @submit.prevent="submit">
-        <h1>{{ data.initialized ? t('auth.welcome') : t('auth.setup') }}</h1>
+        <h1>{{ data.initialized ? t('auth.welcome') : t('auth.setup', { name: siteName }) }}</h1>
         <p class="login-description">
           {{ data.initialized ? t('auth.loginDescription') : t('auth.setupDescription') }}
         </p>
@@ -105,6 +105,6 @@ async function submit() {
         </RouterLink>
       </form>
     </main>
-    <footer class="login-footer">{{ t('common.brand') }}</footer>
+    <footer class="login-footer">{{ siteName }}</footer>
   </div>
 </template>

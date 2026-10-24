@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { RefreshCw } from 'lucide-vue-next'
 import type { PublicPanel, PublicMonitor, MonitorStatus } from '@/types'
 import { request } from '@/lib/api'
-import { loadBootstrap, timezone } from '@/composables/useApp'
+import { loadBootstrap, siteName, timezone } from '@/composables/useApp'
 import { useResource } from '@/composables/useResource'
 import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
 import { formatTime, percent } from '@/lib/format'
@@ -119,14 +119,16 @@ function protocol(monitor: PublicMonitor) {
               stroke-linejoin="round"
             />
           </svg>
-          <span>{{ t('common.brand') }}</span>
+          <span :title="data?.panel.pageTitle || siteName">
+            {{ data?.panel.pageTitle || siteName }}
+          </span>
         </RouterLink>
         <div class="pulse-tools">
           <ThemeToggle />
           <RouterLink class="pulse-admin-link" to="/admin">{{ t('nav.admin') }}</RouterLink>
         </div>
         <p v-if="data?.panel.description" class="pulse-panel-description">
-          {{ data.panel.description }}
+          <span>{{ data.panel.description }}</span>
         </p>
       </header>
 

@@ -26,6 +26,7 @@ const selected = ref<Panel | null>(null)
 const form = reactive<Panel>({
   id: 0,
   name: '',
+  pageTitle: '',
   slug: '',
   description: '',
   monitorIds: [],
@@ -43,6 +44,7 @@ function edit(panel: Panel | null) {
   Object.assign(form, {
     id: 0,
     name: '',
+    pageTitle: '',
     slug: '',
     description: '',
     monitorIds: [],
@@ -210,6 +212,9 @@ async function setDefault(panel: Panel) {
             pattern="[a-z0-9][a-z0-9\-]{0,63}"
             :placeholder="t('panel.slugExample')"
           />
+        </Field>
+        <Field id="panel-page-title" :label="t('panel.pageTitle')" :hint="t('panel.pageTitleHint')">
+          <Input id="panel-page-title" v-model="form.pageTitle" maxlength="200" />
         </Field>
         <Field id="panel-description" :label="t('common.description')" class="col-span-full">
           <Textarea id="panel-description" v-model="form.description" maxlength="4000" />

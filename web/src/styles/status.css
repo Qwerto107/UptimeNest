@@ -83,11 +83,17 @@
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  max-width: min(52vw, 320px);
 }
 .pulse-brand svg {
+  flex: none;
   color: var(--pulse-ok);
 }
 .pulse-brand > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--pulse-text);
   font-size: 17px;
   font-weight: 600;
@@ -120,10 +126,14 @@
 }
 .pulse-panel-description {
   flex-basis: 100%;
-  max-width: 75ch;
+  max-width: 100%;
   color: var(--pulse-muted);
   font-size: 12px;
   overflow-wrap: anywhere;
+}
+.pulse-panel-description > span {
+  display: block;
+  max-width: 75ch;
 }
 
 /* 顶部网格与状态信号点来自指定参考，只在总状态区域使用。 */
