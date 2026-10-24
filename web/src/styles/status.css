@@ -118,20 +118,6 @@
 .pulse-admin-link:hover {
   color: var(--pulse-text);
 }
-.pulse-panel-name {
-  max-width: 220px;
-  overflow-wrap: anywhere;
-}
-.pulse-panel-select {
-  max-width: 220px;
-  min-width: 0;
-  padding: 4px 24px 4px 8px;
-  border: 1px solid var(--pulse-border);
-  border-radius: 6px;
-  color: var(--pulse-muted);
-  background: var(--pulse-surface);
-  font-size: 12px;
-}
 .pulse-panel-description {
   flex-basis: 100%;
   max-width: 75ch;
@@ -553,12 +539,6 @@
   .pulse-tools {
     gap: 10px;
   }
-  .pulse-panel-name {
-    max-width: 120px;
-  }
-  .pulse-panel-select {
-    max-width: 140px;
-  }
   .pulse-summary {
     gap: 12px;
     padding: 18px;
@@ -599,14 +579,11 @@
 }
 @media (max-width: 420px) {
   .pulse-header {
-    align-items: flex-start;
+    align-items: center;
   }
   .pulse-tools {
-    flex: 1 1 100%;
+    flex: 0 0 auto;
     justify-content: flex-end;
-  }
-  .pulse-tools > :first-child {
-    margin-right: auto;
   }
   .pulse-summary {
     padding: 16px;

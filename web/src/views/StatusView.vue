@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { RefreshCw } from 'lucide-vue-next'
 import type { PublicPanel, PublicMonitor, MonitorStatus } from '@/types'
 import { request } from '@/lib/api'
-import { bootstrap, loadBootstrap, timezone } from '@/composables/useApp'
+import { loadBootstrap, timezone } from '@/composables/useApp'
 import { useResource } from '@/composables/useResource'
 import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
 import { formatTime, percent } from '@/lib/format'
@@ -19,7 +19,6 @@ import '@/styles/status.css'
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
 const updatedAt = ref<number>()
 const expanded = ref<number[]>([])
 const { heartbeatCount, resizeHeartbeat } = useHeartbeatCount(90, () => void refresh())
@@ -86,10 +85,6 @@ function toggle(id: number) {
   else expanded.value.push(id)
 }
 
-function selectPanel(event: Event) {
-  void router.push('/status/' + (event.target as HTMLSelectElement).value)
-}
-
 function statusLabel(status: MonitorStatus) {
   if (status === 'up') return t('status.legendUp')
   return t('state.' + status)
@@ -127,18 +122,6 @@ function protocol(monitor: PublicMonitor) {
           <span>{{ t('common.brand') }}</span>
         </RouterLink>
         <div class="pulse-tools">
-          <select
-            v-if="bootstrap && bootstrap.panels.length > 1"
-            class="pulse-panel-select"
-            :aria-label="t('status.panel')"
-            :value="route.params.slug"
-            @change="selectPanel"
-          >
-            <option v-for="panel in bootstrap.panels" :key="panel.slug" :value="panel.slug">
-              {{ panel.name }}
-            </option>
-          </select>
-          <span v-else-if="data" class="pulse-panel-name">{{ data.panel.name }}</span>
           <ThemeToggle />
           <RouterLink class="pulse-admin-link" to="/admin">{{ t('nav.admin') }}</RouterLink>
         </div>
