@@ -43,7 +43,7 @@ docker compose ps
 
 默认 SQLite 部署无须创建 `.env`。需要调整数据库或 HTTPS Cookie 时，在运行目录创建 `.env`，可参考仓库的 [.env.example](../.env.example)。
 
-`docker-compose.yml` 直接指定镜像 `ghcr.io/qwerto107/uptimenest:latest`。固定版本时修改 `image` 为 `ghcr.io/qwerto107/uptimenest:0.1.0`；更换端口时修改 `127.0.0.1:8090:8090` 中的第一个 `8090`。默认端口仅本机可访问，公网访问需配置反向代理。
+`docker-compose.yml` 直接指定镜像 `ghcr.io/qwerto107/uptimenest:latest`。固定版本时修改 `image` 为 `ghcr.io/qwerto107/uptimenest:0.2.0`；更换端口时修改 `127.0.0.1:8090:8090` 中的第一个 `8090`。默认端口仅本机可访问，公网访问需配置反向代理。
 
 ## 数据与目录
 
@@ -79,7 +79,7 @@ Compose 的数据库路径默认为 `/app/data/uptimenest.db`。镜像地址和�
 
 | 分类 | 配置 |
 | --- | --- |
-| 显示 | 系统显示时区、入口页面 |
+| 显示 | 站点名称、系统显示时区、入口页面 |
 | 语言与主题 | 简体中文；浅色／深色主题手动切换，主题偏好保存在当前浏览器 |
 | 监控全局配置 | HTTP/HTTPS 请求的 User-Agent，留空使用系统默认值 |
 | 历史数据 | 保留期限、手动清理；启动及每小时自动清理过期数据 |

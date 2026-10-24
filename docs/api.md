@@ -30,13 +30,13 @@
 
 | 方法 | 路径 | 返回内容 |
 | --- | --- | --- |
-| GET | `/api/public/bootstrap` | 时区、语言、入口设置、默认面板路径、面板名称与路径 |
+| GET | `/api/public/bootstrap` | 站点名称、时区、语言、入口设置、默认面板路径、面板名称与路径 |
 | GET | `/api/public/panels/:slug` | 当前面板信息、展示监控、所属分组和真实统计 |
 | GET | `/api/health` | 数据库可用时返回 `{ "status": "ok" }` |
 
 访客监控仅包含 `id`、`name`、`type`、`protocol`、可选的 `address`、`description`、`tags`、`summary`。`groups` 返回当前面板的独立展示分组（`id`、`name`、`monitorIds`），不返回后台 `groupId` 或父子结构。`protocol` 为配置的检测协议（HTTP、HTTPS、TCP、PING 或 DNS），不依赖最近一次检测是否成功。`address` 仅包含主机名/IP 及端口；`hideAddress: true` 时省略，不返回完整 URL 路径、查询参数、检测参数或内部错误消息。
 
-`summary` 包含 `status`、`uptime`、`average`、`latest` 和按时间升序排列的最多 90 条 `heartbeats`。后台监控列表摘要保持最多 60 条。两者的 `uptime` 和 `average` 仍按近 24 小时计算，无数据时为 `null`。状态为 `up`、`down`、`unknown` 或 `paused`。
+`summary` 包含 `status`、`uptime`、`average`、`latest` 和按时间升序排列的 `heartbeats`。公开面板与后台监控列表支持查询参数 `heartbeatCount`（1～1000），供界面按容器容量补取最近记录；未传或无效时，公开接口默认 90 条、后台默认 60 条，超出上限时截取为 1000。两者的 `uptime` 和 `average` 仍按近 24 小时计算，无数据时为 `null`。状态为 `up`、`down`、`unknown` 或 `paused`。
 
 ## 管理员账户
 
@@ -103,6 +103,7 @@
 ```json
 {
   "version": "auto",
+  "ignoreTLS": false,
   "maxRedirects": 0,
   "validStatusCodes": ["200-299", "401"],
   "method": "POST",
@@ -114,6 +115,7 @@
 ```
 
 - `version`：`standard`（默认，HTTP/1.1 / HTTP/2）、`auto`（优先 HTTP/3，连接失败时回退）、`http3`（仅 HTTP/3，需 HTTPS）。自动模式在存在环境代理时使用 TCP 协议；仅 HTTP/3 不支持该代理。
+- `ignoreTLS`：布尔值，默认 `false`。仅此监控的检测目标跳过证书链、有效期及域名校验；适用于 HTTPS 和 HTTP/3，不关闭 OAuth2 令牌请求的证书校验。HTTP 配置不通过公开接口返回。
 - `maxRedirects`：0–100，省略为 10；0 不跟随跳转。响应是否成功仍由状态码配置决定。
 - `validStatusCodes`：单码或闭区间字符串数组，范围 100–599，如 `200`、`200-299`；至少一项、最多 100 项。
 - `method`：GET、POST、HEAD、PUT、PATCH、DELETE、OPTIONS、TRACE、CONNECT。
@@ -141,6 +143,7 @@ OAuth2 使用 `client_credentials`，Token 请求不跟随重定向，错误不�
 ```json
 {
   "name": "生产环境",
+  "pageTitle": "生产环境服务状态",
   "slug": "production",
   "description": "各项服务的实时状态与可用性",
   "groups": [
@@ -157,20 +160,23 @@ OAuth2 使用 `client_credentials`，Token 请求不跟随重定向，错误不�
 
 `slug` 唯一，最长 64 位，以小写字母或数字开头，其余允许连字符。首个面板自动成为默认面板，设为默认会取消其他默认标记；删除默认面板后递补剩余的首个面板。
 
+`pageTitle` 为可选字符串，最多 200 个字符；替换状态页左上角名称，留空使用全局站点名称，不新增标题行。公开面板响应返回该字段。浏览器标题统一使用 bootstrap 返回的全局 `siteName`，不提供面板级浏览器标题。
+
 ## 设置与清理
 
 GET、PUT `/api/admin/settings`：
 
 ```json
 {
-  "timezone": "Asia/Shanghai",
+  "siteName": "UptimeNest",
+  "timezone": "Asia/Singapore",
   "language": "zh-CN",
   "entryPage": "status",
   "userAgent": "",
-  "retentionDays": 90
+  "retentionDays": 30
 }
 ```
 
-`entryPage` 为 `status` 或 `admin`。UA 留空使用 `UptimeNest/0.1`。保留期限为 1–3650 天。
+`siteName` 最多 100 个字符，留空使用 `UptimeNest`，用于界面品牌及所有页面的浏览器标题；bootstrap 公开返回该字段。`timezone` 使用 IANA 时区，新安装默认 `Asia/Singapore`，已保存值保留。`entryPage` 为 `status` 或 `admin`。UA 留空使用 `UptimeNest`。保留期限为 1–3650 天，新安装默认 30 天，已保存值保留。
 
 POST `/api/admin/cleanup` 无请求体，按已保存期限清理过期数据，返回 `{ "heartbeats": 0, "logs": 0 }`。
