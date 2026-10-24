@@ -54,7 +54,7 @@ watch(data, (value) => {
 })
 // 自动刷新和向前分页可能重叠，按主键去重后再按时间排序。
 function merge<T extends { id: number; time: number }>(recent: T[], older: T[]): T[] {
-  const cutoff = Date.now() - (data.value?.retentionDays || 90) * 86400000
+  const cutoff = Date.now() - (data.value?.retentionDays || 30) * 86400000
   return [...new Map([...older, ...recent].map((item) => [item.id, item])).values()]
     .filter((item) => item.time >= cutoff)
     .sort((a, b) => b.time - a.time || b.id - a.id)

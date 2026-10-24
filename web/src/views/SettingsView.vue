@@ -15,14 +15,14 @@ import { Input } from '@/components/ui/input'
 const { t } = useI18n()
 const { busy, run } = useAction()
 const cleanupOpen = ref(false)
-const savedDays = ref(90)
+const savedDays = ref(30)
 const form = reactive<Settings>({
   siteName: t('common.brand'),
   timezone: 'Asia/Singapore',
   language: 'zh-CN',
   entryPage: 'status',
   userAgent: '',
-  retentionDays: 90,
+  retentionDays: 30,
 })
 const commonTimezones = [
   { value: 'Asia/Singapore', name: 'singapore' },
