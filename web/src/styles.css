@@ -1142,6 +1142,8 @@ svg {
   padding: 2px;
   color: var(--muted-foreground);
   cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 .panel-drag-handle:active {
   cursor: grabbing;
@@ -1178,6 +1180,26 @@ svg {
   height: 32px;
   margin: 8px 10px 10px;
   font-size: 12px;
+}
+.panel-group-monitors:has(> .panel-group-monitor) > .panel-group-empty {
+  display: none;
+}
+.panel-sort-chosen {
+  border-color: var(--input);
+}
+.panel-sort-placeholder {
+  opacity: 0.28;
+  background: var(--accent);
+}
+.panel-sort-preview {
+  z-index: 1000 !important;
+  opacity: 0.98 !important;
+  border: 1px solid var(--input);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 18%);
+  pointer-events: none;
+  cursor: grabbing;
 }
 .panel-editor-form .form-section > .ui-button {
   border-style: dashed;

@@ -227,7 +227,12 @@ async function setDefault(panel: Panel) {
         </div>
         <Switch id="panel-default" v-model="form.isDefault" :disabled="busy" />
       </div>
-      <PanelGroupsEditor v-model="form.groups" :monitors="data?.monitors || []" :busy="busy" />
+      <PanelGroupsEditor
+        v-if="editorOpen"
+        v-model="form.groups"
+        :monitors="data?.monitors || []"
+        :busy="busy"
+      />
       <div class="form-actions">
         <Button type="button" variant="outline" :disabled="busy" @click="editorOpen = false">
           {{ t('common.cancel') }}
