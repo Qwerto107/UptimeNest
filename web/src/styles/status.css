@@ -1,0 +1,656 @@
+/* 字体取自用户提供的状态页，原文件及许可证随本地资源分发。 */
+@font-face {
+  font-family: 'Pulse Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Pulse Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* 所有变量与选择器限定在访客状态页，后台继续使用原有主题。 */
+.pulse-page {
+  --pulse-background: #f6f7f9;
+  --pulse-surface: #ffffff;
+  --pulse-text: #12161c;
+  --pulse-muted: #5b6572;
+  --pulse-border: #e3e7ed;
+  --pulse-grid: #eceff3;
+  --pulse-ok: #12a97b;
+  --pulse-ok-text: #047857;
+  --pulse-ok-soft: rgb(16 185 129 / 12%);
+  --pulse-down: #dc2626;
+  --pulse-down-text: #b91c1c;
+  --pulse-down-soft: rgb(220 38 38 / 10%);
+  --pulse-warning: #92400e;
+  --pulse-warning-soft: rgb(245 158 11 / 22%);
+  --pulse-pill: #eef1f5;
+  --pulse-ca-text: #6d28d9;
+  --pulse-ca-soft: #f3e8ff;
+  --pulse-tls-text: #1d4ed8;
+  --pulse-tls-soft: #dbeafe;
+  --pulse-http-text: #0e7490;
+  --pulse-http-soft: #cffafe;
+  --pulse-empty: #d8dee7;
+  --ring: var(--pulse-ok);
+  min-height: 100dvh;
+  padding: 0 24px 64px;
+  color: var(--pulse-text);
+  background: var(--pulse-background);
+  font-family:
+    'Pulse Inter', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.dark .pulse-page {
+  --pulse-background: #0b0d10;
+  --pulse-surface: #0f1216;
+  --pulse-text: #e6eaf0;
+  --pulse-muted: #8a93a0;
+  --pulse-border: #1e232b;
+  --pulse-grid: #171c23;
+  --pulse-ok: #34d3a0;
+  --pulse-ok-text: #34d3a0;
+  --pulse-ok-soft: rgb(255 255 255 / 5%);
+  --pulse-down: #ff6b5e;
+  --pulse-down-text: #ff6b5e;
+  --pulse-down-soft: rgb(255 107 94 / 12%);
+  --pulse-warning: #f5b94a;
+  --pulse-warning-soft: rgb(245 185 74 / 20%);
+  --pulse-pill: rgb(255 255 255 / 6%);
+  --pulse-ca-text: #c4b5fd;
+  --pulse-ca-soft: rgb(139 92 246 / 16%);
+  --pulse-tls-text: #93c5fd;
+  --pulse-tls-soft: rgb(59 130 246 / 16%);
+  --pulse-http-text: #67e8f9;
+  --pulse-http-soft: rgb(6 182 212 / 14%);
+  --pulse-empty: #2b313b;
+}
+.pulse-page ::selection {
+  color: var(--pulse-text);
+  background: var(--pulse-ok-soft);
+}
+.pulse-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.pulse-mono {
+  font-family: 'Pulse Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.pulse-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 28px;
+}
+.pulse-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.pulse-brand svg {
+  color: var(--pulse-ok);
+}
+.pulse-brand > span {
+  color: var(--pulse-text);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.pulse-tools {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  color: var(--pulse-muted);
+  font-size: 12px;
+}
+.pulse-tools > button {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--pulse-muted);
+}
+.pulse-tools > button:hover {
+  color: var(--pulse-text);
+  background: var(--pulse-pill);
+}
+.pulse-admin-link:hover {
+  color: var(--pulse-text);
+}
+.pulse-panel-name {
+  max-width: 220px;
+  overflow-wrap: anywhere;
+}
+.pulse-panel-select {
+  max-width: 220px;
+  min-width: 0;
+  padding: 4px 24px 4px 8px;
+  border: 1px solid var(--pulse-border);
+  border-radius: 6px;
+  color: var(--pulse-muted);
+  background: var(--pulse-surface);
+  font-size: 12px;
+}
+.pulse-panel-description {
+  flex-basis: 100%;
+  max-width: 75ch;
+  color: var(--pulse-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* 顶部网格与状态信号点来自指定参考，只在总状态区域使用。 */
+.pulse-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 18px 24px;
+  border: 1px solid var(--pulse-border);
+  border-radius: 16px;
+  background-color: var(--pulse-surface);
+  background-image:
+    linear-gradient(var(--pulse-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pulse-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.pulse-summary-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.pulse-summary h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+.pulse-updated {
+  margin-top: 3px;
+  color: var(--pulse-muted);
+  font-size: 12px;
+}
+.pulse-status-description {
+  margin-top: 6px;
+  color: var(--pulse-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.pulse-signal {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  flex: none;
+  color: var(--pulse-ok);
+}
+.pulse-signal-dot,
+.pulse-signal-wave {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pulse-signal-dot {
+  box-shadow: 0 0 12px currentColor;
+}
+.pulse-signal-wave {
+  animation: pulse-status-signal 2s ease-out infinite;
+}
+.pulse-summary-down .pulse-signal {
+  color: var(--pulse-down);
+}
+.pulse-summary-unknown .pulse-signal,
+.pulse-summary-paused .pulse-signal {
+  color: var(--pulse-muted);
+}
+.pulse-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 6px;
+  color: var(--pulse-muted);
+  background: var(--pulse-surface);
+}
+.pulse-refresh:hover {
+  color: var(--pulse-text);
+  background: var(--pulse-pill);
+}
+.pulse-refresh:disabled {
+  opacity: 0.5;
+}
+@keyframes pulse-status-signal {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.pulse-main {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.pulse-group-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 4px 12px;
+  color: var(--pulse-muted);
+}
+.pulse-group-heading h2 {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+}
+.pulse-group-heading > span {
+  flex: none;
+  font-size: 12px;
+}
+.pulse-service-list {
+  border: 1px solid var(--pulse-border);
+  border-radius: 14px;
+  background: var(--pulse-surface);
+}
+.pulse-service {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 24px;
+}
+.pulse-service + .pulse-service {
+  border-top: 1px solid var(--pulse-border);
+}
+.pulse-service-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.pulse-service-name-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-width: 0;
+  flex: 1 1 0;
+}
+.pulse-service-name {
+  color: var(--pulse-text);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.pulse-service-name:hover {
+  color: var(--pulse-ok-text);
+}
+.pulse-address {
+  color: var(--pulse-muted);
+  font-size: 12px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.pulse-protocol {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--pulse-tls-text);
+  background: var(--pulse-tls-soft);
+  font-size: 10px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.pulse-service-result {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+.pulse-uptime {
+  color: var(--pulse-muted);
+  font-size: 13px;
+}
+.pulse-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: var(--pulse-muted);
+  background: var(--pulse-pill);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pulse-state > span {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pulse-state-up {
+  color: var(--pulse-ok-text);
+  background: var(--pulse-ok-soft);
+}
+.pulse-state-down {
+  color: var(--pulse-down-text);
+  background: var(--pulse-down-soft);
+}
+.pulse-state-paused > span {
+  border: 1px solid currentColor;
+  background: transparent;
+}
+.pulse-service-description {
+  color: var(--pulse-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.pulse-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+.pulse-tags > span {
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--pulse-muted);
+  background: var(--pulse-pill);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.pulse-connection-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  font-size: 12px;
+}
+.pulse-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px 9px 3px 8px;
+  border-radius: 999px;
+  color: var(--pulse-text);
+  background: var(--pulse-pill);
+  overflow-wrap: anywhere;
+}
+.pulse-meta-pill svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.5;
+  flex: none;
+}
+.pulse-meta-certificate {
+  color: var(--pulse-ok-text);
+  background: var(--pulse-ok-soft);
+}
+.pulse-meta-ca {
+  color: var(--pulse-ca-text);
+  background: var(--pulse-ca-soft);
+}
+.pulse-meta-tls {
+  color: var(--pulse-tls-text);
+  background: var(--pulse-tls-soft);
+}
+.pulse-meta-http {
+  color: var(--pulse-http-text);
+  background: var(--pulse-http-soft);
+}
+.pulse-meta-latency {
+  color: var(--pulse-warning);
+  background: var(--pulse-warning-soft);
+}
+.pulse-certificate-soon {
+  color: var(--pulse-warning);
+  background: var(--pulse-warning-soft);
+}
+
+/* 前台用 90 条真实检测匹配原稿密度；后台仍使用共享组件的 60 条默认值。 */
+.pulse-page .heartbeat-strip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  height: 16px;
+}
+.pulse-page .heartbeat {
+  flex: 0 1 3px;
+  width: 3px;
+  min-width: 1px;
+  max-width: 3px;
+  height: 14px;
+  border-radius: 1px;
+  transition: transform 120ms ease-out;
+}
+.pulse-page .heartbeat-strip-aligned .heartbeat {
+  position: absolute;
+  top: 1px;
+  min-width: 0;
+  max-width: none;
+  background: transparent;
+}
+.pulse-page .heartbeat-shapes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.pulse-page .heartbeat-shape {
+  fill: var(--pulse-empty);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 120ms ease-out;
+}
+.pulse-page .heartbeat-shape.beat-up {
+  fill: var(--pulse-ok);
+}
+.pulse-page .heartbeat-shape.beat-down {
+  fill: var(--pulse-down);
+}
+.pulse-page .heartbeat-shape-active {
+  transform: scaleY(1.2);
+}
+.pulse-page .heartbeat:hover,
+.pulse-page .heartbeat:focus-visible {
+  transform: scaleY(1.2);
+}
+.pulse-page .beat-up {
+  background: var(--pulse-ok);
+}
+.pulse-page .beat-down {
+  background: var(--pulse-down);
+}
+.pulse-page .beat-empty {
+  background: var(--pulse-empty);
+}
+.pulse-page .heartbeat::after {
+  color: var(--pulse-background);
+  background: var(--pulse-text);
+  font-family: 'Pulse Inter', 'Microsoft YaHei', sans-serif;
+}
+.pulse-expanded {
+  border-top: 1px solid var(--pulse-border);
+}
+.pulse-expanded .connection-details {
+  margin: 0;
+  padding-top: 14px;
+}
+.pulse-expanded .connection-details dt {
+  color: var(--pulse-muted);
+  font-size: 12px;
+}
+.pulse-expanded .connection-details dd {
+  color: var(--pulse-text);
+  font-size: 12px;
+}
+.pulse-history-note {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-top: -16px;
+  color: var(--pulse-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.pulse-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--pulse-border);
+  color: var(--pulse-muted);
+  font-size: 13px;
+}
+.pulse-update-setting {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 11px;
+}
+.pulse-timezone {
+  font-size: 11px;
+}
+.pulse-page .load-state,
+.pulse-page .empty-state p {
+  color: var(--pulse-muted);
+}
+.pulse-page .empty-state h2 {
+  font-size: 16px;
+}
+.pulse-page .empty-icon {
+  color: var(--pulse-muted);
+  border-color: var(--pulse-border);
+  background: var(--pulse-surface);
+}
+
+@media (max-width: 640px) {
+  .pulse-page {
+    padding: 0 18px 36px;
+  }
+  .pulse-container {
+    gap: 24px;
+  }
+  .pulse-header {
+    gap: 12px;
+    padding-top: 22px;
+  }
+  .pulse-tools {
+    gap: 10px;
+  }
+  .pulse-panel-name {
+    max-width: 120px;
+  }
+  .pulse-panel-select {
+    max-width: 140px;
+  }
+  .pulse-summary {
+    gap: 12px;
+    padding: 18px;
+  }
+  .pulse-summary h1 {
+    font-size: 16px;
+  }
+  .pulse-updated {
+    font-size: 11px;
+  }
+  .pulse-updated time {
+    display: inline-block;
+  }
+  .pulse-main {
+    gap: 28px;
+  }
+  .pulse-service {
+    padding: 14px 16px;
+  }
+  .pulse-service-name-line {
+    flex: 1 1 150px;
+  }
+  .pulse-service-name {
+    font-size: 14px;
+  }
+  .pulse-service-result {
+    gap: 10px;
+  }
+  .pulse-service-heading {
+    gap: 10px;
+  }
+  .pulse-connection-meta {
+    gap: 6px;
+  }
+  .pulse-meta-pill {
+    font-size: 11px;
+  }
+  .pulse-expanded .connection-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pulse-footer {
+    font-size: 11px;
+  }
+}
+@media (max-width: 420px) {
+  .pulse-header {
+    align-items: flex-start;
+  }
+  .pulse-tools {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+  .pulse-tools > :first-child {
+    margin-right: auto;
+  }
+  .pulse-summary {
+    padding: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse-signal-wave {
+    display: none;
+  }
+  .pulse-page .heartbeat,
+  .pulse-page .heartbeat-shape {
+    transition: none;
+  }
+}

@@ -1,0 +1,15 @@
+services:
+  uptimenest:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:8090"
+    environment:
+      UPTIMENEST_DB_TYPE: sqlite
+      UPTIMENEST_DB_DSN: /app/data/uptimenest.db
+      UPTIMENEST_COOKIE_SECURE: "false"
+    volumes:
+      - uptimenest-data:/app/data
+
+volumes:
+  uptimenest-data:
