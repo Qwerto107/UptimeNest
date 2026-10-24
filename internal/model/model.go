@@ -122,7 +122,7 @@ type Settings struct {
 
 // DefaultSettings 为首次安装及缺少配置字段时提供默认展示设置。
 func DefaultSettings() Settings {
-	return Settings{SiteName: "UptimeNest", Timezone: "Asia/Shanghai", Language: "zh-CN", EntryPage: "status", RetentionDays: 90}
+	return Settings{SiteName: "UptimeNest", Timezone: "Asia/Singapore", Language: "zh-CN", EntryPage: "status", RetentionDays: 90}
 }
 
 // Heartbeat 只记录一次完整检测（含重试）后的最终结果。

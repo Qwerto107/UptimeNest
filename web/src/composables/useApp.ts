@@ -4,7 +4,7 @@ import type { Bootstrap } from '@/types'
 import { request } from '@/lib/api'
 
 export const bootstrap = ref<Bootstrap>()
-export const timezone = ref('Asia/Shanghai')
+export const timezone = ref('Asia/Singapore')
 export const siteName = computed(() => bootstrap.value?.siteName || i18n.global.t('common.brand'))
 export const dark = ref(false)
 
