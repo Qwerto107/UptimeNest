@@ -64,11 +64,13 @@ const timezoneGroups = computed(() => {
   return groups
 })
 const { data, loading, error, refresh } = useResource((signal) =>
-  request<Settings>('/admin/settings', { signal }),
+  request<Settings & { clientIP: string }>('/admin/settings', { signal }),
 )
 watch(data, (value) => {
   if (value) {
-    Object.assign(form, value)
+    // 客户端 IP 只用于展示，不能混入设置保存请求。
+    const { clientIP, ...settings } = value
+    Object.assign(form, settings)
     savedDays.value = value.retentionDays
     trustedProxies.value = (value.trustedProxies || []).join('\n')
   }
@@ -81,6 +83,7 @@ async function save() {
       trustedProxies: trustedProxies.value.split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
     })
     savedDays.value = Number(form.retentionDays)
+    await refresh()
     await loadBootstrap()
     notify(t('common.saved'))
   })
@@ -210,6 +213,9 @@ async function cleanup() {
         <h2>{{ t('settings.accessSecurity') }}</h2>
       </div>
       <fieldset :disabled="busy" class="settings-fields">
+        <Field id="current-ip" :label="t('settings.currentIP')" :hint="t('settings.currentIPHint')">
+          <output id="current-ip" class="font-mono text-sm break-all">{{ data.clientIP }}</output>
+        </Field>
         <Field id="trusted-proxies" :label="t('settings.trustedProxies')" :hint="t('settings.trustedProxiesHint')">
           <Textarea
             id="trusted-proxies"

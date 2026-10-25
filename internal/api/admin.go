@@ -312,7 +312,16 @@ func (a *Server) settings(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, 200, value)
+	trusted, err := trustedProxyPrefixes(value.TrustedProxies)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	// 当前 IP 与登录限流使用同一解析规则，仅返回给管理员，不保存为配置。
+	writeJSON(w, 200, struct {
+		model.Settings
+		ClientIP string `json:"clientIP"`
+	}{Settings: value, ClientIP: clientIP(r, trusted)})
 }
 func (a *Server) saveSettings(w http.ResponseWriter, r *http.Request) {
 	v := model.DefaultSettings()

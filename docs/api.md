@@ -166,6 +166,8 @@ OAuth2 使用 `client_credentials`，Token 请求不跟随重定向，错误不�
 
 GET、PUT `/api/admin/settings`：
 
+GET 响应额外包含只读字段 `clientIP`，表示按已保存的可信代理规则解析出的当前客户端 IP，与登录限流使用的地址一致。该字段不保存为配置，不通过访客接口返回；修改可信代理后重新 GET 可获取更新后的地址。
+
 ```json
 {
   "siteName": "UptimeNest",

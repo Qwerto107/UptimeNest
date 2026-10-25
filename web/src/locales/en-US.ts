@@ -348,6 +348,8 @@ const enUS: typeof zhCN = {
     securityCode: 'SECURITY',
     accessSecurityCode: '04 · SECURITY',
     accessSecurity: 'Access security',
+    currentIP: 'Current IP address',
+    currentIPHint: 'The client IP identified by the server and used for login rate limits, based on the saved trusted proxy settings.',
     trustedProxies: 'Trusted proxy IPs / CIDRs',
     trustedProxiesHint: 'One IPv4, IPv6, or CIDR per line, up to 100 entries. Only trust proxies you control. Leave blank to rate-limit by the direct peer IP. Trusted proxies must correctly append or overwrite X-Forwarded-For; X-Real-IP is used only when that header is absent.',
     trustedProxiesExample: '127.0.0.1\n192.168.10.10/32',
