@@ -16,13 +16,13 @@ func (a *Server) monitors(w http.ResponseWriter, r *http.Request) {
 	}
 	views := []model.MonitorView{}
 	count := heartbeatCount(r, 60)
+	summaries, err := a.store.Summaries(r.Context(), items, count)
+	if err != nil {
+		fail(w, err)
+		return
+	}
 	for _, m := range items {
-		summary, err := a.store.Summary(r.Context(), m, count)
-		if err != nil {
-			fail(w, err)
-			return
-		}
-		views = append(views, model.MonitorView{Monitor: m, Summary: summary})
+		views = append(views, model.MonitorView{Monitor: m, Summary: summaries[m.ID]})
 	}
 	writeJSON(w, 200, views)
 }

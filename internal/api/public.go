@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -8,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Qwerto107/UptimeNest/internal/model"
+	"github.com/Qwerto107/UptimeNest/internal/store"
 )
 
 // bootstrap 只返回访客路由与展示所需配置，不暴露 UA、账户或数据库信息。
@@ -50,43 +53,42 @@ type publicMonitor struct {
 
 // publicPanel 使用白名单结构，仅公开允许展示的主机地址，不返回完整目标及内部错误消息。
 func (a *Server) publicPanel(w http.ResponseWriter, r *http.Request) {
-	panels, err := a.store.Panels(r.Context())
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	var panel *model.Panel
-	for i := range panels {
-		if panels[i].Slug == r.PathValue("slug") {
-			panel = &panels[i]
-			break
-		}
-	}
-	if panel == nil {
+	value, err := a.publicPanelData(r.Context(), r.PathValue("slug"), heartbeatCount(r, 90))
+	if errors.Is(err, store.ErrNotFound) {
 		writeError(w, 404, "状态面板不存在")
 		return
 	}
-	items, err := a.store.Monitors(r.Context())
 	if err != nil {
 		fail(w, err)
 		return
+	}
+	writeJSON(w, 200, value)
+}
+
+func (a *Server) publicPanelData(ctx context.Context, slug string, count int) (any, error) {
+	panel, err := a.store.PanelBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	items, err := a.store.MonitorsByIDs(ctx, panel.MonitorIDs)
+	if err != nil {
+		return nil, err
 	}
 	index := map[int64]model.Monitor{}
 	for _, m := range items {
 		index[m.ID] = m
 	}
 	views := []publicMonitor{}
-	count := heartbeatCount(r, 90)
+	summaries, err := a.store.Summaries(ctx, items, count)
+	if err != nil {
+		return nil, err
+	}
 	for _, id := range panel.MonitorIDs {
 		m, exists := index[id]
 		if !exists {
 			continue
 		}
-		summary, err := a.store.Summary(r.Context(), m, count)
-		if err != nil {
-			fail(w, err)
-			return
-		}
+		summary := summaries[id]
 		for i := range summary.Heartbeats {
 			summary.Heartbeats[i].Message = ""
 			summary.Heartbeats[i].MonitorID = 0
@@ -98,12 +100,11 @@ func (a *Server) publicPanel(w http.ResponseWriter, r *http.Request) {
 		address, protocol := publicEndpoint(m)
 		views = append(views, publicMonitor{ID: m.ID, Name: m.Name, Type: m.Type, Address: address, Protocol: protocol, Description: m.Description, Tags: m.Tags, Summary: summary})
 	}
-	settings, err := a.store.Settings(r.Context())
+	settings, err := a.store.Settings(ctx)
 	if err != nil {
-		fail(w, err)
-		return
+		return nil, err
 	}
-	writeJSON(w, 200, map[string]any{"panel": map[string]any{"name": panel.Name, "pageTitle": panel.PageTitle, "slug": panel.Slug, "description": panel.Description}, "monitors": views, "groups": panel.Groups, "timezone": settings.Timezone})
+	return map[string]any{"panel": map[string]any{"name": panel.Name, "pageTitle": panel.PageTitle, "slug": panel.Slug, "description": panel.Description}, "monitors": views, "groups": panel.Groups, "timezone": settings.Timezone}, nil
 }
 
 // publicEndpoint 只公开主机和端口，隐藏项不返回地址；URL 路径、查询参数等始终保留在后台。

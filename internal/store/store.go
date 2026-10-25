@@ -22,6 +22,9 @@ var ErrStale = errors.New("监控配置已经更新")
 var ErrConflict = errors.New("名称或访问路径已存在")
 var ErrInvalid = errors.New("配置无效")
 
+// sqlBatchSize 为批量查询预留参数余量，兼容两种数据库的参数数量限制。
+const sqlBatchSize = 500
+
 type Store struct {
 	DB      *sql.DB
 	dialect string
@@ -151,7 +154,30 @@ func (s *Store) migrate(ctx context.Context) error {
 func encode(v any) string { b, _ := json.Marshal(v); return string(b) }
 
 func (s *Store) Monitors(ctx context.Context) ([]model.Monitor, error) {
-	rows, err := s.DB.QueryContext(ctx, "SELECT id, data FROM monitors ORDER BY id")
+	return s.monitors(ctx, "SELECT id, data FROM monitors ORDER BY id")
+}
+
+// MonitorsByIDs 仅读取面板选中的监控，避免解码无关配置和凭据。
+func (s *Store) MonitorsByIDs(ctx context.Context, ids []int64) ([]model.Monitor, error) {
+	items := []model.Monitor{}
+	for start := 0; start < len(ids); start += sqlBatchSize {
+		batch := ids[start:min(start+sqlBatchSize, len(ids))]
+		args := make([]any, len(batch))
+		for i, id := range batch {
+			args[i] = id
+		}
+		placeholders := strings.TrimSuffix(strings.Repeat("?,", len(batch)), ",")
+		monitors, err := s.monitors(ctx, "SELECT id, data FROM monitors WHERE id IN ("+placeholders+") ORDER BY id", args...)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, monitors...)
+	}
+	return items, nil
+}
+
+func (s *Store) monitors(ctx context.Context, query string, args ...any) ([]model.Monitor, error) {
+	rows, err := s.DB.QueryContext(ctx, s.Q(query), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -436,6 +462,27 @@ func (s *Store) Panels(ctx context.Context) ([]model.Panel, error) {
 		items = append(items, p)
 	}
 	return items, rows.Err()
+}
+
+func (s *Store) PanelBySlug(ctx context.Context, slug string) (model.Panel, error) {
+	var p model.Panel
+	var data string
+	var id int64
+	var isDefault int
+	err := s.DB.QueryRowContext(ctx, s.Q("SELECT id, is_default, data FROM panels WHERE slug=?"), slug).Scan(&id, &isDefault, &data)
+	if errors.Is(err, sql.ErrNoRows) {
+		return p, ErrNotFound
+	}
+	if err != nil {
+		return p, err
+	}
+	if err = json.Unmarshal([]byte(data), &p); err != nil {
+		return p, err
+	}
+	p.ID = id
+	p.Slug = slug
+	p.IsDefault = isDefault == 1
+	return p, nil
 }
 
 func (s *Store) SavePanel(ctx context.Context, p model.Panel) (model.Panel, error) {
