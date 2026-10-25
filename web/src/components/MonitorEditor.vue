@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Select } from '@/components/ui/select'
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{ monitor?: Monitor | null; groups: Group[] }>()
 const emit = defineEmits<{ saved: [] }>()
@@ -153,15 +154,12 @@ async function submit(event: Event) {
                   />
                 </Field>
                 <Field id="monitor-type" :label="t('monitor.type')">
-                  <select id="monitor-type" v-model="form.type" class="control">
-                    <option
-                      v-for="kind in ['http', 'tcp', 'ping', 'dns']"
-                      :key="kind"
-                      :value="kind"
-                    >
-                      {{ t(`monitor.${kind}`) }}
-                    </option>
-                  </select>
+                  <Select
+                    id="monitor-type"
+                    v-model="form.type"
+                    :disabled="busy"
+                    :options="(['http', 'tcp', 'ping', 'dns'] as const).map((kind) => ({ value: kind, label: t(`monitor.${kind}`) }))"
+                  />
                 </Field>
                 <Field
                   id="monitor-target"
@@ -204,11 +202,12 @@ async function submit(event: Event) {
                 </Field>
                 <template v-if="form.type === 'dns'">
                   <Field id="dns-record" :label="t('monitor.dnsRecord')">
-                    <select id="dns-record" v-model="form.dnsRecord" class="control">
-                      <option v-for="kind in ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT']" :key="kind">
-                        {{ kind }}
-                      </option>
-                    </select>
+                    <Select
+                      id="dns-record"
+                      v-model="form.dnsRecord"
+                      :disabled="busy"
+                      :options="['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT'].map((kind) => ({ value: kind, label: kind }))"
+                    />
                   </Field>
                   <Field
                     id="dns-server"
@@ -231,12 +230,12 @@ async function submit(event: Event) {
                   </Field>
                 </template>
                 <Field id="monitor-group" :label="t('monitor.group')">
-                  <select id="monitor-group" v-model.number="form.groupId" class="control">
-                    <option :value="0">{{ t('common.ungrouped') }}</option>
-                    <option v-for="group in groupOptions" :key="group.id" :value="group.id">
-                      {{ group.label }}
-                    </option>
-                  </select>
+                  <Select
+                    id="monitor-group"
+                    v-model="form.groupId"
+                    :disabled="busy"
+                    :options="[{ value: 0, label: t('common.ungrouped') }, ...groupOptions.map((group) => ({ value: group.id, label: group.label }))]"
+                  />
                 </Field>
                 <Field id="monitor-tags" :label="t('monitor.tags')" :hint="t('monitor.tagsHint')">
                   <Input id="monitor-tags" v-model="tags" />

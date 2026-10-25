@@ -229,6 +229,95 @@ svg {
 .control:disabled {
   opacity: 0.6;
 }
+.ui-select-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+}
+.ui-select-trigger > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-select-trigger:disabled {
+  cursor: not-allowed;
+}
+.ui-select-icon {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  display: flex;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.ui-select-content {
+  z-index: 90;
+  width: var(--reka-select-trigger-width);
+  min-width: 160px;
+  max-width: calc(100vw - 16px);
+  max-height: var(--reka-select-content-available-height);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+.ui-select-viewport {
+  max-height: min(280px, calc(var(--reka-select-content-available-height, 330px) - 48px));
+  padding: 4px;
+}
+.ui-select-group + .ui-select-group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.ui-select-label {
+  padding: 6px 10px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 500;
+}
+.ui-select-item {
+  position: relative;
+  padding: 8px 30px 8px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+}
+.ui-select-item[data-state='checked'] {
+  color: var(--primary);
+  font-weight: 500;
+}
+.ui-select-item[data-highlighted] {
+  background: var(--accent);
+}
+.ui-select-item[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ui-select-check {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: flex;
+  transform: translateY(-50%);
+}
+.ui-select-scroll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  background: var(--card);
+  color: var(--muted-foreground);
+}
 
 /* 顶栏和导航保持固定，背景网格只作为附件中的轻量辅助层。 */
 .admin-shell {

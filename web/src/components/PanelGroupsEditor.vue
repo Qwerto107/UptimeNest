@@ -8,6 +8,7 @@ import { Plus, GripVertical, ArrowUp, ArrowDown, X, Trash2 } from 'lucide-vue-ne
 import type { PanelGroup, MonitorView } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 
 const groups = defineModel<PanelGroup[]>({ required: true })
 const props = defineProps<{ monitors: MonitorView[]; busy: boolean }>()
@@ -88,11 +89,8 @@ function shift<T>(items: T[], index: number, offset: number) {
 function monitorName(id: number) {
   return props.monitors.find((monitor) => monitor.id === id)?.name || String(id)
 }
-function addMonitor(group: PanelGroup, event: Event) {
-  const select = event.target as HTMLSelectElement
-  const id = Number(select.value)
+function addMonitor(group: PanelGroup, id: number) {
   if (id && !assigned.value.has(id)) group.monitorIds.push(id)
-  select.value = ''
 }
 function moveMonitor(source: PanelGroup, id: number, targetId: string) {
   const target = groups.value.find((group) => group.id === targetId)
@@ -100,11 +98,6 @@ function moveMonitor(source: PanelGroup, id: number, targetId: string) {
   if (!target || current < 0) return
   source.monitorIds.splice(current, 1)
   target.monitorIds.push(id)
-}
-function changeGroup(source: PanelGroup, id: number, event: Event) {
-  const select = event.target as HTMLSelectElement
-  moveMonitor(source, id, select.value)
-  select.value = ''
 }
 </script>
 
@@ -205,22 +198,16 @@ function changeGroup(source: PanelGroup, id: number, event: Event) {
             </button>
             <span class="panel-monitor-name">{{ monitorName(id) }}</span>
             <div class="row-actions">
-              <select
+              <Select
                 v-if="groups.length > 1"
-                class="control panel-monitor-move"
-                value=""
+                class="panel-monitor-move"
+                :model-value="''"
+                :placeholder="t('panel.moveTo')"
+                :disabled="busy"
                 :aria-label="t('panel.moveToGroup', { name: monitorName(id) })"
-                @change="changeGroup(group, id, $event)"
-              >
-                <option value="" disabled selected>{{ t('panel.moveTo') }}</option>
-                <option
-                  v-for="target in groups.filter((item) => item.id !== group.id)"
-                  :key="target.id"
-                  :value="target.id"
-                >
-                  {{ target.name }}
-                </option>
-              </select>
+                :options="groups.filter((item) => item.id !== group.id).map((target) => ({ value: target.id, label: target.name }))"
+                @update:model-value="moveMonitor(group, id, $event)"
+              />
               <Button
                 type="button"
                 variant="ghost"
@@ -256,20 +243,14 @@ function changeGroup(source: PanelGroup, id: number, event: Event) {
             {{ t('panel.emptyGroup') }}
           </p>
         </VueDraggable>
-        <select
-          class="control"
-          value=""
-          :disabled="!available.length"
+        <Select
+          :model-value="''"
+          :disabled="busy || !available.length"
+          :placeholder="available.length ? t('panel.addMonitor') : t('panel.allSelected')"
           :aria-label="t('panel.addMonitorTo', { name: group.name })"
-          @change="addMonitor(group, $event)"
-        >
-          <option value="" disabled selected>
-            {{ available.length ? t('panel.addMonitor') : t('panel.allSelected') }}
-          </option>
-          <option v-for="monitor in available" :key="monitor.id" :value="monitor.id">
-            {{ monitor.name }}
-          </option>
-        </select>
+          :options="available.map((monitor) => ({ value: monitor.id, label: monitor.name }))"
+          @update:model-value="addMonitor(group, $event)"
+        />
       </section>
     </VueDraggable>
     <Button type="button" variant="outline" :disabled="groups.length >= 100" @click="addGroup">

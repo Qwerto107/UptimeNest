@@ -6,6 +6,7 @@ import Field from '@/components/Field.vue'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Select } from '@/components/ui/select'
 
 const model = defineModel<HTTPOptions>({ required: true })
 defineProps<{ busy: boolean }>()
@@ -36,11 +37,12 @@ watch(customCodes, (value) => {
     <legend>{{ t('http.options') }}</legend>
     <div class="form-grid">
       <Field id="http-version" :label="t('http.version')" :hint="t('http.versionHint')">
-        <select id="http-version" v-model="model.version" class="control">
-          <option v-for="version in ['standard', 'auto', 'http3']" :key="version" :value="version">
-            {{ t('http.version_' + version) }}
-          </option>
-        </select>
+        <Select
+          id="http-version"
+          v-model="model.version"
+          :disabled="busy"
+          :options="(['standard', 'auto', 'http3'] as const).map((version) => ({ value: version, label: t('http.version_' + version) }))"
+        />
       </Field>
       <Field id="http-redirects" :label="t('http.redirects')" :hint="t('http.redirectsHint')">
         <Input
@@ -90,20 +92,20 @@ watch(customCodes, (value) => {
         <Input id="http-custom-codes" v-model="customCodes" :placeholder="t('http.codesExample')" />
       </Field>
       <Field id="http-method" :label="t('http.method')">
-        <select id="http-method" v-model="model.method" class="control">
-          <option v-for="method in methods" :key="method">{{ method }}</option>
-        </select>
+        <Select
+          id="http-method"
+          v-model="model.method"
+          :disabled="busy"
+          :options="methods.map((method) => ({ value: method, label: method }))"
+        />
       </Field>
       <Field id="http-encoding" :label="t('http.bodyEncoding')">
-        <select id="http-encoding" v-model="model.bodyEncoding" class="control">
-          <option
-            v-for="encoding in ['json', 'form', 'xml', 'text']"
-            :key="encoding"
-            :value="encoding"
-          >
-            {{ t('http.encoding_' + encoding) }}
-          </option>
-        </select>
+        <Select
+          id="http-encoding"
+          v-model="model.bodyEncoding"
+          :disabled="busy"
+          :options="(['json', 'form', 'xml', 'text'] as const).map((encoding) => ({ value: encoding, label: t('http.encoding_' + encoding) }))"
+        />
       </Field>
       <Field
         id="http-body"

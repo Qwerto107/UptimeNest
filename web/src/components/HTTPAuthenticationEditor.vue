@@ -4,6 +4,7 @@ import type { HTTPOptions } from '@/types'
 import Field from '@/components/Field.vue'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Select } from '@/components/ui/select'
 
 const model = defineModel<HTTPOptions>({ required: true })
 defineProps<{ busy: boolean }>()
@@ -15,11 +16,12 @@ const { t } = useI18n()
     <legend>{{ t('http.authentication') }}</legend>
     <div class="form-grid">
       <Field id="http-auth" :label="t('http.authType')" class="col-span-full">
-        <select id="http-auth" v-model="model.auth.type" class="control">
-          <option v-for="type in ['none', 'basic', 'oauth2', 'mtls']" :key="type" :value="type">
-            {{ t('http.auth_' + type) }}
-          </option>
-        </select>
+        <Select
+          id="http-auth"
+          v-model="model.auth.type"
+          :disabled="busy"
+          :options="(['none', 'basic', 'oauth2', 'mtls'] as const).map((type) => ({ value: type, label: t('http.auth_' + type) }))"
+        />
       </Field>
       <template v-if="model.auth.type === 'basic'">
         <Field id="http-username" :label="t('http.username')" required>
@@ -55,10 +57,12 @@ const { t } = useI18n()
           <Input id="oauth-scope" v-model="model.auth.scope" />
         </Field>
         <Field id="oauth-auth-method" :label="t('http.tokenAuthMethod')">
-          <select id="oauth-auth-method" v-model="model.auth.tokenAuthMethod" class="control">
-            <option value="header">{{ t('http.tokenAuth_header') }}</option>
-            <option value="body">{{ t('http.tokenAuth_body') }}</option>
-          </select>
+          <Select
+            id="oauth-auth-method"
+            v-model="model.auth.tokenAuthMethod"
+            :disabled="busy"
+            :options="(['header', 'body'] as const).map((method) => ({ value: method, label: t('http.tokenAuth_' + method) }))"
+          />
         </Field>
       </template>
       <template v-if="model.auth.type === 'mtls'">

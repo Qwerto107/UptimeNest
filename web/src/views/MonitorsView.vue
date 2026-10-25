@@ -32,6 +32,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Select } from '@/components/ui/select'
 const { t } = useI18n()
 const route = useRoute()
 const search = ref('')
@@ -218,19 +219,18 @@ async function toggle(monitor: MonitorView) {
           />
           <kbd>{{ t(searchShortcut) }}</kbd>
         </div>
-        <select v-model="groupId" class="control filter-select" :aria-label="t('monitor.group')">
-          <option value="all">{{ t('monitor.allGroups') }}</option>
-          <option value="0">{{ t('common.ungrouped') }}</option>
-          <option v-for="group in choices" :key="group.id" :value="String(group.id)">
-            {{ group.label }}
-          </option>
-        </select>
-        <select v-model="status" class="control filter-select" :aria-label="t('common.status')">
-          <option value="all">{{ t('monitor.allStates') }}</option>
-          <option v-for="kind in ['up', 'down', 'unknown', 'paused']" :key="kind" :value="kind">
-            {{ t(`state.${kind}`) }}
-          </option>
-        </select>
+        <Select
+          v-model="groupId"
+          class="filter-select"
+          :aria-label="t('monitor.group')"
+          :options="[{ value: 'all', label: t('monitor.allGroups') }, { value: '0', label: t('common.ungrouped') }, ...choices.map((group) => ({ value: String(group.id), label: group.label }))]"
+        />
+        <Select
+          v-model="status"
+          class="filter-select"
+          :aria-label="t('common.status')"
+          :options="[{ value: 'all', label: t('monitor.allStates') }, ...['up', 'down', 'unknown', 'paused'].map((kind) => ({ value: kind, label: t('state.' + kind) }))]"
+        />
         <Button
           variant="outline"
           size="icon"

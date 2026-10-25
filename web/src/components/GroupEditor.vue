@@ -9,6 +9,7 @@ import Modal from '@/components/Modal.vue'
 import Field from '@/components/Field.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{ group: Group | null; parentId: number; groups: Group[] }>()
@@ -58,12 +59,12 @@ async function save() {
         />
       </Field>
       <Field id="group-parent" :label="t('group.parent')">
-        <select id="group-parent" v-model.number="parentId" class="control" :disabled="busy">
-          <option :value="0">{{ t('group.root') }}</option>
-          <option v-for="option in parentOptions" :key="option.id" :value="option.id">
-            {{ option.label }}
-          </option>
-        </select>
+        <Select
+          id="group-parent"
+          v-model="parentId"
+          :disabled="busy"
+          :options="[{ value: 0, label: t('group.root') }, ...parentOptions.map((group) => ({ value: group.id, label: group.label }))]"
+        />
       </Field>
       <div class="form-actions">
         <Button type="button" variant="outline" :disabled="busy" @click="open = false">

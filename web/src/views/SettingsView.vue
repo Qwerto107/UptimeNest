@@ -13,6 +13,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Select } from '@/components/ui/select'
 const { t } = useI18n()
 const { busy, run } = useAction()
 const cleanupOpen = ref(false)
@@ -45,6 +46,22 @@ const otherTimezones = computed(() => {
   return [...new Set([...supportedTimezones, form.timezone])]
     .filter((zone) => zone && !common.has(zone))
     .sort()
+})
+const timezoneGroups = computed(() => {
+  const groups = [{
+    label: t('settings.commonTimezones'),
+    options: commonTimezones.map((zone) => ({
+      value: zone.value,
+      label: `${t(`settings.timezoneNames.${zone.name}`)} · ${zone.value}`,
+    })),
+  }]
+  if (otherTimezones.value.length) {
+    groups.push({
+      label: t('settings.otherTimezones'),
+      options: otherTimezones.value.map((zone) => ({ value: zone, label: zone })),
+    })
+  }
+  return groups
 })
 const { data, loading, error, refresh } = useResource((signal) =>
   request<Settings>('/admin/settings', { signal }),
@@ -100,29 +117,24 @@ async function cleanup() {
           />
         </Field>
         <Field id="timezone" :label="t('settings.timezone')" :hint="t('settings.timezoneHint')">
-          <select id="timezone" v-model="form.timezone" class="control" required>
-            <optgroup :label="t('settings.commonTimezones')">
-              <option v-for="zone in commonTimezones" :key="zone.value" :value="zone.value">
-                {{ t(`settings.timezoneNames.${zone.name}`) }} · {{ zone.value }}
-              </option>
-            </optgroup>
-            <optgroup v-if="otherTimezones.length" :label="t('settings.otherTimezones')">
-              <option v-for="zone in otherTimezones" :key="zone" :value="zone">{{ zone }}</option>
-            </optgroup>
-          </select>
+          <Select id="timezone" v-model="form.timezone" :groups="timezoneGroups" :disabled="busy" required />
         </Field>
         <div class="settings-row">
           <Field id="entry-page" :label="t('settings.entry')">
-            <select id="entry-page" v-model="form.entryPage" class="control">
-              <option value="status">{{ t('settings.statusEntry') }}</option>
-              <option value="admin">{{ t('settings.adminEntry') }}</option>
-            </select>
+            <Select
+              id="entry-page"
+              v-model="form.entryPage"
+              :disabled="busy"
+              :options="([{ value: 'status', label: t('settings.statusEntry') }, { value: 'admin', label: t('settings.adminEntry') }] as const)"
+            />
           </Field>
           <Field id="language" :label="t('settings.language')" :hint="t('settings.languageHint')">
-            <select id="language" v-model="form.language" class="control">
-              <option value="en-US">{{ t('settings.enUS') }}</option>
-              <option value="zh-CN">{{ t('settings.zhCN') }}</option>
-            </select>
+            <Select
+              id="language"
+              v-model="form.language"
+              :disabled="busy"
+              :options="[{ value: 'en-US', label: t('settings.enUS') }, { value: 'zh-CN', label: t('settings.zhCN') }]"
+            />
           </Field>
         </div>
         <div class="field">
