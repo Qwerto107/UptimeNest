@@ -69,13 +69,19 @@ const canLoadMore = computed(() => {
 async function loadMore() {
   await run(async () => {
     if (tab.value === 'heartbeats') {
-      const before = beats.value.at(-1)?.id
-      const items = await request<Heartbeat[]>(`/admin/monitors/${id}/heartbeats?before=${before}`)
+      const before = beats.value.at(-1)
+      if (!before) return
+      const items = await request<Heartbeat[]>(
+        `/admin/monitors/${id}/heartbeats?before=${before.id}&beforeTime=${before.time}`,
+      )
       olderBeats.value.push(...items)
       hasMoreBeats.value = items.length === 100
     } else {
-      const before = logs.value.at(-1)?.id
-      const items = await request<MonitorLog[]>(`/admin/monitors/${id}/logs?before=${before}`)
+      const before = logs.value.at(-1)
+      if (!before) return
+      const items = await request<MonitorLog[]>(
+        `/admin/monitors/${id}/logs?before=${before.id}&beforeTime=${before.time}`,
+      )
       olderLogs.value.push(...items)
       hasMoreLogs.value = items.length === 100
     }

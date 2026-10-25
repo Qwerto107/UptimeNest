@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -185,12 +186,38 @@ func (s *Store) recentHeartbeats(ctx context.Context, monitors []model.Monitor, 
 	return result, rows.Err()
 }
 
+type HistoryCursor struct {
+	ID   int64
+	Time *int64
+}
+
+func (s *Store) resolveHistoryCursor(ctx context.Context, table string, id int64, cursor HistoryCursor) (HistoryCursor, error) {
+	if cursor.ID <= 0 || cursor.Time != nil {
+		return cursor, nil
+	}
+	var at int64
+	err := s.DB.QueryRowContext(ctx, s.Q("SELECT time FROM "+table+" WHERE monitor_id=? AND id=?"), id, cursor.ID).Scan(&at)
+	if errors.Is(err, sql.ErrNoRows) {
+		return cursor, fmt.Errorf("%w：分页位置已失效，请刷新后重试", ErrInvalid)
+	}
+	cursor.Time = &at
+	return cursor, err
+}
+
 func (s *Store) Heartbeats(ctx context.Context, id, before int64, limit int) ([]model.Heartbeat, error) {
+	return s.HeartbeatsPage(ctx, id, HistoryCursor{ID: before}, limit)
+}
+
+func (s *Store) HeartbeatsPage(ctx context.Context, id int64, cursor HistoryCursor, limit int) ([]model.Heartbeat, error) {
+	cursor, err := s.resolveHistoryCursor(ctx, "heartbeats", id, cursor)
+	if err != nil {
+		return nil, err
+	}
 	q := "SELECT id,data FROM heartbeats WHERE monitor_id=?"
 	args := []any{id}
-	if before > 0 {
-		q += " AND id<?"
-		args = append(args, before)
+	if cursor.ID > 0 {
+		q += " AND (time,id)<(?,?)"
+		args = append(args, *cursor.Time, cursor.ID)
 	}
 	q += " ORDER BY time DESC,id DESC LIMIT ?"
 	args = append(args, limit)
@@ -217,11 +244,19 @@ func (s *Store) Heartbeats(ctx context.Context, id, before int64, limit int) ([]
 }
 
 func (s *Store) Logs(ctx context.Context, id, before int64, limit int) ([]model.Log, error) {
+	return s.LogsPage(ctx, id, HistoryCursor{ID: before}, limit)
+}
+
+func (s *Store) LogsPage(ctx context.Context, id int64, cursor HistoryCursor, limit int) ([]model.Log, error) {
+	cursor, err := s.resolveHistoryCursor(ctx, "monitor_logs", id, cursor)
+	if err != nil {
+		return nil, err
+	}
 	q := "SELECT id,monitor_id,time,status,message FROM monitor_logs WHERE monitor_id=?"
 	args := []any{id}
-	if before > 0 {
-		q += " AND id<?"
-		args = append(args, before)
+	if cursor.ID > 0 {
+		q += " AND (time,id)<(?,?)"
+		args = append(args, *cursor.Time, cursor.ID)
 	}
 	q += " ORDER BY time DESC,id DESC LIMIT ?"
 	args = append(args, limit)

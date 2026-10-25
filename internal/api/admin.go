@@ -135,8 +135,11 @@ func (a *Server) heartbeats(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	before, limit := page(r)
-	items, err := a.store.Heartbeats(r.Context(), id, before, limit)
+	cursor, limit, ok := page(w, r)
+	if !ok {
+		return
+	}
+	items, err := a.store.HeartbeatsPage(r.Context(), id, cursor, limit)
 	if err != nil {
 		fail(w, err)
 		return
@@ -152,8 +155,11 @@ func (a *Server) logs(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	before, limit := page(r)
-	items, err := a.store.Logs(r.Context(), id, before, limit)
+	cursor, limit, ok := page(w, r)
+	if !ok {
+		return
+	}
+	items, err := a.store.LogsPage(r.Context(), id, cursor, limit)
 	if err != nil {
 		fail(w, err)
 		return

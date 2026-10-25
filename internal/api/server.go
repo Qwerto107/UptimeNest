@@ -208,11 +208,27 @@ func heartbeatCount(r *http.Request, fallback int) int {
 	return count
 }
 
-func page(r *http.Request) (int64, int) {
-	before, _ := strconv.ParseInt(r.URL.Query().Get("before"), 10, 64)
+func page(w http.ResponseWriter, r *http.Request) (store.HistoryCursor, int, bool) {
+	cursor := store.HistoryCursor{}
+	if value := r.URL.Query().Get("before"); value != "" {
+		id, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || id <= 0 {
+			writeError(w, 400, "分页位置无效，请刷新后重试")
+			return cursor, 0, false
+		}
+		cursor.ID = id
+	}
+	if value := r.URL.Query().Get("beforeTime"); value != "" {
+		at, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || cursor.ID == 0 {
+			writeError(w, 400, "分页时间无效，请刷新后重试")
+			return cursor, 0, false
+		}
+		cursor.Time = &at
+	}
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	if limit <= 0 || limit > 200 {
 		limit = 100
 	}
-	return before, limit
+	return cursor, limit, true
 }
