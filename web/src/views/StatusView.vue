@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { RefreshCw } from 'lucide-vue-next'
+import { LayoutDashboard, RefreshCw } from 'lucide-vue-next'
 import type { PublicPanel, PublicMonitor, MonitorStatus } from '@/types'
 import { request } from '@/lib/api'
 import { loadBootstrap, siteName, timezone } from '@/composables/useApp'
@@ -10,6 +10,7 @@ import { useResource } from '@/composables/useResource'
 import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
 import { formatTime, percent } from '@/lib/format'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import { Button } from '@/components/ui/button'
 import LoadState from '@/components/LoadState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import HeartbeatStrip from '@/components/HeartbeatStrip.vue'
@@ -124,7 +125,11 @@ function protocol(monitor: PublicMonitor) {
         </RouterLink>
         <div class="pulse-tools">
           <ThemeToggle />
-          <RouterLink class="pulse-admin-link" to="/admin">{{ t('nav.admin') }}</RouterLink>
+          <Button variant="ghost" size="icon" as-child>
+            <RouterLink to="/admin" :aria-label="t('nav.admin')" :title="t('nav.admin')">
+              <LayoutDashboard />
+            </RouterLink>
+          </Button>
         </div>
         <p v-if="data?.panel.description" class="pulse-panel-description">
           <span>{{ data.panel.description }}</span>

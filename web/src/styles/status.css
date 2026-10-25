@@ -107,22 +107,19 @@
   color: var(--pulse-muted);
   font-size: 12px;
 }
-.pulse-tools > button {
+.pulse-tools > .ui-button {
   width: 28px;
   height: 28px;
   border-radius: 6px;
   color: var(--pulse-muted);
 }
-.pulse-tools > button:hover {
+.pulse-tools > .ui-button:hover {
   color: var(--pulse-text);
   background: var(--pulse-pill);
 }
-.pulse-tools > button svg {
+.pulse-tools > .ui-button svg {
   width: 16px;
   height: 16px;
-}
-.pulse-admin-link:hover {
-  color: var(--pulse-text);
 }
 .pulse-panel-description {
   flex-basis: 100%;
