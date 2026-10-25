@@ -55,6 +55,8 @@ function label(beat: Heartbeat | null) {
     latency: latency(beat.latency),
   })
 }
+// 无障碍文本与提示共用标签；悬停和聚焦只更新高亮，不重复格式化时间。
+const labels = computed(() => slots.value.map(label))
 </script>
 <template>
   <div
@@ -91,14 +93,14 @@ function label(beat: Heartbeat | null) {
       :tabindex="beat ? 0 : undefined"
       :class="['heartbeat', beat ? `beat-${beat.status}` : 'beat-empty']"
       :style="positions[index]"
-      :aria-label="label(beat)"
-      :data-tooltip="label(beat)"
+      :aria-label="labels[index]"
+      :data-tooltip="labels[index]"
       @mouseenter="activeIndex = index"
       @mouseleave="activeIndex = undefined"
       @focus="activeIndex = index"
       @blur="activeIndex = undefined"
     >
-      <span class="sr-only">{{ label(beat) }}</span>
+      <span class="sr-only">{{ labels[index] }}</span>
     </span>
   </div>
 </template>

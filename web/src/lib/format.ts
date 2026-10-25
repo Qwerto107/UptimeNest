@@ -1,8 +1,10 @@
+import { computed } from 'vue'
 import { i18n } from '@/i18n'
 import { timezone } from '@/composables/useApp'
 
-export function formatTime(value?: number | null) {
-  if (!value) return '—'
+// 仅在语言或时区变化时重建格式化器，避免每个心跳重复创建。
+const dateTimeFormat = computed(() => {
+  const locale = i18n.global.locale.value
   const options: Intl.DateTimeFormatOptions = {
     timeZone: timezone.value,
     year: 'numeric',
@@ -14,11 +16,20 @@ export function formatTime(value?: number | null) {
     hour12: false,
   }
   try {
-    return new Intl.DateTimeFormat('zh-CN', options).format(value)
+    return { formatter: new Intl.DateTimeFormat(locale, options), suffix: '' }
   } catch {
     // 浏览器时区目录落后时明确回退 UTC，避免日期格式化中断整个页面。
-    return new Intl.DateTimeFormat('zh-CN', { ...options, timeZone: 'UTC' }).format(value) + ' UTC'
+    return {
+      formatter: new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }),
+      suffix: ' UTC',
+    }
   }
+})
+
+export function formatTime(value?: number | null) {
+  if (!value) return '—'
+  const { formatter, suffix } = dateTimeFormat.value
+  return formatter.format(value) + suffix
 }
 export function percent(value?: number | null) {
   if (value == null) return '—'
