@@ -225,13 +225,17 @@ function protocol(monitor: PublicMonitor) {
                 </div>
                 <StatusConnectionMeta :beat="monitor.summary.latest" />
                 <HeartbeatStrip :beats="monitor.summary.heartbeats" @capacity="resizeHeartbeat" />
-                <div
-                  v-if="expanded.includes(monitor.id)"
-                  :id="'connection-' + monitor.id"
-                  class="pulse-expanded"
-                >
-                  <ConnectionDetails :beat="monitor.summary.latest" />
-                </div>
+                <Transition name="pulse-details">
+                  <div
+                    v-if="expanded.includes(monitor.id)"
+                    :id="'connection-' + monitor.id"
+                    class="pulse-expanded"
+                  >
+                    <div class="pulse-expanded-content">
+                      <ConnectionDetails :beat="monitor.summary.latest" />
+                    </div>
+                  </div>
+                </Transition>
               </article>
             </div>
           </section>
