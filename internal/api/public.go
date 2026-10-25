@@ -41,6 +41,21 @@ func (a *Server) bootstrap(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"siteName": v.SiteName, "timezone": v.Timezone, "language": v.Language, "entryPage": v.EntryPage, "defaultPanel": defaultSlug, "panels": items})
 }
 
+// publicHeartbeatPoint 只保留心跳条实际使用的数据，连接详情由 Latest 单独提供。
+type publicHeartbeatPoint struct {
+	Time    int64   `json:"time"`
+	Status  string  `json:"status"`
+	Latency float64 `json:"latency"`
+}
+
+type publicSummary struct {
+	Status     string                 `json:"status"`
+	Uptime     *float64               `json:"uptime"`
+	Average    *float64               `json:"average"`
+	Latest     *model.Heartbeat       `json:"latest"`
+	Heartbeats []publicHeartbeatPoint `json:"heartbeats"`
+}
+
 type publicMonitor struct {
 	ID          int64         `json:"id"`
 	Name        string        `json:"name"`
@@ -49,7 +64,7 @@ type publicMonitor struct {
 	Protocol    string        `json:"protocol"`
 	Description string        `json:"description"`
 	Tags        []string      `json:"tags"`
-	Summary     model.Summary `json:"summary"`
+	Summary     publicSummary `json:"summary"`
 }
 
 // publicPanel 使用白名单结构，仅公开允许展示的主机地址，不返回完整目标及内部错误消息。
@@ -110,16 +125,19 @@ func (a *Server) publicPanelData(ctx context.Context, slug string, count int) (a
 			continue
 		}
 		summary := summaries[id]
-		for i := range summary.Heartbeats {
-			summary.Heartbeats[i].Message = ""
-			summary.Heartbeats[i].MonitorID = 0
+		points := make([]publicHeartbeatPoint, 0, len(summary.Heartbeats))
+		for _, beat := range summary.Heartbeats {
+			points = append(points, publicHeartbeatPoint{Time: beat.Time, Status: beat.Status, Latency: beat.Latency})
 		}
 		if summary.Latest != nil {
 			summary.Latest.Message = ""
 			summary.Latest.MonitorID = 0
 		}
 		address, protocol := publicEndpoint(m)
-		views = append(views, publicMonitor{ID: m.ID, Name: m.Name, Type: m.Type, Address: address, Protocol: protocol, Description: m.Description, Tags: m.Tags, Summary: summary})
+		views = append(views, publicMonitor{
+			ID: m.ID, Name: m.Name, Type: m.Type, Address: address, Protocol: protocol, Description: m.Description, Tags: m.Tags,
+			Summary: publicSummary{Status: summary.Status, Uptime: summary.Uptime, Average: summary.Average, Latest: summary.Latest, Heartbeats: points},
+		})
 	}
 	settings, err := a.store.Settings(ctx)
 	if err != nil {

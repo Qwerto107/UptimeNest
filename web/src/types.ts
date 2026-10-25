@@ -27,6 +27,12 @@ export interface Summary {
   heartbeats: Heartbeat[]
 }
 
+export type HeartbeatPoint = Pick<Heartbeat, 'time' | 'status' | 'latency'>
+
+export interface PublicSummary extends Omit<Summary, 'heartbeats'> {
+  heartbeats: HeartbeatPoint[]
+}
+
 export interface Monitor {
   id: number
   name: string
@@ -128,8 +134,8 @@ export interface MonitorLog {
 }
 export type PublicMonitor = Pick<
   MonitorView,
-  'id' | 'name' | 'type' | 'description' | 'tags' | 'summary'
-> & { address?: string; protocol: string }
+  'id' | 'name' | 'type' | 'description' | 'tags'
+> & { address?: string; protocol: string; summary: PublicSummary }
 export interface PublicPanel {
   panel: Pick<Panel, 'name' | 'slug' | 'description' | 'pageTitle'>
   monitors: PublicMonitor[]

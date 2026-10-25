@@ -2,9 +2,9 @@
 import { computed, ref, watch } from 'vue'
 import { useDevicePixelRatio, useEventListener, useResizeObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import type { Heartbeat } from '@/types'
+import type { HeartbeatPoint } from '@/types'
 import { formatTime, latency } from '@/lib/format'
-const props = defineProps<{ beats: Heartbeat[] }>()
+const props = defineProps<{ beats: HeartbeatPoint[] }>()
 const emit = defineEmits<{ capacity: [count: number] }>()
 const { t } = useI18n()
 const strip = ref<HTMLDivElement>()
@@ -47,7 +47,7 @@ const slots = computed(() => {
   const recent = props.beats.slice(-count)
   return [...Array<null>(Math.max(0, count - recent.length)).fill(null), ...recent]
 })
-function label(beat: Heartbeat | null) {
+function label(beat: HeartbeatPoint | null) {
   if (!beat) return t('common.noData')
   return t('status.heartbeatPoint', {
     time: formatTime(beat.time),
