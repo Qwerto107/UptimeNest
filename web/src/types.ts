@@ -27,7 +27,10 @@ export interface Summary {
   heartbeats: Heartbeat[]
 }
 
-export type HeartbeatPoint = Pick<Heartbeat, 'time' | 'status' | 'latency'>
+export type HeartbeatPoint = Pick<Heartbeat, 'time' | 'status' | 'latency'> & {
+  failure?: 'timeout' | 'refused' | 'response'
+  statusCode?: number
+}
 
 export interface PublicSummary extends Omit<Summary, 'heartbeats'> {
   heartbeats: HeartbeatPoint[]

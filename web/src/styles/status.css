@@ -509,6 +509,204 @@
   padding-top: 14px;
   gap: 16px 24px;
 }
+.pulse-latency-chart {
+  margin-top: var(--pulse-service-gap);
+  border-top: 1px solid var(--pulse-border);
+  padding: 14px 0;
+}
+.pulse-latency-heading,
+.pulse-latency-title,
+.pulse-latency-statistics,
+.pulse-latency-statistics > div {
+  display: flex;
+  align-items: baseline;
+}
+.pulse-latency-heading {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 20px;
+  margin-bottom: 6px;
+}
+.pulse-latency-title {
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.pulse-latency-title h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+.pulse-latency-title > span {
+  color: var(--pulse-muted);
+  font-size: 11px;
+}
+.pulse-latency-statistics {
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 12px;
+}
+.pulse-latency-statistics > div {
+  gap: 6px;
+}
+.pulse-latency-statistics dt {
+  color: var(--pulse-muted);
+}
+.pulse-latency-statistics dd {
+  margin: 0;
+}
+.pulse-latency-statistics abbr {
+  text-decoration: none;
+}
+.pulse-latency-plot {
+  position: relative;
+  min-width: 0;
+  /* 为两行提示预留固定空间，避免悬停时遮点或改变布局。 */
+  padding-top: 56px;
+  border-radius: 4px;
+}
+.pulse-latency-plot > svg {
+  display: block;
+  width: 100%;
+  height: 88px;
+}
+.pulse-latency-grid {
+  fill: none;
+  stroke: var(--pulse-border);
+  stroke-dasharray: 3 5;
+}
+.pulse-latency-area {
+  fill: var(--pulse-ok);
+  fill-opacity: 0.09;
+}
+.pulse-latency-line {
+  fill: none;
+  stroke: var(--pulse-ok);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pulse-latency-missing {
+  fill: none;
+  stroke: var(--pulse-down);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.pulse-latency-missing {
+  stroke: var(--pulse-muted);
+}
+.pulse-latency-single {
+  fill: var(--pulse-ok);
+}
+.pulse-latency-maximum,
+.pulse-latency-latest,
+.pulse-latency-selected {
+  stroke: var(--pulse-surface);
+  stroke-width: 1.5;
+}
+.pulse-latency-maximum {
+  fill: var(--pulse-warning);
+}
+.pulse-latency-latest,
+.pulse-latency-selected-up {
+  fill: var(--pulse-ok);
+}
+.pulse-latency-selected-down {
+  fill: var(--pulse-down);
+}
+.pulse-latency-selected-unknown,
+.pulse-latency-selected-paused {
+  fill: var(--pulse-muted);
+}
+.pulse-latency-guide {
+  fill: none;
+  stroke: var(--pulse-muted);
+  stroke-dasharray: 3 4;
+  opacity: 0.5;
+}
+.pulse-latency-tooltip {
+  position: absolute;
+  top: 0;
+  display: grid;
+  gap: 3px;
+  max-width: calc(100% - 16px);
+  padding: 7px 10px;
+  border: 1px solid var(--pulse-border);
+  border-radius: 6px;
+  background: var(--pulse-pill);
+  color: var(--pulse-text);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+.pulse-latency-tooltip > span {
+  font-weight: 500;
+}
+.pulse-latency-tooltip > time,
+.pulse-latency-annotation > span:first-child {
+  color: var(--pulse-muted);
+}
+.pulse-latency-tooltip .pulse-latency-fault-label,
+.pulse-latency-failure-count dd {
+  color: var(--pulse-down-text);
+}
+.pulse-latency-outage-area {
+  fill: var(--pulse-down);
+  fill-opacity: 0.13;
+}
+.pulse-latency-outage-edge,
+.pulse-latency-timeout,
+.pulse-latency-response {
+  fill: var(--pulse-down);
+}
+.pulse-latency-response {
+  stroke: var(--pulse-surface);
+  stroke-width: 1.5;
+}
+.pulse-latency-abnormal {
+  fill: none;
+  stroke: var(--pulse-down);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pulse-latency-recovered {
+  fill: var(--pulse-surface);
+  stroke: var(--pulse-ok);
+  stroke-width: 1.6;
+}
+.pulse-latency-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 5px;
+  color: var(--pulse-muted);
+  font-size: 10.5px;
+}
+.pulse-latency-axis-single {
+  justify-content: center;
+}
+.pulse-latency-empty {
+  position: absolute;
+  inset: 56px 0 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--pulse-muted);
+  font-size: 12px;
+  text-align: center;
+  pointer-events: none;
+}
+.pulse-latency-no-data {
+  position: static;
+  min-height: 88px;
+}
+.pulse-expanded .pulse-latency-chart + .connection-details {
+  margin-top: 0;
+  padding-top: 18px;
+}
 .pulse-expanded .connection-details dt {
   color: var(--pulse-muted);
   font-size: 12px;

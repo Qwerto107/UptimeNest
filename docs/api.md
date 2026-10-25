@@ -38,7 +38,7 @@
 
 `summary` 包含 `status`、`uptime`、`average`、`latest` 和按时间升序排列的 `heartbeats`。公开面板与后台监控列表支持查询参数 `heartbeatCount`（1～1000），供界面按容器容量补取最近记录；未传或无效时，公开接口默认 90 条、后台默认 60 条，超出上限时截取为 1000。两者的 `uptime` 和 `average` 仍按近 24 小时计算，无数据时为 `null`。状态为 `up`、`down`、`unknown` 或 `paused`。
 
-公开面板的 `summary.heartbeats` 每项仅包含 `time`、`status`、`latency`，供心跳条与提示使用，不重复携带 ID、内部消息或连接详情。`summary.latest` 保留最新检测的 TLS、HTTP、QUIC 和证书等展示字段，供连接标签与展开详情使用，内部消息仍清空。后台监控与历史接口继续返回完整心跳记录。
+公开面板的 `summary.heartbeats` 正常记录仅包含 `time`、`status`、`latency`，供心跳条与图表使用。可明确识别的故障记录额外包含 `failure`（`timeout`、`refused` 或 `response`）；HTTP 异常响应可附带 `statusCode`。这些值从既有标准诊断映射为白名单，未知原因不填，不返回原始错误内容。历史点不重复携带 ID 或连接详情。`summary.latest` 保留最新检测的 TLS、HTTP、QUIC 和证书等展示字段，内部消息仍清空。后台监控与历史接口继续返回完整心跳记录。
 
 ## 管理员账户
 

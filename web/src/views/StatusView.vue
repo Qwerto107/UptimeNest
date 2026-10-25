@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import LoadState from '@/components/LoadState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import HeartbeatStrip from '@/components/HeartbeatStrip.vue'
+import LatencyHistoryChart from '@/components/LatencyHistoryChart.vue'
 import ConnectionDetails from '@/components/ConnectionDetails.vue'
 import StatusConnectionMeta from '@/components/StatusConnectionMeta.vue'
 import '@/styles/status.css'
@@ -232,6 +233,7 @@ function protocol(monitor: PublicMonitor) {
                     class="pulse-expanded"
                   >
                     <div class="pulse-expanded-content">
+                      <LatencyHistoryChart :beats="monitor.summary.heartbeats" />
                       <ConnectionDetails :beat="monitor.summary.latest" />
                     </div>
                   </div>

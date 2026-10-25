@@ -41,11 +41,48 @@ func (a *Server) bootstrap(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"siteName": v.SiteName, "timezone": v.Timezone, "language": v.Language, "entryPage": v.EntryPage, "defaultPanel": defaultSlug, "panels": items})
 }
 
-// publicHeartbeatPoint 只保留心跳条实际使用的数据，连接详情由 Latest 单独提供。
+// publicHeartbeatPoint 保留曲线所需的轻量数据，仅为可识别的故障补充脱敏分类。
 type publicHeartbeatPoint struct {
-	Time    int64   `json:"time"`
-	Status  string  `json:"status"`
-	Latency float64 `json:"latency"`
+	Time       int64   `json:"time"`
+	Status     string  `json:"status"`
+	Latency    float64 `json:"latency"`
+	Failure    string  `json:"failure,omitempty"`
+	StatusCode int     `json:"statusCode,omitempty"`
+}
+
+// publicFailure 只识别明确的标准诊断并返回白名单值，不公开原始错误中的地址或凭据。
+func publicFailure(beat model.Heartbeat) (string, int) {
+	if beat.Status != "down" {
+		return "", 0
+	}
+	message := beat.Message
+	if value, ok := strings.CutPrefix(message, "HTTP 状态不在有效状态码中："); ok {
+		code, err := strconv.Atoi(strings.TrimSpace(value))
+		if err == nil && code >= 100 && code <= 599 {
+			return "response", code
+		}
+	}
+	for _, suffix := range []string{
+		"context deadline exceeded", "i/o timeout", "net/http: TLS handshake timeout",
+		"(Client.Timeout exceeded while awaiting headers)",
+		"timeout: no recent network activity", "timeout: handshake did not complete in time",
+	} {
+		if strings.HasSuffix(message, suffix) {
+			return "timeout", 0
+		}
+	}
+	for _, suffix := range []string{
+		"connection refused", "No connection could be made because the target machine actively refused it.",
+		"由于目标计算机积极拒绝，无法连接。",
+	} {
+		if strings.HasSuffix(message, suffix) {
+			return "refused", 0
+		}
+	}
+	if message == "反转模式：服务可访问" || message == "DNS 返回结果与期望值不一致" || message == "DNS 未返回匹配记录" {
+		return "response", 0
+	}
+	return "", 0
 }
 
 type publicSummary struct {
@@ -127,7 +164,8 @@ func (a *Server) publicPanelData(ctx context.Context, slug string, count int) (a
 		summary := summaries[id]
 		points := make([]publicHeartbeatPoint, 0, len(summary.Heartbeats))
 		for _, beat := range summary.Heartbeats {
-			points = append(points, publicHeartbeatPoint{Time: beat.Time, Status: beat.Status, Latency: beat.Latency})
+			failure, code := publicFailure(beat)
+			points = append(points, publicHeartbeatPoint{Time: beat.Time, Status: beat.Status, Latency: beat.Latency, Failure: failure, StatusCode: code})
 		}
 		if summary.Latest != nil {
 			summary.Latest.Message = ""
