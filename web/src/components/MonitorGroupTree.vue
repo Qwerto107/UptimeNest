@@ -5,6 +5,8 @@ import { ChevronDown, ChevronRight, Folder, FolderOpen } from 'lucide-vue-next'
 import type { Group, MonitorView } from '@/types'
 import { groupTree, type GroupBranch } from '@/lib/groups'
 import StatusBadge from '@/components/StatusBadge.vue'
+import PaginationControls from '@/components/PaginationControls.vue'
+import { usePagination } from '@/composables/usePagination'
 
 const props = withDefaults(
   defineProps<{
@@ -13,8 +15,9 @@ const props = withDefaults(
     visibleIds?: number[]
     visibleGroupIds?: number[]
     searching?: boolean
+    filterKey?: string
   }>(),
-  { searching: false },
+  { searching: false, filterKey: '' },
 )
 const { t } = useI18n()
 const collapsed = ref(new Set<number>())
@@ -55,6 +58,26 @@ const rows = computed(() => {
   }
   return result
 })
+const { page, pageSize, offset } = usePagination(computed(() => rows.value.length))
+watch(() => props.filterKey, () => { page.value = 1 })
+const pageRows = computed(() => {
+  const visible = rows.value.slice(offset.value, offset.value + pageSize.value)
+  const first = visible[0]
+  if (!first) return []
+  const groups = new Map(rows.value.filter((row) => row.kind === 'group').map((row) => [row.branch.group.id, row]))
+  let parent = 0
+  if (first.kind === 'group') parent = first.branch.group.parentId
+  else parent = first.monitor.groupId
+  const context: Row[] = []
+  // 跨页时补上首行的父级标题，保留完整分组状态及折叠操作。
+  while (parent) {
+    const row = groups.get(parent)
+    if (!row) break
+    context.unshift(row)
+    parent = row.branch.group.parentId
+  }
+  return [...context, ...visible]
+})
 function toggle(id: number) {
   if (collapsed.value.has(id)) collapsed.value.delete(id)
   else collapsed.value.add(id)
@@ -64,7 +87,7 @@ function toggle(id: number) {
 <template>
   <div class="monitor-tree monitor-list">
     <div
-      v-for="row in rows"
+      v-for="row in pageRows"
       :key="row.kind + '-' + (row.kind === 'group' ? row.branch.group.id : row.monitor.id)"
       class="tree-entry"
       :class="{ 'tree-entry-nested': row.depth > 0 }"
@@ -98,4 +121,5 @@ function toggle(id: number) {
       </slot>
     </div>
   </div>
+  <PaginationControls v-model:page="page" v-model:pageSize="pageSize" :total="rows.length" :label="t('pagination.monitorRows')" />
 </template>

@@ -252,6 +252,7 @@ async function toggle(monitor: MonitorView) {
         :visible-ids="filtered.map((monitor) => monitor.id)"
         :visible-group-ids="visibleGroupIds"
         :searching="searching"
+        :filter-key="JSON.stringify([search, groupId, status])"
       >
         <template #group-actions="{ group }">
           <Button

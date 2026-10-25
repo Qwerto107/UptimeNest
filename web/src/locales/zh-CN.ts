@@ -54,6 +54,16 @@ export default {
     unknown: '等待检测',
     paused: '已停用',
   },
+  pagination: {
+    label: '{name}分页',
+    size: '每页显示数量',
+    perPage: '每页 {count}',
+    previous: '上一页',
+    next: '下一页',
+    page: '第 {page} / {pages} 页',
+    monitorRows: '监控与分组',
+    services: '服务',
+  },
   nav: {
     monitors: '监控管理',
     groups: '监控分组',

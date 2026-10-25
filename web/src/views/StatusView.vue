@@ -16,6 +16,8 @@ import HeartbeatStrip from '@/components/HeartbeatStrip.vue'
 import ConnectionDetails from '@/components/ConnectionDetails.vue'
 import StatusConnectionMeta from '@/components/StatusConnectionMeta.vue'
 import '@/styles/status.css'
+import PaginationControls from '@/components/PaginationControls.vue'
+import { usePagination } from '@/composables/usePagination'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -41,6 +43,8 @@ const { data, loading, error, refresh, refreshing } = useResource(async (signal)
 }, 30000)
 
 const monitors = computed(() => data.value?.monitors || [])
+const { page, pageSize, offset } = usePagination(computed(() => monitors.value.length), 25)
+const pageMonitors = computed(() => monitors.value.slice(offset.value, offset.value + pageSize.value))
 const overall = computed<MonitorStatus>(() => {
   if (!monitors.value.length) return 'unknown'
   if (monitors.value.some((monitor) => monitor.summary.status === 'down')) return 'down'
@@ -63,7 +67,7 @@ const statusCopy = computed(() => {
 
 const groups = computed(() => {
   if (!data.value) return []
-  const index = new Map(monitors.value.map((monitor) => [monitor.id, monitor]))
+  const index = new Map(pageMonitors.value.map((monitor) => [monitor.id, monitor]))
   return data.value.groups
     .map((group) => ({
       id: group.id,
@@ -230,6 +234,7 @@ function protocol(monitor: PublicMonitor) {
           <div v-if="monitors.length" class="pulse-history-note">
             <span>{{ t('status.uptimeShort') }}</span>
           </div>
+          <PaginationControls v-model:page="page" v-model:pageSize="pageSize" :total="monitors.length" :label="t('pagination.services')" />
         </main>
 
         <footer class="pulse-footer">
