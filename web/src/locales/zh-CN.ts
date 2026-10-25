@@ -348,6 +348,7 @@ export default {
     monitoringCode: '02 · PROBE',
     historyCode: '03 · DATA',
     securityCode: 'SECURITY',
+    accessSecurityCode: '04 · SECURITY',
     accessSecurity: '访问安全',
     trustedProxies: '可信代理 IP / CIDR',
     trustedProxiesHint: '每行一个 IPv4、IPv6 或 CIDR，最多 100 项，仅填写你控制的代理。留空时按直连 IP 限流。可信代理需正确追加或重写 X-Forwarded-For；未提供该头时使用 X-Real-IP。',

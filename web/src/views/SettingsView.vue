@@ -193,7 +193,7 @@ async function cleanup() {
     </section>
     <section class="settings-section">
       <div class="settings-section-title">
-        <span class="settings-code">{{ t('settings.securityCode') }}</span>
+        <span class="settings-code">{{ t('settings.accessSecurityCode') }}</span>
         <h2>{{ t('settings.accessSecurity') }}</h2>
       </div>
       <fieldset :disabled="busy" class="settings-fields">
