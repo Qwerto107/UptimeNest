@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -53,16 +54,36 @@ type publicMonitor struct {
 
 // publicPanel 使用白名单结构，仅公开允许展示的主机地址，不返回完整目标及内部错误消息。
 func (a *Server) publicPanel(w http.ResponseWriter, r *http.Request) {
-	value, err := a.publicPanelData(r.Context(), r.PathValue("slug"), heartbeatCount(r, 90))
+	slug := r.PathValue("slug")
+	if !slugPattern.MatchString(slug) {
+		writeError(w, 404, "状态面板不存在")
+		return
+	}
+	key := panelCacheKey{slug: slug, count: heartbeatCount(r, 90), version: a.store.PublicVersion()}
+	body, err := a.publicCache.get(r.Context(), key, func(ctx context.Context) ([]byte, error) {
+		value, err := a.publicPanelData(ctx, slug, key.count)
+		if err != nil {
+			return nil, err
+		}
+		data, err := json.Marshal(value)
+		return append(data, '\n'), err
+	})
 	if errors.Is(err, store.ErrNotFound) {
 		writeError(w, 404, "状态面板不存在")
 		return
 	}
-	if err != nil {
-		fail(w, err)
+	if errors.Is(err, errPanelBusy) {
+		writeError(w, 503, "服务繁忙，请稍后重试")
 		return
 	}
-	writeJSON(w, 200, value)
+	if err != nil {
+		if r.Context().Err() == nil {
+			fail(w, err)
+		}
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Write(body)
 }
 
 func (a *Server) publicPanelData(ctx context.Context, slug string, count int) (any, error) {

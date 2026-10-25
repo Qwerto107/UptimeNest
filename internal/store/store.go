@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/Qwerto107/UptimeNest/internal/model"
@@ -26,8 +27,19 @@ var ErrInvalid = errors.New("配置无效")
 const sqlBatchSize = 500
 
 type Store struct {
-	DB      *sql.DB
-	dialect string
+	DB            *sql.DB
+	dialect       string
+	publicVersion atomic.Uint64
+}
+
+func (s *Store) PublicVersion() uint64 { return s.publicVersion.Load() }
+
+// commitChange 使配置变更提交后立即淘汰本进程的公开响应缓存。
+func (s *Store) commitChange(tx *sql.Tx) error {
+	err := tx.Commit()
+	// 取消或连接中断时提交结果可能未知，仍使缓存失效以免保留旧配置。
+	s.publicVersion.Add(1)
+	return err
 }
 
 // Open 初始化连接与版本化表结构；SQLite 使用单连接避免并发写锁冲突。
@@ -249,7 +261,7 @@ func (s *Store) SaveMonitor(ctx context.Context, m model.Monitor) (model.Monitor
 	if err != nil {
 		return m, err
 	}
-	return m, tx.Commit()
+	return m, s.commitChange(tx)
 }
 
 func (s *Store) DeleteMonitor(ctx context.Context, id int64) error {
@@ -319,7 +331,7 @@ func (s *Store) DeleteMonitor(ctx context.Context, id int64) error {
 			return err
 		}
 	}
-	return tx.Commit()
+	return s.commitChange(tx)
 }
 
 func (s *Store) Groups(ctx context.Context) ([]model.Group, error) {
@@ -366,7 +378,7 @@ func (s *Store) SaveGroup(ctx context.Context, g model.Group) (model.Group, erro
 	if err != nil {
 		return g, conflict(err)
 	}
-	return g, tx.Commit()
+	return g, s.commitChange(tx)
 }
 
 // DeleteGroup 将组内监控移到未分组，不删除监控或其历史数据。
@@ -435,7 +447,7 @@ func (s *Store) DeleteGroup(ctx context.Context, id int64) error {
 			return err
 		}
 	}
-	return tx.Commit()
+	return s.commitChange(tx)
 }
 
 func (s *Store) Panels(ctx context.Context) ([]model.Panel, error) {
@@ -560,7 +572,7 @@ func (s *Store) SavePanel(ctx context.Context, p model.Panel) (model.Panel, erro
 	if _, err = tx.ExecContext(ctx, "UPDATE panels SET is_default=1 WHERE id=(SELECT MIN(id) FROM panels) AND NOT EXISTS (SELECT 1 FROM panels WHERE is_default=1)"); err != nil {
 		return p, err
 	}
-	return p, tx.Commit()
+	return p, s.commitChange(tx)
 }
 
 func (s *Store) DeletePanel(ctx context.Context, id int64) error {
@@ -585,7 +597,7 @@ func (s *Store) DeletePanel(ctx context.Context, id int64) error {
 	if _, err = tx.ExecContext(ctx, "UPDATE panels SET is_default=1 WHERE id=(SELECT MIN(id) FROM panels) AND NOT EXISTS (SELECT 1 FROM panels WHERE is_default=1)"); err != nil {
 		return err
 	}
-	return tx.Commit()
+	return s.commitChange(tx)
 }
 
 func (s *Store) Settings(ctx context.Context) (model.Settings, error) {
@@ -604,6 +616,7 @@ func (s *Store) Settings(ctx context.Context) (model.Settings, error) {
 
 func (s *Store) SaveSettings(ctx context.Context, v model.Settings) error {
 	_, err := s.DB.ExecContext(ctx, s.Q("INSERT INTO settings(key,value) VALUES('system',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"), encode(v))
+	s.publicVersion.Add(1)
 	return err
 }
 
@@ -620,6 +633,8 @@ func conflict(err error) error {
 
 // Cleanup 使用统一截止时间分批清理，批次间释放连接；中断后可再次执行。
 func (s *Store) Cleanup(ctx context.Context, days int) (map[string]int64, error) {
+	// 最后再次失效，避免并发读取把清理中间状态留在缓存中。
+	defer s.publicVersion.Add(1)
 	cutoff := time.Now().Add(-time.Duration(days) * 24 * time.Hour).UnixMilli()
 	counts := map[string]int64{"heartbeats": 0, "logs": 0}
 	for _, item := range []struct{ table, id, time, key string }{
@@ -635,14 +650,23 @@ func (s *Store) Cleanup(ctx context.Context, days int) (map[string]int64, error)
 			query := "DELETE FROM " + item.table + " WHERE " + item.id + " IN (SELECT " + item.id + " FROM " + item.table + " WHERE " + item.time + "<? ORDER BY " + item.time + "," + item.id + " LIMIT 500)"
 			result, err := s.DB.ExecContext(ctx, s.Q(query), before)
 			if err != nil {
+				if item.key != "" {
+					s.publicVersion.Add(1)
+				}
 				return counts, err
 			}
 			n, err := result.RowsAffected()
 			if err != nil {
+				if item.key != "" {
+					s.publicVersion.Add(1)
+				}
 				return counts, err
 			}
 			if item.key != "" {
 				counts[item.key] += n
+				if n > 0 {
+					s.publicVersion.Add(1)
+				}
 			}
 			if n < 500 {
 				// 并发清理可能已经删掉本批选中的行；确认没有剩余过期数据再结束。

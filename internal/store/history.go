@@ -53,7 +53,14 @@ func (s *Store) Append(ctx context.Context, snapshot model.Monitor, h model.Hear
 			return "", err
 		}
 	}
-	return previous, tx.Commit()
+	err = tx.Commit()
+	if previous != h.Status {
+		s.publicVersion.Add(1)
+	}
+	if err != nil {
+		return "", err
+	}
+	return previous, nil
 }
 
 // Summary 按页面所需条数返回最近心跳，近 24 小时统计独立计算。
@@ -286,6 +293,7 @@ func (s *Store) ClearHistory(ctx context.Context, id int64, kind string) (int64,
 		return 0, err
 	}
 	result, err := s.DB.ExecContext(ctx, s.Q("DELETE FROM "+table+" WHERE monitor_id=?"), id)
+	s.publicVersion.Add(1)
 	if err != nil {
 		return 0, err
 	}

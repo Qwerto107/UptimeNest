@@ -25,16 +25,17 @@ import (
 )
 
 type Server struct {
-	store    *store.Store
-	engine   *monitor.Engine
-	config   config.Config
-	setupMu  sync.Mutex
-	limitMu  sync.Mutex
-	attempts map[string]attempt
+	store       *store.Store
+	engine      *monitor.Engine
+	config      config.Config
+	setupMu     sync.Mutex
+	limitMu     sync.Mutex
+	attempts    map[string]attempt
+	publicCache *panelCache
 }
 
 func New(s *store.Store, engine *monitor.Engine, cfg config.Config) http.Handler {
-	a := &Server{store: s, engine: engine, config: cfg, attempts: map[string]attempt{}}
+	a := &Server{store: s, engine: engine, config: cfg, attempts: map[string]attempt{}, publicCache: newPanelCache()}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/public/bootstrap", a.bootstrap)
 	mux.HandleFunc("GET /api/public/panels/{slug}", a.publicPanel)
