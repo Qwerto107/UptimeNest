@@ -29,6 +29,10 @@ export function initTheme() {
 
 export async function loadBootstrap() {
   const value = await request<Bootstrap>('/public/bootstrap')
+  // 未识别的语言回退英语，页面语言标记与实际文案保持一致。
+  const language = value.language === 'zh-CN' ? 'zh-CN' : 'en-US'
+  i18n.global.locale.value = language
+  document.documentElement.lang = language
   bootstrap.value = value
   timezone.value = value.timezone
   return value

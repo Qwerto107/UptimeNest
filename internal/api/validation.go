@@ -113,8 +113,8 @@ func validateSettings(v model.Settings) error {
 	if _, err := time.LoadLocation(v.Timezone); err != nil {
 		return fmt.Errorf("时区无效，请使用 IANA 时区名称")
 	}
-	if v.Language != "zh-CN" {
-		return fmt.Errorf("当前版本仅支持简体中文")
+	if v.Language != "en-US" && v.Language != "zh-CN" {
+		return fmt.Errorf("请选择英语或简体中文")
 	}
 	if v.EntryPage != "status" && v.EntryPage != "admin" {
 		return fmt.Errorf("入口页面无效")

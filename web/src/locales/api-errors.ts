@@ -1,0 +1,115 @@
+// 保持现有接口错误格式兼容，仅翻译已知提示；未知诊断详情保留原文。
+const englishErrors: Record<string, string> = {
+  '请先登录管理员账户': 'Please log in as an admin first.',
+  '管理员已设置，请直接登录': 'An admin account already exists. Please log in.',
+  '尝试次数过多，请 15 分钟后重试': 'Too many attempts. Please try again in 15 minutes.',
+  '密码不能为空，且 UTF-8 编码后不能超过 72 字节': 'The password must be nonempty and at most 72 UTF-8 bytes.',
+  '请先设置管理员密码': 'Please set an admin password first.',
+  '密码不正确': 'Incorrect password.',
+  '当前密码不正确': 'The current password is incorrect.',
+  '密码已更新，请重新登录': 'The password has changed. Please log in again.',
+  '请明确指定启用或停用状态': 'Specify whether the monitor should be enabled or paused.',
+  '分组名称不能为空，且不能超过 200 字节': 'The group name must be nonempty and at most 200 bytes.',
+  '面板标题最多 200 个字符': 'The page title must be at most 200 characters.',
+  '请填写名称和访问路径；路径最多 64 位，仅支持小写字母、数字和连字符': 'Enter a name and a unique URL slug of up to 64 lowercase letters, numbers, or hyphens.',
+  '单个面板最多展示 1000 项监控': 'A status page can contain up to 1000 monitors.',
+  '无效的监控编号': 'Invalid monitor ID.',
+  '站点名称最多 100 个字符': 'The site name must be at most 100 characters.',
+  '可信代理最多设置 100 项': 'You can configure up to 100 trusted proxies.',
+  '状态面板不存在': 'Status page not found.',
+  '服务繁忙，请稍后重试': 'The service is busy. Please try again shortly.',
+  '数据库暂不可用': 'The database is temporarily unavailable.',
+  '接口不存在或请求方式不正确': 'The API endpoint does not exist or the request method is incorrect.',
+  '请求方式不正确': 'Incorrect request method.',
+  '不允许跨站提交': 'Cross-site submissions are not allowed.',
+  '请求必须使用 JSON': 'The request must use JSON.',
+  '服务暂时不可用': 'The service is temporarily unavailable.',
+  '请求数据格式不正确': 'Invalid request data format.',
+  '请求只能包含一个 JSON 对象': 'The request must contain a single JSON object.',
+  '记录不存在，请刷新页面': 'Record not found. Please refresh the page.',
+  '名称或访问路径已存在': 'The name or URL slug already exists.',
+  '操作未完成，请稍后重试': 'The operation could not be completed. Please try again.',
+  '无效的记录编号': 'Invalid record ID.',
+  '分页位置无效，请刷新后重试': 'Invalid pagination position. Refresh the page and try again.',
+  '分页时间无效，请刷新后重试': 'Invalid pagination timestamp. Refresh the page and try again.',
+  '分页位置已失效，请刷新后重试': 'The pagination position has expired. Refresh the page and try again.',
+  '显示名称不能为空，且不能超过 200 字节': 'The display name must be nonempty and at most 200 bytes.',
+  '目标地址或描述过长': 'The target address or description is too long.',
+  '心跳间隔应为 5 至 86400 秒': 'The check interval must be between 5 and 86400 seconds.',
+  '检测超时应为 1 至 120 秒': 'The check timeout must be between 1 and 120 seconds.',
+  '重试次数应为 0 至 10 次': 'The number of retries must be between 0 and 10.',
+  '重试间隔应为 1 至 3600 秒': 'The retry interval must be between 1 and 3600 seconds.',
+  '无效的分组': 'Invalid group.',
+  '最多设置 20 个标签': 'You can add up to 20 tags.',
+  '单个标签不能超过 100 字节': 'Each tag must be at most 100 bytes.',
+  '请输入有效的 HTTP/HTTPS 地址，不允许在地址中携带账户密码': 'Enter a valid HTTP or HTTPS URL without embedded credentials.',
+  'TCP 目标应为主机名或 IP，端口应为 1 至 65535': 'The TCP target must be a hostname or IP address, with a port between 1 and 65535.',
+  'Ping 目标应为主机名或 IP': 'The Ping target must be a hostname or IP address.',
+  '请输入有效的 DNS 域名': 'Enter a valid DNS domain name.',
+  '请选择有效的 DNS 记录类型': 'Select a valid DNS record type.',
+  'DNS 期望值过长': 'The expected DNS answer is too long.',
+  'DNS 服务器应填写 IP:端口，例如 1.1.1.1:53': 'Enter the DNS server as IP:port, for example 1.1.1.1:53.',
+  'DNS 服务器端口无效': 'Invalid DNS server port.',
+  '请选择 HTTP、TCP、Ping 或 DNS 类型': 'Select HTTP, TCP, Ping, or DNS.',
+  '请选择明确的 IANA 时区名称，例如 Asia/Singapore 或 UTC': 'Select an explicit IANA timezone, such as Asia/Singapore or UTC.',
+  '时区无效，请使用 IANA 时区名称': 'Invalid timezone. Use an IANA timezone name.',
+  '请选择英语或简体中文': 'Select English or Simplified Chinese.',
+  '入口页面无效': 'Invalid entry page.',
+  'User-Agent 过长或包含非法换行': 'The User-Agent is too long or contains invalid line breaks.',
+  '历史保留期限应为 1 至 3650 天': 'History retention must be between 1 and 3650 days.',
+  '父分组无效': 'Invalid parent group.',
+  '不能将分组放入自身或其子分组': 'A group cannot be moved into itself or one of its descendants.',
+  '父分组不存在，请刷新后重试': 'The parent group no longer exists. Refresh the page and try again.',
+  '单个面板最多 100 个展示分组': 'A status page can contain up to 100 display groups.',
+  '展示分组编号无效或重复': 'Display group IDs must be valid and unique.',
+  '展示分组名称不能为空，且不能超过 200 字节': 'Display group names must be nonempty and at most 200 bytes.',
+  '同一面板中的监控不能重复，编号需为正整数': 'Monitors cannot appear more than once on a page, and their IDs must be positive integers.',
+  'HTTP 版本选项无效': 'Invalid HTTP protocol mode.',
+  '仅 HTTP/3 模式需要 HTTPS 地址': 'HTTP/3-only mode requires an HTTPS URL.',
+  '最大重定向次数应为 0 至 100': 'Maximum redirects must be between 0 and 100.',
+  '请选择有效的 HTTP 请求方法': 'Select a valid HTTP request method.',
+  '请选择至少一种有效状态码，最多 100 项': 'Select at least one accepted status code, up to 100 entries.',
+  '请求体最多 256 KiB，请求头最多 64 KiB': 'The request body must not exceed 256 KiB and headers must not exceed 64 KiB.',
+  '使用身份验证时，请勿重复设置 Authorization 请求头': 'Do not also set the Authorization header when authentication is configured.',
+  '身份验证参数过长': 'The authentication parameters are too long.',
+  'Basic 用户名不能为空且不能包含冒号': 'The Basic username must be nonempty and cannot contain a colon.',
+  'OAuth2 Token URL 应为有效的 HTTP/HTTPS 地址': 'The OAuth2 token URL must be a valid HTTP or HTTPS URL.',
+  'OAuth2 Client ID 和 Secret 不能为空': 'The OAuth2 client ID and secret are required.',
+  'OAuth2 客户端凭据发送方式无效': 'Invalid OAuth2 client credentials method.',
+  'mTLS 需要 HTTPS 地址': 'mTLS requires an HTTPS URL.',
+  '身份验证方式无效': 'Invalid authentication type.',
+  '有效状态码格式应为 200 或 200-299': 'Use a status code such as 200 or a range such as 200-299.',
+  '有效状态码应在 100 至 599 之间，区间起点不能大于终点': 'Status codes must be between 100 and 599, and range starts cannot exceed range ends.',
+  '请求体不是有效 JSON': 'The request body is not valid JSON.',
+  '请求体不是有效的 URL 编码表单': 'The request body is not valid URL-encoded form data.',
+  '请求体编码无效': 'Invalid request body encoding.',
+  '请求头应为 JSON 对象，名称和值均为字符串': 'Headers must be a JSON object with string names and values.',
+  '请求头最多 64 项': 'You can configure up to 64 headers.',
+  '请求头名称或内容包含无效字符': 'A header name or value contains invalid characters.',
+  '每项 PEM 内容最多 64 KiB': 'Each PEM value must not exceed 64 KiB.',
+  'mTLS 证书或私钥无效，请检查 PEM 内容及是否匹配': 'Invalid mTLS certificate or private key. Check the PEM contents and that the key matches the certificate.',
+  'mTLS CA 证书不是有效 PEM': 'The mTLS CA certificate is not valid PEM.',
+}
+
+const patterns: [RegExp, (match: RegExpExecArray) => string][] = [
+  [/^第 (\d+) 项可信代理应为有效的 IP 或 CIDR$/, (match) => `Trusted proxy entry ${match[1]} must be a valid IP address or CIDR.`],
+  [/^(.+) 由系统自动管理$/, (match) => `${match[1]} is managed automatically.`],
+  [/^请求头名称重复：(.+)$/, (match) => `Duplicate header name: ${match[1]}.`],
+]
+
+export function translateApiError(message: string, language: string): string {
+  if (language === 'zh-CN') return message
+  const invalidPrefix = '配置无效：'
+  let prefix = ''
+  let detail = message
+  if (message.startsWith(invalidPrefix)) {
+    prefix = 'Invalid configuration: '
+    detail = message.slice(invalidPrefix.length)
+  }
+  if (Object.hasOwn(englishErrors, detail)) return prefix + englishErrors[detail]
+  for (const [pattern, translate] of patterns) {
+    const match = pattern.exec(detail)
+    if (match) return prefix + translate(match)
+  }
+  return prefix + detail
+}

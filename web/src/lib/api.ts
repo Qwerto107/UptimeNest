@@ -1,4 +1,5 @@
 import { i18n } from '@/i18n'
+import { translateApiError } from '@/locales/api-errors'
 
 export class ApiError extends Error {
   constructor(
@@ -28,7 +29,11 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     if (response.status === 401 && path !== '/admin/session') {
       window.dispatchEvent(new Event('session-expired'))
     }
-    throw new ApiError(data?.error || i18n.global.t('common.requestError'), response.status)
+    let message = i18n.global.t('common.requestError')
+    if (typeof data?.error === 'string' && data.error) {
+      message = translateApiError(data.error, i18n.global.locale.value)
+    }
+    throw new ApiError(message, response.status)
   }
   return data as T
 }

@@ -21,7 +21,7 @@ const trustedProxies = ref('')
 const form = reactive<Settings>({
   siteName: t('common.brand'),
   timezone: 'Asia/Singapore',
-  language: 'zh-CN',
+  language: 'en-US',
   entryPage: 'status',
   userAgent: '',
   retentionDays: 30,
@@ -64,8 +64,8 @@ async function save() {
       trustedProxies: trustedProxies.value.split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
     })
     savedDays.value = Number(form.retentionDays)
-    notify(t('common.saved'))
     await loadBootstrap()
+    notify(t('common.saved'))
   })
 }
 async function cleanup() {
@@ -120,6 +120,7 @@ async function cleanup() {
           </Field>
           <Field id="language" :label="t('settings.language')" :hint="t('settings.languageHint')">
             <select id="language" v-model="form.language" class="control">
+              <option value="en-US">{{ t('settings.enUS') }}</option>
               <option value="zh-CN">{{ t('settings.zhCN') }}</option>
             </select>
           </Field>

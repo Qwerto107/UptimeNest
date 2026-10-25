@@ -1807,3 +1807,11 @@ svg {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+@media (max-width: 600px) {
+  html[lang="en-US"] .pagination-actions {
+    width: 100%;
+  }
+  html[lang="en-US"] .pagination-actions .control {
+    flex-basis: 100%;
+  }
+}
