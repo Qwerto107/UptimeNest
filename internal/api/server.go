@@ -44,6 +44,7 @@ func New(s *store.Store, engine *monitor.Engine, cfg config.Config) http.Handler
 	mux.Handle("DELETE /api/admin/session", a.auth(a.logout))
 	mux.Handle("PUT /api/admin/password", a.auth(a.password))
 	mux.Handle("GET /api/admin/monitors", a.auth(a.monitors))
+	mux.Handle("GET /api/admin/monitors/{id}", a.auth(a.monitor))
 	mux.Handle("POST /api/admin/monitors", a.auth(a.saveMonitor))
 	mux.Handle("PUT /api/admin/monitors/{id}", a.auth(a.saveMonitor))
 	mux.Handle("DELETE /api/admin/monitors/{id}", a.auth(a.deleteMonitor))

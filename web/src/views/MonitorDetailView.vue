@@ -31,15 +31,15 @@ const hasMoreBeats = ref(true)
 const hasMoreLogs = ref(true)
 const { heartbeatCount, resizeHeartbeat } = useHeartbeatCount(60, () => void refresh())
 const { data, loading, error, refresh } = useResource(async (signal) => {
-  const [monitors, groups, beats, logs, settings] = await Promise.all([
-    request<MonitorView[]>(`/admin/monitors?heartbeatCount=${heartbeatCount.value}`, { signal }),
+  const [monitor, groups, beats, logs, settings] = await Promise.all([
+    request<MonitorView>(`/admin/monitors/${id}?heartbeatCount=${heartbeatCount.value}`, { signal }),
     request<Group[]>('/admin/groups', { signal }),
     request<Heartbeat[]>(`/admin/monitors/${id}/heartbeats`, { signal }),
     request<MonitorLog[]>(`/admin/monitors/${id}/logs`, { signal }),
     request<Settings>('/admin/settings', { signal }),
   ])
   return {
-    monitor: monitors.find((m) => m.id === id),
+    monitor,
     groups,
     beats,
     logs,

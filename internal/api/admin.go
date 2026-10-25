@@ -27,6 +27,24 @@ func (a *Server) monitors(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, views)
 }
 
+func (a *Server) monitor(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r)
+	if !ok {
+		return
+	}
+	m, err := a.store.Monitor(r.Context(), id)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	summary, err := a.store.Summary(r.Context(), m, heartbeatCount(r, 60))
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	writeJSON(w, 200, model.MonitorView{Monitor: m, Summary: summary})
+}
+
 func (a *Server) saveMonitor(w http.ResponseWriter, r *http.Request) {
 	var m model.Monitor
 	if !decode(w, r, &m) {
