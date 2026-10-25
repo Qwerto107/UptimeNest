@@ -105,6 +105,7 @@ export interface Settings {
   entryPage: 'status' | 'admin'
   userAgent: string
   retentionDays: number
+  trustedProxies: string[]
 }
 export interface Bootstrap {
   siteName: string

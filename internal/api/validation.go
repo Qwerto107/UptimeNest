@@ -125,5 +125,8 @@ func validateSettings(v model.Settings) error {
 	if v.RetentionDays < 1 || v.RetentionDays > 3650 {
 		return fmt.Errorf("历史保留期限应为 1 至 3650 天")
 	}
+	if _, err := trustedProxyPrefixes(v.TrustedProxies); err != nil {
+		return err
+	}
 	return nil
 }

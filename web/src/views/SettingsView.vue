@@ -12,10 +12,12 @@ import LoadState from '@/components/LoadState.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 const { t } = useI18n()
 const { busy, run } = useAction()
 const cleanupOpen = ref(false)
 const savedDays = ref(30)
+const trustedProxies = ref('')
 const form = reactive<Settings>({
   siteName: t('common.brand'),
   timezone: 'Asia/Singapore',
@@ -23,6 +25,7 @@ const form = reactive<Settings>({
   entryPage: 'status',
   userAgent: '',
   retentionDays: 30,
+  trustedProxies: [],
 })
 const commonTimezones = [
   { value: 'Asia/Singapore', name: 'singapore' },
@@ -50,6 +53,7 @@ watch(data, (value) => {
   if (value) {
     Object.assign(form, value)
     savedDays.value = value.retentionDays
+    trustedProxies.value = (value.trustedProxies || []).join('\n')
   }
 })
 async function save() {
@@ -57,6 +61,7 @@ async function save() {
     await send('/admin/settings', 'PUT', {
       ...form,
       retentionDays: Number(form.retentionDays),
+      trustedProxies: trustedProxies.value.split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
     })
     savedDays.value = Number(form.retentionDays)
     notify(t('common.saved'))
@@ -184,6 +189,23 @@ async function cleanup() {
           </Button>
           <p class="field-hint mt-2">{{ t('settings.cleanupSaveFirst') }}</p>
         </div>
+      </fieldset>
+    </section>
+    <section class="settings-section">
+      <div class="settings-section-title">
+        <span class="settings-code">{{ t('settings.securityCode') }}</span>
+        <h2>{{ t('settings.accessSecurity') }}</h2>
+      </div>
+      <fieldset :disabled="busy" class="settings-fields">
+        <Field id="trusted-proxies" :label="t('settings.trustedProxies')" :hint="t('settings.trustedProxiesHint')">
+          <Textarea
+            id="trusted-proxies"
+            v-model="trustedProxies"
+            :rows="4"
+            maxlength="10100"
+            :placeholder="t('settings.trustedProxiesExample')"
+          />
+        </Field>
       </fieldset>
     </section>
     <div class="settings-save">

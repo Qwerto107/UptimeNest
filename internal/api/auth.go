@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
-	"net"
 	"net/http"
 	"time"
 
@@ -34,7 +33,16 @@ func newToken() (string, error) {
 }
 
 // allowed 限制密码尝试次数，并及时移除过期记录，防止内存无限增长。
-func (a *Server) allowed(r *http.Request) bool {
+func (a *Server) allowed(r *http.Request) (bool, error) {
+	settings, err := a.store.Settings(r.Context())
+	if err != nil {
+		return false, err
+	}
+	trusted, err := trustedProxyPrefixes(settings.TrustedProxies)
+	if err != nil {
+		return false, err
+	}
+	ip := clientIP(r, trusted)
 	a.limitMu.Lock()
 	defer a.limitMu.Unlock()
 	now := time.Now()
@@ -43,20 +51,16 @@ func (a *Server) allowed(r *http.Request) bool {
 			delete(a.attempts, key)
 		}
 	}
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		ip = r.RemoteAddr
-	}
 	v := a.attempts[ip]
 	if v.Count >= 10 || (v.Count == 0 && len(a.attempts) >= 10000) {
-		return false
+		return false, nil
 	}
 	if v.Count == 0 {
 		v.Until = now.Add(15 * time.Minute)
 	}
 	v.Count++
 	a.attempts[ip] = v
-	return true
+	return true, nil
 }
 
 func (a *Server) authenticated(r *http.Request) (bool, error) {
@@ -110,7 +114,22 @@ func (a *Server) session(w http.ResponseWriter, r *http.Request) {
 func (a *Server) setup(w http.ResponseWriter, r *http.Request) {
 	a.setupMu.Lock()
 	defer a.setupMu.Unlock()
-	if !a.allowed(r) {
+	// 初始化完成后不再消耗登录额度，也不重复计算密码哈希。
+	var count int
+	if err := a.store.DB.QueryRowContext(r.Context(), "SELECT COUNT(*) FROM account").Scan(&count); err != nil {
+		fail(w, err)
+		return
+	}
+	if count > 0 {
+		writeError(w, 409, "管理员已设置，请直接登录")
+		return
+	}
+	allowed, err := a.allowed(r)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if !allowed {
 		writeError(w, 429, "尝试次数过多，请 15 分钟后重试")
 		return
 	}
@@ -155,7 +174,12 @@ func validPassword(w http.ResponseWriter, password string) bool {
 }
 
 func (a *Server) login(w http.ResponseWriter, r *http.Request) {
-	if !a.allowed(r) {
+	allowed, err := a.allowed(r)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if !allowed {
 		writeError(w, 429, "尝试次数过多，请 15 分钟后重试")
 		return
 	}
@@ -169,7 +193,7 @@ func (a *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var hash string
-	err := a.store.DB.QueryRowContext(r.Context(), "SELECT password_hash FROM account WHERE id=1").Scan(&hash)
+	err = a.store.DB.QueryRowContext(r.Context(), "SELECT password_hash FROM account WHERE id=1").Scan(&hash)
 	if errors.Is(err, sql.ErrNoRows) {
 		writeError(w, 409, "请先设置管理员密码")
 		return
@@ -218,7 +242,12 @@ func (a *Server) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Server) password(w http.ResponseWriter, r *http.Request) {
-	if !a.allowed(r) {
+	allowed, err := a.allowed(r)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if !allowed {
 		writeError(w, 429, "尝试次数过多，请 15 分钟后重试")
 		return
 	}
