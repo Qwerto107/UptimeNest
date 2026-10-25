@@ -618,24 +618,49 @@ func conflict(err error) error {
 	return err
 }
 
-// Cleanup 按统一截止时间原子清理两类历史，统计查询直接读取清理后的数据。
+// Cleanup 使用统一截止时间分批清理，批次间释放连接；中断后可再次执行。
 func (s *Store) Cleanup(ctx context.Context, days int) (map[string]int64, error) {
 	cutoff := time.Now().Add(-time.Duration(days) * 24 * time.Hour).UnixMilli()
-	tx, err := s.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-	counts := map[string]int64{}
-	for _, item := range []struct{ table, key string }{{"heartbeats", "heartbeats"}, {"monitor_logs", "logs"}} {
-		result, err := tx.ExecContext(ctx, s.Q("DELETE FROM "+item.table+" WHERE time<?"), cutoff)
-		if err != nil {
-			return nil, err
+	counts := map[string]int64{"heartbeats": 0, "logs": 0}
+	for _, item := range []struct{ table, id, time, key string }{
+		{"heartbeats", "id", "time", "heartbeats"},
+		{"monitor_logs", "id", "time", "logs"},
+		{"sessions", "token", "expires", ""},
+	} {
+		before := cutoff
+		if item.table == "sessions" {
+			before = time.Now().UnixMilli()
 		}
-		counts[item.key], _ = result.RowsAffected()
+		for {
+			query := "DELETE FROM " + item.table + " WHERE " + item.id + " IN (SELECT " + item.id + " FROM " + item.table + " WHERE " + item.time + "<? ORDER BY " + item.time + "," + item.id + " LIMIT 500)"
+			result, err := s.DB.ExecContext(ctx, s.Q(query), before)
+			if err != nil {
+				return counts, err
+			}
+			n, err := result.RowsAffected()
+			if err != nil {
+				return counts, err
+			}
+			if item.key != "" {
+				counts[item.key] += n
+			}
+			if n < 500 {
+				// 并发清理可能已经删掉本批选中的行；确认没有剩余过期数据再结束。
+				var remaining bool
+				query = "SELECT EXISTS(SELECT 1 FROM " + item.table + " WHERE " + item.time + "<?)"
+				if err = s.DB.QueryRowContext(ctx, s.Q(query), before).Scan(&remaining); err != nil {
+					return counts, err
+				}
+				if !remaining {
+					break
+				}
+			}
+			select {
+			case <-ctx.Done():
+				return counts, ctx.Err()
+			case <-time.After(time.Millisecond):
+			}
+		}
 	}
-	if _, err = tx.ExecContext(ctx, s.Q("DELETE FROM sessions WHERE expires<?"), time.Now().UnixMilli()); err != nil {
-		return nil, err
-	}
-	return counts, tx.Commit()
+	return counts, nil
 }
