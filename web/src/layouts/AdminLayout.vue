@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import { useEventListener, useMediaQuery } from '@vueuse/core'
 import {
   Activity,
-  Folder,
   PanelsTopLeft,
   Settings2,
   UserRound,
@@ -23,9 +22,7 @@ import { Button } from '@/components/ui/button'
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const autoRefresh = computed(
-  () => route.path.startsWith('/admin/monitors') || route.path === '/admin/groups',
-)
+const autoRefresh = computed(() => route.path.startsWith('/admin/monitors'))
 const mobileMenu = ref(false)
 const compactNav = useMediaQuery('(max-width: 900px)')
 useEventListener(window, 'keydown', (event) => {
@@ -34,7 +31,6 @@ useEventListener(window, 'keydown', (event) => {
 const { busy, run } = useAction()
 const links = [
   { path: '/admin/monitors', label: 'nav.monitors', icon: Activity },
-  { path: '/admin/groups', label: 'nav.groups', icon: Folder },
   { path: '/admin/panels', label: 'nav.panels', icon: PanelsTopLeft },
   { path: '/admin/settings', label: 'nav.settings', icon: Settings2 },
   { path: '/admin/account', label: 'nav.account', icon: UserRound },

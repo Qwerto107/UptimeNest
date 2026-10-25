@@ -11,6 +11,7 @@ const props = withDefaults(
     groups: Group[]
     monitors: MonitorView[]
     visibleIds?: number[]
+    visibleGroupIds?: number[]
     searching?: boolean
   }>(),
   { searching: false },
@@ -29,9 +30,14 @@ type Row =
 const rows = computed(() => {
   const result: Row[] = []
   const visible = new Set(props.visibleIds || props.monitors.map((monitor) => monitor.id))
+  const visibleGroups = new Set(props.visibleGroupIds)
   const visit = (branches: GroupBranch[], depth: number) => {
     for (const branch of branches) {
-      if (props.searching && !branch.descendants.some((monitor) => visible.has(monitor.id)))
+      if (
+        props.searching &&
+        !visibleGroups.has(branch.group.id) &&
+        !branch.descendants.some((monitor) => visible.has(monitor.id))
+      )
         continue
       result.push({ kind: 'group', branch, depth })
       if (collapsed.value.has(branch.group.id)) continue

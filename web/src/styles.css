@@ -347,6 +347,11 @@ svg {
   color: var(--muted-foreground);
   font-size: 13px;
 }
+.monitor-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .mobile-menu-button,
 .sidebar-backdrop {
   display: none;
@@ -498,9 +503,6 @@ svg {
 }
 .monitor-group-row > .row-actions:empty {
   display: none;
-}
-.group-tree .monitor-group-row {
-  min-height: 56px;
 }
 .group-monitor-leaf {
   display: flex;
@@ -1584,26 +1586,26 @@ svg {
     padding-right: 14px;
     gap: 10px;
   }
-  .group-tree .monitor-group-row {
+  .monitor-group-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 6px 10px;
     padding-top: 10px;
     padding-bottom: 10px;
   }
-  .group-tree .monitor-group-toggle {
+  .monitor-group-toggle {
     grid-column: 1;
     grid-row: 1;
   }
-  .group-tree .row-actions {
+  .monitor-group-row > .row-actions {
     grid-column: 2;
     grid-row: 1;
   }
-  .group-tree .group-monitor-count {
+  .group-monitor-count {
     grid-column: 1;
     grid-row: 2;
   }
-  .group-tree .monitor-group-row > .status-badge {
+  .monitor-group-row > .status-badge {
     grid-column: 2;
     grid-row: 2;
     justify-self: end;

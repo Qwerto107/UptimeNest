@@ -27,11 +27,11 @@
 
 ![深色状态页：相同信息结构与夜间配色](docs/assets/status-dark.jpg)
 
-![监控管理：树形分组、子树状态与单项操作](docs/assets/monitors.jpg)
+![监控管理：监控与分组统一管理、子树状态与单项操作](docs/assets/monitors.jpg)
 
 ![监控详情：可用率、响应时间、TLS 与 QUIC 参数及历史心跳](docs/assets/monitor-detail.jpg)
 
-![后台分组：父子关系与分组管理](docs/assets/groups.jpg)
+![监控列表内编辑分组名称和父级](docs/assets/groups.jpg)
 
 ![状态面板：独立展示分组、监控顺序与跨组移动](docs/assets/panels.jpg)
 
