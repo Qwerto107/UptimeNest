@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { request } from '@/lib/api'
+import { loadBootstrap } from '@/composables/useApp'
 import type { Session } from '@/types'
 
 export const router = createRouter({
@@ -43,6 +44,17 @@ export const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  if (to.path === '/') {
+    // 确认路由前解析入口，避免先显示首页标题栏再跳转到状态页。
+    try {
+      const value = await loadBootstrap()
+      if (value.entryPage === 'admin') return '/admin'
+      if (value.defaultPanel) return `/status/${encodeURIComponent(value.defaultPanel)}`
+    } catch {
+      // 入口配置读取失败时，由首页保留错误提示和重试入口。
+    }
+    return true
+  }
   if (!to.meta.admin) return true
   try {
     const session = await request<Session>('/admin/session')
