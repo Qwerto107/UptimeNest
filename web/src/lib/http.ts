@@ -1,9 +1,10 @@
 import type { HTTPOptions } from '@/types'
 
-// 与后端兼容默认值一致，旧监控编辑后不改变既有检测行为。
+// 与后端默认值一致；监控已明确指定的配置由编辑器保留。
 export function defaultHTTPOptions(): HTTPOptions {
   return {
     version: 'standard',
+    connectIP: '',
     ignoreTLS: false,
     maxRedirects: 10,
     validStatusCodes: ['200-299', '300-399'],

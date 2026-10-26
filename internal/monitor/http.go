@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -74,19 +75,29 @@ func probeHTTP(ctx context.Context, m model.Monitor, ua string, h *model.Heartbe
 		}
 	}
 	tcp := &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
 		ForceAttemptHTTP2:     true,
 		DisableKeepAlives:     true,
 		TLSClientConfig:       tlsConfig,
 		ResponseHeaderTimeout: time.Duration(m.Timeout) * time.Second,
 	}
 	defer tcp.CloseIdleConnections()
-	client := &http.Client{Transport: &probeTransport{
+	transport := &probeTransport{
 		tcp:     tcp,
 		version: options.Version,
 		timeout: time.Duration(m.Timeout) * time.Second,
 		beat:    h,
-	}}
+		host:    req.URL.Hostname(),
+		ip:      options.ConnectIP,
+	}
+	tcp.Proxy = transport.proxy
+	if options.ConnectIP != "" {
+		dialer := &net.Dialer{}
+		// 只替换连接地址，URL、Host、TLS SNI 和证书校验继续使用原域名。
+		tcp.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+			return dialer.DialContext(ctx, network, transport.connectAddress(address))
+		}
+	}
+	client := &http.Client{Transport: transport}
 	client.CheckRedirect = func(next *http.Request, via []*http.Request) error {
 		if *options.MaxRedirects == 0 {
 			return http.ErrUseLastResponse

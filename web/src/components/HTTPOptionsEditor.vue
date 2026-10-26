@@ -54,6 +54,20 @@ watch(customCodes, (value) => {
           required
         />
       </Field>
+      <Field
+        id="http-connect-ip"
+        :label="t('http.connectIP')"
+        :hint="t('http.connectIPHint')"
+        class="col-span-full"
+      >
+        <Input
+          id="http-connect-ip"
+          v-model="model.connectIP"
+          :placeholder="t('http.connectIPExample')"
+          maxlength="45"
+          spellcheck="false"
+        />
+      </Field>
       <div class="toggle-row col-span-full">
         <div>
           <label for="http-ignore-tls">{{ t('http.ignoreTLS') }}</label>

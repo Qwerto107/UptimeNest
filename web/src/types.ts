@@ -74,6 +74,7 @@ export interface HTTPAuth {
 
 export interface HTTPOptions {
   version: 'standard' | 'auto' | 'http3'
+  connectIP: string
   ignoreTLS: boolean
   maxRedirects: number
   validStatusCodes: string[]

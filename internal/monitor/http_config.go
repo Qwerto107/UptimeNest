@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -17,6 +18,11 @@ import (
 // ValidateHTTP 校验单项 HTTP 配置，旧监控缺少选项时补齐兼容默认值。
 func ValidateHTTP(m *model.Monitor) error {
 	v := m.HTTPConfig()
+	var err error
+	v.ConnectIP, err = normalizeConnectIP(v.ConnectIP)
+	if err != nil {
+		return err
+	}
 	switch v.Version {
 	case "standard", "auto", "http3":
 	default:
@@ -88,6 +94,18 @@ func ValidateHTTP(m *model.Monitor) error {
 	}
 	m.HTTP = &v
 	return nil
+}
+
+func normalizeConnectIP(value string) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", nil
+	}
+	ip := net.ParseIP(value)
+	if ip == nil {
+		return "", fmt.Errorf("指定连接 IP 应为有效的 IPv4 或 IPv6 地址，不含端口")
+	}
+	return ip.String(), nil
 }
 
 // statusRange 同时接受单个状态码和闭区间，统一限制在 HTTP 状态码范围内。

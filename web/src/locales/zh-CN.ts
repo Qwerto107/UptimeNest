@@ -215,6 +215,12 @@ export default {
     clientKeyHint: '需与证书匹配，使用未加密的 PEM 私钥。',
     caCert: '附加 CA 证书（可选，PEM）',
     caCertHint: '用于信任服务端的私有 CA；保留系统证书校验。',
+
+    connectIPExample: '例如 192.168.0.88 或 2001:db8::1',
+
+    connectIPHint: '可选，填写单个 IPv4 或 IPv6，不含端口。仅对目标域名直连此 IP，保留 Host 和 HTTPS 域名校验；留空使用 DNS。',
+
+    connectIP: '指定连接 IP',
   },
   monitor: {
     totalCaption: 'TOTAL',

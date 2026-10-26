@@ -7,11 +7,14 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/Qwerto107/UptimeNest/internal/model"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
+	"golang.org/x/net/idna"
 )
 
 // probeTransport 在发送 HTTP 请求前完成 QUIC 握手；仅握手失败可自动回退，避免重发 POST。
@@ -20,25 +23,59 @@ type probeTransport struct {
 	version string
 	timeout time.Duration
 	beat    *model.Heartbeat
+	host    string
+	ip      string
+}
+
+// connectAddress 仅覆盖原目标主机，保留请求端口，不影响跳转到其他主机的连接。
+func (t *probeTransport) connectAddress(address string) string {
+	if t.ip == "" {
+		return address
+	}
+	host, port, err := net.SplitHostPort(address)
+	if err != nil || !t.matchesHost(host) {
+		return address
+	}
+	return net.JoinHostPort(t.ip, port)
+}
+
+// proxy 对指定 IP 的目标直接连接，其他主机仍遵循环境代理。
+func (t *probeTransport) proxy(req *http.Request) (*url.URL, error) {
+	if t.ip != "" && t.matchesHost(req.URL.Hostname()) {
+		return nil, nil
+	}
+	return http.ProxyFromEnvironment(req)
+}
+
+// matchesHost 兼容 net/http 拨号时的 IDNA 转换，避免国际化域名漏用指定 IP。
+func (t *probeTransport) matchesHost(host string) bool {
+	if strings.EqualFold(host, t.host) {
+		return true
+	}
+	source, sourceErr := idna.Lookup.ToASCII(t.host)
+	target, targetErr := idna.Lookup.ToASCII(host)
+	return sourceErr == nil && targetErr == nil && strings.EqualFold(source, target)
 }
 
 func (t *probeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	resetTLS(t.beat)
-	if t.version == "standard" || req.URL.Scheme != "https" {
-		if t.version == "http3" {
-			return nil, fmt.Errorf("仅 HTTP/3 模式不能请求非 HTTPS 地址")
-		}
+	if t.version == "http3" && req.URL.Scheme != "https" {
+		return nil, fmt.Errorf("仅 HTTP/3 模式不能请求非 HTTPS 地址")
+	}
+	if req.URL.Scheme != "https" || (t.version != "auto" && t.version != "http3") {
 		return t.tcp.RoundTrip(req)
 	}
-	proxy, err := http.ProxyFromEnvironment(req)
-	if err != nil {
-		return nil, err
-	}
-	if proxy != nil {
-		if t.version == "http3" {
-			return nil, fmt.Errorf("当前环境代理不支持 HTTP/3 UDP 连接")
+	if t.tcp.Proxy != nil {
+		proxy, err := t.tcp.Proxy(req)
+		if err != nil {
+			return nil, err
 		}
-		return t.tcp.RoundTrip(req)
+		if proxy != nil {
+			if t.version == "http3" {
+				return nil, fmt.Errorf("当前环境代理不支持 HTTP/3 UDP 连接")
+			}
+			return t.tcp.RoundTrip(req)
+		}
 	}
 	tlsConfig := t.tcp.TLSClientConfig.Clone()
 	tlsConfig.NextProtos = []string{http3.NextProtoH3}
@@ -56,7 +93,7 @@ func (t *probeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	dialCtx, cancel := context.WithTimeout(req.Context(), budget)
 	start := time.Now()
 	// 不使用 DialAddrEarly，不主动启用 0-RTT；详情只报告连接的真实使用状态。
-	conn, err := quic.DialAddr(dialCtx, net.JoinHostPort(req.URL.Hostname(), port), tlsConfig, &quic.Config{HandshakeIdleTimeout: budget})
+	conn, err := quic.DialAddr(dialCtx, t.connectAddress(net.JoinHostPort(req.URL.Hostname(), port)), tlsConfig, &quic.Config{HandshakeIdleTimeout: budget})
 	cancel()
 	if err != nil {
 		if t.version == "auto" && req.Context().Err() == nil {

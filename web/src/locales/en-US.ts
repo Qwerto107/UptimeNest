@@ -217,6 +217,12 @@ const enUS: typeof zhCN = {
     clientKeyHint: 'Use an unencrypted PEM private key that matches the certificate.',
     caCert: 'Additional CA certificate (optional, PEM)',
     caCertHint: 'Trust a private server CA while retaining system certificate verification.',
+
+    connectIPExample: 'e.g. 192.168.0.88 or 2001:db8::1',
+
+    connectIPHint: 'Optional single IPv4 or IPv6 address without a port. Connect directly for the target hostname while retaining Host and HTTPS hostname verification. Leave empty to use DNS.',
+
+    connectIP: 'Connect to IP',
   },
   monitor: {
     totalCaption: 'TOTAL',
