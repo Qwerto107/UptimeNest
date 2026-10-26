@@ -8,7 +8,7 @@
 
 [快速部署](#快速部署) · [文档中心](docs/README.md) · [API 参考](docs/api.md) · [下载版本](https://github.com/Qwerto107/UptimeNest/releases)
 
-**Go + Vue** · **SQLite / PostgreSQL** · **HTTP(S) / TCP / Ping / DNS**
+**Go + Vue** · **SQLite / PostgreSQL** · **HTTP(S) / WebSocket / TCP / Ping / DNS**
 
 一个容器或一个程序，同时提供状态页、管理后台与 API。
 
@@ -18,24 +18,38 @@
 
 ## 界面一览
 
-状态页按面板独立分组，展示近期心跳、可用率与连接信息，支持浅色和深色主题。
+状态页按面板独立分组，展示近期心跳、可用率与连接信息。后台支持时间范围延迟图表，兼容桌面与手机，提供浅色和深色主题。
 
-![浅色状态页：服务分组、近期心跳与连接信息](docs/assets/status-light.jpg)
+![UptimeNest：状态页、响应延迟图表与移动端展示](docs/assets/product-showcase.png)
+
+*UptimeNest 产品展示图，根据独立演示界面生成。实际布局与配置以下方截图为准。*
 
 <details>
-<summary><strong>查看更多：深色状态页、监控详情、分组、面板与系统设置</strong></summary>
+<summary><strong>查看实际截图：状态页、监控详情、协议配置、分组与系统设置</strong></summary>
 
-![深色状态页：相同信息结构与夜间配色](docs/assets/status-dark.jpg)
+![UptimeNest 浅色状态页：服务分组、近期心跳与连接信息](docs/assets/status-light.jpg)
+
+<table>
+  <tr><th width="75%">深色状态页</th><th width="25%">移动端状态页</th></tr>
+  <tr>
+    <td valign="top"><img src="docs/assets/status-dark.jpg" alt="UptimeNest 深色状态页"></td>
+    <td valign="top"><img src="docs/assets/status-mobile.jpg" alt="UptimeNest 移动端状态页"></td>
+  </tr>
+</table>
 
 ![监控管理：监控与分组统一管理、子树状态与单项操作](docs/assets/monitors.jpg)
 
-![监控详情：可用率、响应时间、TLS 与 QUIC 参数及历史心跳](docs/assets/monitor-detail.jpg)
+![监控详情：可用率、响应时间与七档时间范围的延迟图表](docs/assets/monitor-detail.jpg)
+
+![HTTP 配置：协议模式、指定连接 IP 与成功状态码](docs/assets/http-options.jpg)
+
+![WebSocket 配置：握手与 Ping/Pong、Origin、子协议和指定连接 IP](docs/assets/websocket-options.jpg)
 
 ![监控列表内编辑分组名称和父级](docs/assets/groups.jpg)
 
 ![状态面板：独立展示分组、监控顺序与跨组移动](docs/assets/panels.jpg)
 
-![系统设置：站点名称、时区、入口页面、主题、User-Agent 与历史保留期限](docs/assets/settings.jpg)
+![系统设置：语言、主题、TLS 握手提醒阈值、历史保留与可信代理](docs/assets/settings.jpg)
 
 截图来自当前界面，使用独立演示数据，域名、地址和统计仅作展示，不包含真实凭据。正式版功能以对应 [更新记录](docs/changelog.md) 为准。
 
@@ -46,13 +60,16 @@
 | 能力 | 使用方式 |
 | --- | --- |
 | 常规监控 | HTTP/HTTPS、WebSocket（WS/WSS）、TCP 端口、Ping 和 DNS；自定义间隔、超时、重试及反转模式 |
-| HTTP 请求 | HTTP/3 优先回退或仅 HTTP/3，设置方法、有效状态码、重定向、请求体与请求头 |
+| HTTP 请求 | 手动 HTTP/1.1、HTTP/2、HTTP/3 或两种自动协商；指定连接 IP，配置方法、状态码、重定向、请求体与请求头 |
+| WebSocket | WS/WSS 握手或 Ping/Pong 检测，支持 Origin、子协议、请求头及指定连接 IP |
 | 请求验证 | Basic、OAuth2 客户端凭据和 PEM 格式 mTLS |
 | 连接详情 | TLS/HTTP 版本、握手耗时、证书剩余有效期及签发者组织；展开查看密钥交换与加密套件，HTTP/3 额外显示 QUIC 版本和实际 0-RTT 使用状态 |
+| 监控操作 | 复制现有配置创建独立监控，从分组加号直接创建组内监控 |
 | 后台分组 | 父子树形管理、展开折叠、父组汇总子树状态、调整监控归属 |
 | 状态面板 | 多独立路径、默认面板、自定义标题、独立展示分组、实时拖拽及按钮排序、按项隐藏地址 |
+| 延迟图表 | 后台支持 1、3、6、12、24 小时及 3、7 天范围，展示平均值、P95、峰值和故障记录 |
 | 历史数据 | 查看心跳及日志、按项独立清空、保留期限与自动／手动过期清理 |
-| 系统设置 | 站点名称、列表选择时区、入口页面、全局 HTTP User-Agent、浅色／深色主题 |
+| 系统设置 | 站点名称、时区、界面语言、入口、User-Agent、TLS 握手提醒阈值和浅色／深色主题 |
 | 账户管理 | 首次设置管理员密码、登录、修改密码及会话撤销 |
 | 数据库 | SQLite 或 PostgreSQL 独立运行，启动时执行版本化迁移 |
 
@@ -88,8 +105,9 @@ Windows、外部数据库、HTTPS 和升级步骤见 [部署指南](docs/deploym
 
 ## 支持范围
 
-- 前后台心跳条使用固定细条和间距，按容器宽度显示最新一段检测记录；可用率与平均响应时间按近 24 小时计算，不代表心跳条覆盖的时间。
+- 前后台心跳条按容器宽度显示最近的检测记录。汇总可用率与平均响应时间按近 24 小时计算；后台延迟图表按所选时间范围统计，受历史保留设置限制。
 - HTTP/3 需要 HTTPS 及 UDP 连通；自动模式仅在 QUIC 连接建立失败时回退，不重发已经发出的请求。
+- WebSocket 握手与 Ping/Pong 用于检查协议连接，响应延迟包含连接及所选检测步骤；WSS 始终校验证书。
 - Ping 使用系统命令。容器已提供 Ping，直接运行程序时需要系统安装 `ping` 并允许 ICMP。
 - 面板为公开展示页面；地址可逐项隐藏，完整请求配置和验证凭据仅管理员可见。
 - 当前按单应用实例运行，SQLite 使用本机磁盘。界面支持英语与简体中文，新安装默认英语，支持手动切换浅色／深色主题。

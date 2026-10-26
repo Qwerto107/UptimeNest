@@ -34,7 +34,7 @@
 | GET | `/api/public/panels/:slug` | 当前面板信息、展示监控、所属分组和真实统计 |
 | GET | `/api/health` | 数据库可用时返回 `{ "status": "ok" }` |
 
-访客监控仅包含 `id`、`name`、`type`、`protocol`、可选的 `address`、`description`、`tags`、`summary`。`groups` 返回当前面板的独立展示分组（`id`、`name`、`monitorIds`），不返回后台 `groupId` 或父子结构。`protocol` 为配置的检测协议（HTTP、HTTPS、TCP、PING 或 DNS），不依赖最近一次检测是否成功。`address` 仅包含主机名/IP 及端口；`hideAddress: true` 时省略，不返回完整 URL 路径、查询参数、检测参数或内部错误消息。
+访客监控仅包含 `id`、`name`、`type`、`protocol`、可选的 `address`、`description`、`tags`、`summary`。`groups` 返回当前面板的独立展示分组（`id`、`name`、`monitorIds`），不返回后台 `groupId` 或父子结构。`protocol` 为配置的检测协议（HTTP、HTTPS、WS、WSS、TCP、PING 或 DNS），不依赖最近一次检测是否成功。`address` 仅包含主机名/IP 及端口；`hideAddress: true` 时省略，不返回完整 URL 路径、查询参数、检测参数或内部错误消息。
 
 `summary` 包含 `status`、`uptime`、`average`、`latest` 和按时间升序排列的 `heartbeats`。公开面板与后台监控列表支持查询参数 `heartbeatCount`（1～1000），供界面按容器容量补取最近记录；未传或无效时，公开接口默认 90 条、后台默认 60 条，超出上限时截取为 1000。两者的 `uptime` 和 `average` 仍按近 24 小时计算，无数据时为 `null`。状态为 `up`、`down`、`unknown` 或 `paused`。
 
@@ -50,7 +50,7 @@
 | DELETE | `/api/admin/session` | 无；退出当前会话 |
 | PUT | `/api/admin/password` | `{ "current": "...", "password": "..." }` |
 
-登录与首次设置成功后写入 HttpOnly、SameSite=Strict Cookie。后续管理接口需要该 Cookie。密码尝试按客户端连接地址限流，每 15 分钟最多 10 次；反向代理场景下同一代理后的客户端共用额度。
+登录与首次设置成功后写入 HttpOnly、SameSite=Strict Cookie。后续管理接口需要该 Cookie。密码尝试按可信代理规则识别出的客户端 IP 限流，每 15 分钟最多 10 次；未配置可信代理时使用连接地址。
 
 ## 监控管理
 
@@ -93,7 +93,7 @@
 
 监控类型为 `http`（包括 HTTPS）、`websocket`（WS/WSS）、`tcp`、`ping`、`dns`。`groupId: 0` 表示未分组。心跳间隔为 5–86400 秒，超时 1–120 秒，重试 0–10 次，重试间隔 1–3600 秒。
 
-心跳、日志查询支持 `?limit=100&before=记录ID`。默认每页 100 条，上限 200 条；下一页传上一页最后一条的 ID。时间使用 Unix 毫秒。
+心跳、日志查询支持 `?limit=100&before=记录ID&beforeTime=记录时间`。默认每页 100 条，有效范围为 1～200，超出范围回退为 100。下一页传上一页最后一条的 ID 和时间，按时间与 ID 联合分页；只传 ID 的旧请求仍兼容，由服务端查找该记录的时间。时间使用 Unix 毫秒。
 
 延迟接口使用 `?range=24h`，支持 `1h`、`3h`、`6h`、`12h`、`24h`、`3d`、`1w`，省略时默认 `24h`，其他值返回 400。响应包含请求时段 `start`、`end`，受历史保留设置限制后的查询起点 `availableStart`，原始检测总数 `total`、故障次数 `failures`，以及 `statistics` 和 `buckets`。该接口需要管理员登录，不改变公开状态页的数据范围。
 
@@ -205,6 +205,7 @@ GET 响应额外包含只读字段 `clientIP`，表示按已保存的可信代�
   "entryPage": "status",
   "userAgent": "",
   "tlsLatencyWarningMs": 0,
+  "trustedProxies": [],
   "retentionDays": 30
 }
 ```
@@ -212,5 +213,7 @@ GET 响应额外包含只读字段 `clientIP`，表示按已保存的可信代�
 `siteName` 最多 100 个字符，留空使用 `UptimeNest`，用于界面品牌及所有页面的浏览器标题；bootstrap 公开返回该字段。`timezone` 使用 IANA 时区，新安装默认 `Asia/Singapore`，已保存值保留。`entryPage` 为 `status` 或 `admin`。UA 留空使用 `UptimeNest`。保留期限为 1–3650 天，新安装默认 30 天，已保存值保留。
 
 `tlsLatencyWarningMs` 为 0～120000 的整数，单位毫秒，默认 0（关闭）。公开 bootstrap 返回此展示设置，状态页仅在最新 TLS 握手耗时严格大于正阈值时使用琥珀色提示；等于阈值、低于阈值或关闭时均为中性色。它不改变检测状态、超时、重试或历史统计。旧配置缺少此字段时默认关闭。
+
+`trustedProxies` 为最多 100 项的 IP 或 CIDR 数组。仅当连接来源可信时才解析转发头，优先按 `X-Forwarded-For` 的代理链识别客户端，缺少该头时使用有效的 `X-Real-IP`。留空时使用连接地址；配置不通过访客接口返回。
 
 POST `/api/admin/cleanup` 无请求体，按已保存期限清理过期数据，返回 `{ "heartbeats": 0, "logs": 0 }`。
