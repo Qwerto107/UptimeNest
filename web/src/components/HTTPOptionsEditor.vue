@@ -41,7 +41,7 @@ watch(customCodes, (value) => {
           id="http-version"
           v-model="model.version"
           :disabled="busy"
-          :options="(['standard', 'auto', 'http3'] as const).map((version) => ({ value: version, label: t('http.version_' + version) }))"
+          :options="(['http1', 'http2', 'http3', 'standard', 'auto'] as const).map((version) => ({ value: version, label: t('http.version_' + version) }))"
         />
       </Field>
       <Field id="http-redirects" :label="t('http.redirects')" :hint="t('http.redirectsHint')">

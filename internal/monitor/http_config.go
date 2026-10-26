@@ -24,7 +24,7 @@ func ValidateHTTP(m *model.Monitor) error {
 		return err
 	}
 	switch v.Version {
-	case "standard", "auto", "http3":
+	case "http1", "http2", "http3", "standard", "auto":
 	default:
 		return fmt.Errorf("HTTP 版本选项无效")
 	}

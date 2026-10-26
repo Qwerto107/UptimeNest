@@ -173,10 +173,10 @@ const enUS: typeof zhCN = {
     ignoreTLSHint: 'Skip certificate chain and hostname verification for this monitor’s HTTPS requests only. Off by default.',
     options: 'HTTP options',
     version: 'HTTP protocol mode',
-    version_standard: 'Negotiate HTTP/1.1 or HTTP/2',
-    version_auto: 'Prefer HTTP/3 with fallback',
-    version_http3: 'HTTP/3 only',
-    versionHint: 'HTTP/3 requires HTTPS and UDP connectivity. Automatic mode uses HTTP/1.1 or HTTP/2 when an environment proxy is configured.',
+    version_standard: 'Automatic (h2 > h1.1)',
+    version_auto: 'Automatic (h3 > h2 > h1.1)',
+    version_http3: 'HTTP/3 (h3)',
+    versionHint: 'Manual modes do not downgrade. Cleartext HTTP/2 requires h2c support; HTTP/3 requires HTTPS and UDP. Automatic modes use h2 > h1.1 when using an environment proxy.',
     redirects: 'Maximum redirects',
     redirectsHint: 'Maximum number of redirects to follow. Set to 0 to disable redirects.',
     statusCodes: 'Accepted status codes',
@@ -223,6 +223,10 @@ const enUS: typeof zhCN = {
     connectIPHint: 'Optional single IPv4 or IPv6 address without a port. Connect directly for the target hostname while retaining Host and HTTPS hostname verification. Leave empty to use DNS.',
 
     connectIP: 'Connect to IP',
+
+    version_http2: 'HTTP/2 (h2)',
+
+    version_http1: 'HTTP/1.1',
   },
   monitor: {
     totalCaption: 'TOTAL',

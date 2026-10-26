@@ -36,6 +36,19 @@ func probeHTTP(ctx context.Context, m model.Monitor, ua string, h *model.Heartbe
 	}
 	// 仅按单项配置跳过检测目标的证书校验；OAuth2 令牌请求仍单独校验证书。
 	tlsConfig.InsecureSkipVerify = options.IgnoreTLS
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(options.Version != "http2")
+	protocols.SetHTTP2(options.Version != "http1")
+	if options.Version == "http2" {
+		protocols.SetUnencryptedHTTP2(true)
+		// 服务端未返回 ALPN 时也必须拒绝，避免仅 HTTP/2 模式悄然发送 HTTP/1.1 请求。
+		tlsConfig.VerifyConnection = func(state tls.ConnectionState) error {
+			if state.NegotiatedProtocol != "h2" {
+				return fmt.Errorf("服务器未协商 HTTP/2，无法使用仅 HTTP/2 模式")
+			}
+			return nil
+		}
+	}
 	var tlsStart time.Time
 	trace := &httptrace.ClientTrace{
 		TLSHandshakeStart: func() { resetTLS(h); tlsStart = time.Now() },
@@ -75,7 +88,7 @@ func probeHTTP(ctx context.Context, m model.Monitor, ua string, h *model.Heartbe
 		}
 	}
 	tcp := &http.Transport{
-		ForceAttemptHTTP2:     true,
+		Protocols:             protocols,
 		DisableKeepAlives:     true,
 		TLSClientConfig:       tlsConfig,
 		ResponseHeaderTimeout: time.Duration(m.Timeout) * time.Second,

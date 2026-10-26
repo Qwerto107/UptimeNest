@@ -170,10 +170,10 @@ export default {
     ignoreTLSHint: '跳过检测目标的证书链及域名校验；仅对本监控的 HTTPS 请求生效，默认关闭。',
     options: 'HTTP 选项',
     version: 'HTTP 协议模式',
-    version_standard: 'HTTP/1.1 / HTTP/2 自动协商',
-    version_auto: '优先 HTTP/3，连接失败时回退',
-    version_http3: '仅 HTTP/3',
-    versionHint: 'HTTP/3 需要 HTTPS 和 UDP 连通。存在环境代理时自动模式使用 HTTP/1.1 / HTTP/2。',
+    version_standard: '自动协商（h2 > h1.1）',
+    version_auto: '自动协商（h3 > h2 > h1.1）',
+    version_http3: 'HTTP/3（h3）',
+    versionHint: '手动模式不降级。明文 HTTP/2 需要服务端支持 h2c；HTTP/3 需要 HTTPS 和 UDP。使用环境代理时，自动模式协商 h2 > h1.1。',
     redirects: '最大重定向次数',
     redirectsHint: '允许的最大重定向次数，设置为 0 禁用重定向。',
     statusCodes: '有效状态码',
@@ -221,6 +221,10 @@ export default {
     connectIPHint: '可选，填写单个 IPv4 或 IPv6，不含端口。仅对目标域名直连此 IP，保留 Host 和 HTTPS 域名校验；留空使用 DNS。',
 
     connectIP: '指定连接 IP',
+
+    version_http2: 'HTTP/2（h2）',
+
+    version_http1: 'HTTP/1.1',
   },
   monitor: {
     totalCaption: 'TOTAL',

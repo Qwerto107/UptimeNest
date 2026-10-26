@@ -73,7 +73,7 @@ export interface HTTPAuth {
 }
 
 export interface HTTPOptions {
-  version: 'standard' | 'auto' | 'http3'
+  version: 'http1' | 'http2' | 'http3' | 'standard' | 'auto'
   connectIP: string
   ignoreTLS: boolean
   maxRedirects: number

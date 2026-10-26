@@ -28,7 +28,7 @@ type Monitor struct {
 	HTTP          *HTTPOptions `json:"http,omitempty"`
 }
 
-// HTTPOptions 保存单项 HTTP 检测配置；省略时保持旧监控的默认行为。
+// HTTPOptions 保存单项 HTTP 检测配置；省略的字段由 HTTPConfig 补齐默认值。
 type HTTPOptions struct {
 	Version          string   `json:"version"`
 	ConnectIP        string   `json:"connectIP,omitempty"`
@@ -64,7 +64,7 @@ func (m Monitor) HTTPConfig() HTTPOptions {
 		v = *m.HTTP
 	}
 	if v.Version == "" {
-		v.Version = "standard"
+		v.Version = "auto"
 	}
 	if v.Method == "" {
 		v.Method = "GET"
