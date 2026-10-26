@@ -52,6 +52,7 @@ const status = ref('all')
 const editorOpen = ref(false)
 const selected = ref<MonitorView | null>(null)
 const duplicating = ref(false)
+const newMonitorGroup = ref(0)
 const deleteOpen = ref(false)
 const deleting = ref<MonitorView | null>(null)
 const groupEditorOpen = ref(false)
@@ -121,9 +122,10 @@ const overview = computed(() => {
     { key: 'paused', count: monitors.filter((monitor) => !monitor.enabled).length },
   ]
 })
-function edit(monitor: MonitorView | null, duplicate = false) {
+function edit(monitor: MonitorView | null, duplicate = false, initialGroupId = 0) {
   selected.value = monitor
   duplicating.value = duplicate
+  newMonitorGroup.value = initialGroupId
   editorOpen.value = true
 }
 function askDelete(monitor: MonitorView) {
@@ -262,11 +264,21 @@ async function toggle(monitor: MonitorView) {
             variant="ghost"
             size="icon"
             :disabled="busy"
+            :aria-label="t('group.addMonitor', { name: group.name })"
+            :title="t('group.addMonitor', { name: group.name })"
+            @click="edit(null, false, group.id)"
+          >
+            <Plus />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            :disabled="busy"
             :aria-label="t('group.addChild', { name: group.name })"
             :title="t('group.addChild', { name: group.name })"
             @click="editGroup(null, group.id)"
           >
-            <Plus />
+            <FolderPlus />
           </Button>
           <Button
             variant="ghost"
@@ -377,6 +389,7 @@ async function toggle(monitor: MonitorView) {
     v-model:open="editorOpen"
     :monitor="selected"
     :duplicate="duplicating"
+    :initial-group-id="newMonitorGroup"
     :groups="data?.groups || []"
     @saved="refresh"
   />

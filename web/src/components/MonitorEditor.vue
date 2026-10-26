@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Select } from '@/components/ui/select'
 const open = defineModel<boolean>('open', { required: true })
-const props = defineProps<{ monitor?: Monitor | null; groups: Group[]; duplicate?: boolean }>()
+const props = defineProps<{ monitor?: Monitor | null; groups: Group[]; duplicate?: boolean; initialGroupId?: number }>()
 const emit = defineEmits<{ saved: [] }>()
 const { t } = useI18n()
 const groupOptions = computed(() => groupChoices(props.groups))
@@ -44,7 +44,7 @@ function defaults(): Monitor {
     invert: false,
     description: '',
     tags: [],
-    groupId: 0,
+    groupId: props.initialGroupId ?? 0,
     enabled: true,
     http: defaultHTTPOptions(),
     websocket: defaultWebSocketOptions(),

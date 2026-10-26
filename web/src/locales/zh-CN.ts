@@ -356,6 +356,8 @@ export default {
       '删除“{name}”后，直属监控移至未分组，子分组上移一级；监控及历史、各状态页分组保留。',
     nameExample: '例如：基础设施',
     manage: '管理组内监控',
+
+    addMonitor: '在 {name} 下添加监控',
   },
   panel: {
     title: '状态面板',

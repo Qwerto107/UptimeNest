@@ -356,6 +356,8 @@ const enUS: typeof zhCN = {
     deleteDescription: 'Delete “{name}”. Direct monitors become ungrouped, and child groups move up one level. Monitors, history, and status page groups are kept.',
     nameExample: 'e.g. Infrastructure',
     manage: 'Manage monitors in this group',
+
+    addMonitor: 'Add a monitor to {name}',
   },
   panel: {
     title: 'Status pages',
