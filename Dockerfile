@@ -4,7 +4,8 @@ WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY web/ ./
-RUN npm run build
+ARG BUILD_COMMIT
+RUN BUILD_COMMIT="$BUILD_COMMIT" npm run build
 WORKDIR /src
 COPY scripts/ ./scripts/
 RUN node scripts/prepare-webui.mjs
