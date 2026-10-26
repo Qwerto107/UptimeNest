@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { LayoutDashboard, RefreshCw } from 'lucide-vue-next'
+import { LayoutDashboard } from 'lucide-vue-next'
 import type { PublicPanel, PublicMonitor, MonitorStatus } from '@/types'
 import { request } from '@/lib/api'
-import { loadBootstrap, siteName, timezone } from '@/composables/useApp'
+import { bootstrap, loadBootstrap, siteName, timezone } from '@/composables/useApp'
 import { useResource } from '@/composables/useResource'
 import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
 import { formatTime, percent } from '@/lib/format'
@@ -17,6 +17,11 @@ import HeartbeatStrip from '@/components/HeartbeatStrip.vue'
 import LatencyHistoryChart from '@/components/LatencyHistoryChart.vue'
 import ConnectionDetails from '@/components/ConnectionDetails.vue'
 import StatusConnectionMeta from '@/components/StatusConnectionMeta.vue'
+import StatusSignal from '@/components/StatusSignal.vue'
+import FailureHighlight from '@/components/FailureHighlight.vue'
+import AnimatedValue from '@/components/AnimatedValue.vue'
+import RefreshIcon from '@/components/RefreshIcon.vue'
+import { useMotion } from '@/composables/useMotion'
 import '@/styles/status.css'
 import PaginationControls from '@/components/PaginationControls.vue'
 import { usePagination } from '@/composables/usePagination'
@@ -25,9 +30,11 @@ const { t } = useI18n()
 const route = useRoute()
 const updatedAt = ref<number>()
 const expanded = ref<number[]>([])
+const pageElement = ref<HTMLElement>()
+const { animate, reducedMotion } = useMotion()
 const { heartbeatCount, resizeHeartbeat } = useHeartbeatCount(90, () => void refresh())
 
-const { data, loading, error, refresh, refreshing } = useResource(async (signal) => {
+const { data, loading, error, refresh, refreshing, secondsUntilRefresh } = useResource(async (signal) => {
   const [value] = await Promise.all([
     request<PublicPanel>(
       '/public/panels/' +
@@ -81,9 +88,43 @@ const groups = computed(() => {
     .filter((group) => group.monitors.length)
 })
 
-function toggle(id: number) {
+async function toggle(id: number) {
+  // 只插值位置和卡片底板的缩放，正文保持原始比例，不动画化布局宽高。
+  const elements = reducedMotion.value === 'reduce' ? [] : [...(pageElement.value?.querySelectorAll<HTMLElement>('.pulse-service, .pulse-group-heading, .pulse-list-surface, .list-pagination, .pulse-footer') || [])]
+  const before = elements.map((element) => ({ element, rect: element.getBoundingClientRect() }))
   if (expanded.value.includes(id)) expanded.value = expanded.value.filter((value) => value !== id)
   else expanded.value.push(id)
+  await nextTick()
+  for (const { element, rect } of before) {
+    if (!element.isConnected) continue
+    const after = element.getBoundingClientRect()
+    const dy = rect.top - after.top
+    const scale = element.classList.contains('pulse-list-surface') && after.height ? rect.height / after.height : 1
+    if (Math.abs(dy) < .5 && Math.abs(scale - 1) < .001) continue
+    animate(element, [{ transform: `translateY(${dy}px) scaleY(${scale})` }, { transform: 'translateY(0) scaleY(1)' }], 260)
+  }
+}
+
+function finish(animation: Animation | undefined, done: () => void) {
+  if (animation) void animation.finished.then(done, done)
+  else done()
+}
+function resetDetails(element: Element) {
+  const style = (element as HTMLElement).style
+  for (const property of ['position', 'top', 'left', 'width', 'margin-top', 'pointer-events']) style.removeProperty(property)
+}
+function enterDetails(element: Element, done: () => void) {
+  resetDetails(element)
+  finish(animate(element, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }], 200, 60), done)
+}
+function leaveDetails(element: Element, done: () => void) {
+  const node = element as HTMLElement
+  if (reducedMotion.value === 'reduce' || !node.parentElement) { done(); return }
+  const rect = node.getBoundingClientRect()
+  const parent = node.parentElement.getBoundingClientRect()
+  // 离场内容临时脱离文档流，下方各行通过 FLIP 移回新位置。
+  Object.assign(node.style, { position: 'absolute', top: `${rect.top - parent.top}px`, left: `${rect.left - parent.left}px`, width: `${rect.width}px`, marginTop: '0', pointerEvents: 'none' })
+  finish(animate(node, [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-4px)' }], 180), done)
 }
 
 function statusLabel(status: MonitorStatus) {
@@ -98,7 +139,7 @@ function protocol(monitor: PublicMonitor) {
 </script>
 
 <template>
-  <div class="pulse-page">
+  <div ref="pageElement" class="pulse-page">
     <div class="pulse-container">
       <header class="pulse-header">
         <RouterLink class="pulse-brand" to="/" :aria-label="t('common.home')">
@@ -137,15 +178,12 @@ function protocol(monitor: PublicMonitor) {
         </p>
       </header>
 
-      <LoadState :loading="loading" :error="error" :has-data="!!data" @retry="refresh" />
+      <LoadState :loading="loading" :error="error" :has-data="!!data" skeleton="status" @retry="refresh" />
 
       <template v-if="data">
         <section class="pulse-summary" :class="'pulse-summary-' + overall" aria-live="polite">
           <div class="pulse-summary-main">
-            <span class="pulse-signal" aria-hidden="true">
-              <span v-if="overall === 'up'" class="pulse-signal-wave" />
-              <span class="pulse-signal-dot" />
-            </span>
+            <StatusSignal :status="overall" />
             <div>
               <h1 class="pulse-summary-title">{{ statusCopy.title }}</h1>
               <p class="pulse-updated">
@@ -163,6 +201,8 @@ function protocol(monitor: PublicMonitor) {
               </p>
             </div>
           </div>
+          <div class="pulse-refresh-controls">
+          <span class="pulse-next-refresh pulse-mono" :title="t('status.refreshCountdown', { seconds: secondsUntilRefresh })">{{ refreshing ? t('status.refreshing') : `${secondsUntilRefresh}s` }}</span>
           <button
             class="pulse-refresh"
             type="button"
@@ -171,8 +211,9 @@ function protocol(monitor: PublicMonitor) {
             :title="t('common.refresh')"
             @click="refresh"
           >
-            <RefreshCw :size="14" :class="{ 'animate-spin': refreshing }" />
+            <RefreshIcon :size="14" :refreshing="refreshing" />
           </button>
+          </div>
         </section>
 
         <main class="pulse-main">
@@ -184,10 +225,11 @@ function protocol(monitor: PublicMonitor) {
           <section v-for="group in groups" :key="group.id" class="pulse-group">
             <div class="pulse-group-heading">
               <h2>{{ group.name }}</h2>
-              <span>{{ t('status.recentChecks') }}</span>
             </div>
             <div class="pulse-service-list">
+              <div class="pulse-list-surface" aria-hidden="true" />
               <article v-for="monitor in group.monitors" :key="monitor.id" class="pulse-service">
+                <FailureHighlight :status="monitor.summary.status" />
                 <div class="pulse-service-heading">
                   <div class="pulse-service-name-line">
                     <button
@@ -206,14 +248,14 @@ function protocol(monitor: PublicMonitor) {
                   </div>
                   <div class="pulse-service-result">
                     <span
-                      class="pulse-uptime pulse-mono"
+                      class="pulse-uptime"
                       :title="t('status.uptimeShort')"
                       :aria-label="t('status.uptimeShort') + ' ' + percent(monitor.summary.uptime)"
                     >
-                      {{ percent(monitor.summary.uptime) }}
+                      <AnimatedValue class="pulse-mono" :value="percent(monitor.summary.uptime)" />
                     </span>
                     <span class="pulse-state" :class="'pulse-state-' + monitor.summary.status">
-                      <span aria-hidden="true" />
+                      <StatusSignal :status="monitor.summary.status" />
                       {{ statusLabel(monitor.summary.status) }}
                     </span>
                   </div>
@@ -224,9 +266,9 @@ function protocol(monitor: PublicMonitor) {
                 <div v-if="monitor.tags.length" class="pulse-tags">
                   <span v-for="tag in monitor.tags" :key="tag">{{ tag }}</span>
                 </div>
-                <StatusConnectionMeta :beat="monitor.summary.latest" />
+                <StatusConnectionMeta :beat="monitor.summary.latest" :tls-latency-warning-ms="bootstrap?.tlsLatencyWarningMs ?? 0" />
                 <HeartbeatStrip :beats="monitor.summary.heartbeats" @capacity="resizeHeartbeat" />
-                <Transition name="pulse-details">
+                <Transition :css="false" @enter="enterDetails" @leave="leaveDetails" @leave-cancelled="resetDetails">
                   <div
                     v-if="expanded.includes(monitor.id)"
                     :id="'connection-' + monitor.id"
@@ -242,9 +284,6 @@ function protocol(monitor: PublicMonitor) {
             </div>
           </section>
 
-          <div v-if="monitors.length" class="pulse-history-note">
-            <span>{{ t('status.uptimeShort') }}</span>
-          </div>
           <PaginationControls v-model:page="page" v-model:pageSize="pageSize" :total="monitors.length" :label="t('pagination.services')" />
         </main>
 
