@@ -115,7 +115,6 @@ export default {
     averageHint: '最近 24 小时正常检测的响应时间均值，不含反转监控。',
     uptimeHint: '对本面板有数据的服务取近 24 小时可用率的平均值。',
     heartbeat: '最近 {count} 次检测',
-    recentChecks: '最近检测',
     serviceName: '服务名称',
     legendUp: '正常',
     legendDown: '故障',
@@ -190,6 +189,8 @@ export default {
     },
 
     latencyRange: '响应延迟时间范围',
+
+    handshakeWarning: 'TLS 握手 {value}，超过管理员设置的 {threshold} 提醒阈值',
   },
   http: {
     ignoreTLS: '忽略 HTTPS 站点的 TLS/SSL 错误',
@@ -463,6 +464,10 @@ export default {
     confirmPassword: '确认新密码',
     passwordChanged: '密码已修改，其他登录会话已失效',
     passwordHint: '修改后，其他浏览器的管理员会话将失效。',
+
+    tlsLatencyWarningHint: '填写 0–120000 的整数，0 表示关闭（默认）。状态页仅在 TLS 握手耗时超过此值时标为琥珀色；只影响显示，不改变监控状态。',
+
+    tlsLatencyWarning: 'TLS 握手延迟提醒阈值（ms）',
   },
 
     websocket: {

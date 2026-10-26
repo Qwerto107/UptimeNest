@@ -132,6 +132,9 @@ func validateSettings(v model.Settings) error {
 	if v.RetentionDays < 1 || v.RetentionDays > 3650 {
 		return fmt.Errorf("历史保留期限应为 1 至 3650 天")
 	}
+	if v.TLSLatencyWarningMS < 0 || v.TLSLatencyWarningMS > 120000 {
+		return fmt.Errorf("TLS 握手延迟提醒阈值应为 0 至 120000 毫秒，0 表示关闭")
+	}
 	if _, err := trustedProxyPrefixes(v.TrustedProxies); err != nil {
 		return err
 	}

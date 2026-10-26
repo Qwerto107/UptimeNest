@@ -1,5 +1,6 @@
 // 保持现有接口错误格式兼容，仅翻译已知提示；未知诊断详情保留原文。
 const englishErrors: Record<string, string> = {
+  'TLS 握手延迟提醒阈值应为 0 至 120000 毫秒，0 表示关闭': 'The TLS handshake warning threshold must be between 0 and 120000 ms; 0 disables it.',
   '请输入有效的 WS/WSS 地址，不允许携带账户密码或片段': 'Enter a valid WS/WSS URL without embedded credentials or a fragment.',
   'WebSocket 端口应为 1 至 65535': 'The WebSocket port must be between 1 and 65535.',
   'WebSocket 检测模式无效': 'Invalid WebSocket check mode.',

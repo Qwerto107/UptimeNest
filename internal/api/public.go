@@ -38,7 +38,7 @@ func (a *Server) bootstrap(w http.ResponseWriter, r *http.Request) {
 			defaultSlug = p.Slug
 		}
 	}
-	writeJSON(w, 200, map[string]any{"siteName": v.SiteName, "timezone": v.Timezone, "language": v.Language, "entryPage": v.EntryPage, "defaultPanel": defaultSlug, "panels": items})
+	writeJSON(w, 200, map[string]any{"siteName": v.SiteName, "timezone": v.Timezone, "language": v.Language, "entryPage": v.EntryPage, "defaultPanel": defaultSlug, "panels": items, "tlsLatencyWarningMs": v.TLSLatencyWarningMS})
 }
 
 // publicHeartbeatPoint 保留曲线所需的轻量数据，仅为可识别的故障补充脱敏分类。

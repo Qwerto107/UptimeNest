@@ -25,6 +25,7 @@ const form = reactive<Settings>({
   language: 'en-US',
   entryPage: 'status',
   userAgent: '',
+  tlsLatencyWarningMs: 0,
   retentionDays: 30,
   trustedProxies: [],
 })
@@ -80,6 +81,7 @@ async function save() {
     await send('/admin/settings', 'PUT', {
       ...form,
       retentionDays: Number(form.retentionDays),
+      tlsLatencyWarningMs: Number(form.tlsLatencyWarningMs),
       trustedProxies: trustedProxies.value.split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
     })
     savedDays.value = Number(form.retentionDays)
@@ -179,6 +181,9 @@ async function cleanup() {
             placeholder="UptimeNest"
             maxlength="500"
           />
+        </Field>
+        <Field id="tls-latency-warning" :label="t('settings.tlsLatencyWarning')" :hint="t('settings.tlsLatencyWarningHint')">
+          <Input id="tls-latency-warning" v-model.number="form.tlsLatencyWarningMs" type="number" min="0" max="120000" step="1" required />
         </Field>
       </fieldset>
     </section>

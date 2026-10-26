@@ -15,12 +15,12 @@
   --pulse-warning: #92400e;
   --pulse-warning-soft: rgb(245 158 11 / 22%);
   --pulse-pill: #eef1f5;
-  --pulse-ca-text: #6d28d9;
-  --pulse-ca-soft: #f3e8ff;
-  --pulse-tls-text: #1d4ed8;
-  --pulse-tls-soft: #dbeafe;
-  --pulse-http-text: #0e7490;
-  --pulse-http-soft: #cffafe;
+  --pulse-protocol-text: #1d4ed8;
+  --pulse-protocol-soft: #dbeafe;
+  --pulse-http2-text: #0e7490;
+  --pulse-http2-soft: #cffafe;
+  --pulse-http3-text: #6d28d9;
+  --pulse-http3-soft: #f3e8ff;
   --pulse-empty: #d8dee7;
   --ring: var(--pulse-ok);
   min-height: 100dvh;
@@ -48,12 +48,12 @@
   --pulse-warning: #f5b94a;
   --pulse-warning-soft: rgb(245 185 74 / 20%);
   --pulse-pill: rgb(255 255 255 / 6%);
-  --pulse-ca-text: #c4b5fd;
-  --pulse-ca-soft: rgb(139 92 246 / 16%);
-  --pulse-tls-text: #93c5fd;
-  --pulse-tls-soft: rgb(59 130 246 / 16%);
-  --pulse-http-text: #67e8f9;
-  --pulse-http-soft: rgb(6 182 212 / 14%);
+  --pulse-protocol-text: #93c5fd;
+  --pulse-protocol-soft: rgb(59 130 246 / 16%);
+  --pulse-http2-text: #67e8f9;
+  --pulse-http2-soft: rgb(6 182 212 / 14%);
+  --pulse-http3-text: #c4b5fd;
+  --pulse-http3-soft: rgb(139 92 246 / 16%);
   --pulse-empty: #2b313b;
 }
 .pulse-page ::selection {
@@ -135,6 +135,9 @@
 
 /* 顶部网格与状态信号点来自指定参考，只在总状态区域使用。 */
 .pulse-summary {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -143,10 +146,20 @@
   border: 1px solid var(--pulse-border);
   border-radius: 16px;
   background-color: var(--pulse-surface);
+}
+/* 只淡化底纹，正文不参与透明度或渐隐遮罩。 */
+.pulse-summary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image:
     linear-gradient(var(--pulse-grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--pulse-grid) 1px, transparent 1px);
   background-size: 32px 32px;
+  opacity: 0.75;
+  mask-image: linear-gradient(to bottom, #000 20%, transparent 100%);
 }
 .pulse-summary-main {
   display: flex;
@@ -248,10 +261,6 @@
   letter-spacing: 0.08em;
   overflow-wrap: anywhere;
 }
-.pulse-group-heading > span {
-  flex: none;
-  font-size: 12px;
-}
 .pulse-service-list {
   border: 1px solid var(--pulse-border);
   border-radius: 14px;
@@ -303,8 +312,8 @@
   flex: none;
   padding: 2px 7px;
   border-radius: 999px;
-  color: var(--pulse-tls-text);
-  background: var(--pulse-tls-soft);
+  color: var(--pulse-protocol-text);
+  background: var(--pulse-protocol-soft);
   font-size: 10px;
   line-height: 1.5;
   white-space: nowrap;
@@ -316,6 +325,11 @@
   margin-left: auto;
 }
 .pulse-uptime {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 2px 6px;
   color: var(--pulse-muted);
   font-size: 13px;
 }
@@ -373,7 +387,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px 6px;
-  font-size: 10px;
+  font-size: 11px;
 }
 .pulse-meta-pill {
   display: inline-flex;
@@ -383,7 +397,7 @@
   max-width: 100%;
   padding: 2px 7px;
   border-radius: 999px;
-  color: var(--pulse-text);
+  color: var(--pulse-muted);
   background: var(--pulse-pill);
   overflow-wrap: anywhere;
 }
@@ -393,29 +407,29 @@
   stroke-width: 1.5;
   flex: none;
 }
-.pulse-meta-certificate {
+.pulse-meta-certificate,
+.pulse-meta-ca,
+.pulse-meta-tls {
   color: var(--pulse-ok-text);
   background: var(--pulse-ok-soft);
 }
-.pulse-meta-ca {
-  color: var(--pulse-ca-text);
-  background: var(--pulse-ca-soft);
-}
-.pulse-meta-tls {
-  color: var(--pulse-tls-text);
-  background: var(--pulse-tls-soft);
-}
-.pulse-meta-http {
-  color: var(--pulse-http-text);
-  background: var(--pulse-http-soft);
-}
-.pulse-meta-latency {
+.pulse-certificate-soon,
+.pulse-tls-warning,
+.pulse-latency-warning {
   color: var(--pulse-warning);
   background: var(--pulse-warning-soft);
 }
-.pulse-certificate-soon {
-  color: var(--pulse-warning);
-  background: var(--pulse-warning-soft);
+.pulse-certificate-expired {
+  color: var(--pulse-down-text);
+  background: var(--pulse-down-soft);
+}
+.pulse-http2 {
+  color: var(--pulse-http2-text);
+  background: var(--pulse-http2-soft);
+}
+.pulse-http3 {
+  color: var(--pulse-http3-text);
+  background: var(--pulse-http3-soft);
 }
 
 /* 前后台共用固定细条，按可用宽度显示最近一段真实检测。 */
@@ -521,16 +535,6 @@
   color: var(--pulse-text);
   font-size: 12px;
   font-family: inherit;
-}
-.pulse-history-note {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px 24px;
-  margin-top: -16px;
-  color: var(--pulse-muted);
-  font-size: 11px;
-  line-height: 1.6;
 }
 .pulse-footer {
   display: flex;

@@ -143,6 +143,7 @@ export interface Panel {
   isDefault: boolean
 }
 export interface Settings {
+  tlsLatencyWarningMs: number
   siteName: string
   timezone: string
   language: string
@@ -152,6 +153,7 @@ export interface Settings {
   trustedProxies: string[]
 }
 export interface Bootstrap {
+  tlsLatencyWarningMs: number
   siteName: string
   timezone: string
   language: string

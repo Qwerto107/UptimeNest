@@ -118,7 +118,6 @@ const enUS: typeof zhCN = {
     averageHint: 'Average response time of successful checks in the last 24 hours, excluding inverted monitors.',
     uptimeHint: 'Average 24-hour uptime of services on this page that have check data.',
     heartbeat: 'Last {count} check | Last {count} checks',
-    recentChecks: 'Recent checks',
     serviceName: 'Service name',
     legendUp: 'Up',
     legendDown: 'Down',
@@ -193,6 +192,8 @@ const enUS: typeof zhCN = {
     },
 
     latencyRange: 'Response latency time range',
+
+    handshakeWarning: 'TLS handshake {value}, above the admin warning threshold of {threshold}',
   },
   http: {
     ignoreTLS: 'Ignore TLS/SSL errors for HTTPS targets',
@@ -460,6 +461,10 @@ const enUS: typeof zhCN = {
     confirmPassword: 'Confirm new password',
     passwordChanged: 'Password changed. Other login sessions have been signed out.',
     passwordHint: 'Changing the password signs out admin sessions in other browsers.',
+
+    tlsLatencyWarningHint: 'An integer from 0 to 120000. Set 0 to disable (default). The status page uses amber only when TLS handshake time exceeds this value. This changes display only, not monitor status.',
+
+    tlsLatencyWarning: 'TLS handshake warning threshold (ms)',
   },
 
     websocket: {
