@@ -36,6 +36,31 @@ export interface PublicSummary extends Omit<Summary, 'heartbeats'> {
   heartbeats: HeartbeatPoint[]
 }
 
+export interface LatencyStatistics {
+  average: number
+  p95: number
+  maximum: number
+}
+export interface LatencyBucket {
+  start: number
+  end: number
+  count: number
+  successes: number
+  failures: number
+  average: number | null
+  minimum: number | null
+  maximum: number | null
+}
+export interface LatencyHistory {
+  start: number
+  end: number
+  availableStart: number
+  total: number
+  failures: number
+  statistics: LatencyStatistics | null
+  buckets: LatencyBucket[]
+}
+
 export interface Monitor {
   id: number
   name: string

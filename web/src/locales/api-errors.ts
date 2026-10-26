@@ -7,6 +7,7 @@ const englishErrors: Record<string, string> = {
   'WebSocket 子协议最多 16 项，每项最多 128 字节且不能重复': 'Enter up to 16 distinct WebSocket subprotocols, each a valid token of at most 128 bytes.',
   'WebSocket 请求头最多 64 KiB': 'WebSocket headers must not exceed 64 KiB.',
   'WebSocket 握手头由系统管理，Origin 和子协议请使用专属字段': 'WebSocket handshake headers are managed automatically. Use the dedicated fields for Origin and subprotocols.',
+  '请选择有效的延迟历史时间范围': 'Select a valid latency history time range.',
   '指定连接 IP 应为有效的 IPv4 或 IPv6 地址，不含端口': 'Enter a valid IPv4 or IPv6 connection address without a port.',
   '请先登录管理员账户': 'Please log in as an admin first.',
   '管理员已设置，请直接登录': 'An admin account already exists. Please log in.',

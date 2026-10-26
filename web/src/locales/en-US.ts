@@ -167,6 +167,32 @@ const enUS: typeof zhCN = {
     latest: 'Latest check',
     showDetails: 'View connection details for {name}',
     panel: 'Switch status page',
+
+    rangeChartHelp: 'Move the pointer, or focus and use arrow keys, Home, and End to inspect bucket averages, minima, maxima, and failure counts. Missing data breaks the curve. Statistics use all successful checks in the selected range.',
+
+    bucketChecks: '{count} checks · {failures} failures',
+
+    rangeRetentionHint: 'History retention limits results to records after {start}.',
+
+    rangeChartHint: 'The curve shows bucket averages; vertical lines preserve minimum and maximum values. Buckets with failures are red; missing data breaks the curve.',
+
+    rangeStatisticsHint: 'Calculated from all valid successful checks in the selected range, rather than chart aggregates.',
+
+    historyMinimum: 'Min',
+
+    rangeChecks: '{count} checks in range',
+
+    latencyRanges: {
+      '1h': '1 hour',
+      '3h': '3 hours',
+      '6h': '6 hours',
+      '12h': '12 hours',
+      '24h': '24 hours',
+      '3d': '3 days',
+      '1w': '7 days',
+    },
+
+    latencyRange: 'Response latency time range',
   },
   http: {
     ignoreTLS: 'Ignore TLS/SSL errors for HTTPS targets',

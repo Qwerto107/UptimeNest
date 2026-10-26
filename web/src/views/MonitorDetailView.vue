@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ArrowLeft, Pencil, Copy, Pause, Play, Trash2 } from 'lucide-vue-next'
-import type { MonitorView, Group, Heartbeat, MonitorLog, Settings } from '@/types'
+import type { MonitorView, Group, Heartbeat, MonitorLog, Settings, LatencyHistory } from '@/types'
 import { request, send } from '@/lib/api'
 import { useResource } from '@/composables/useResource'
 import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
@@ -12,6 +12,7 @@ import { percent, latency, formatTime } from '@/lib/format'
 import LoadState from '@/components/LoadState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import HeartbeatStrip from '@/components/HeartbeatStrip.vue'
+import LatencyHistoryChart from '@/components/LatencyHistoryChart.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import ConnectionDetails from '@/components/ConnectionDetails.vue'
 import MonitorEditor from '@/components/MonitorEditor.vue'
@@ -47,6 +48,16 @@ const { data, loading, error, refresh } = useResource(async (signal) => {
     retentionDays: settings.retentionDays,
   }
 }, 15000)
+const latencyRanges = ['1h', '3h', '6h', '12h', '24h', '3d', '1w'] as const
+const latencyRange = ref<typeof latencyRanges[number]>('24h')
+const { data: latencyData, loading: latencyLoading, refreshing: latencyRefreshing, error: latencyError, refresh: refreshLatency } = useResource(async (signal) => {
+  const range = latencyRange.value
+  const history = await request<LatencyHistory>(`/admin/monitors/${id}/latency?range=${range}`, { signal })
+  return { range, history }
+}, 60000)
+// 切换范围时不显示上一档数据，复用资源的取消请求机制防止旧响应覆盖新范围。
+const latencyHistory = computed(() => latencyData.value?.range === latencyRange.value ? latencyData.value.history : undefined)
+watch(latencyRange, () => void refreshLatency())
 watch(data, (value) => {
   if (!value) return
   // 清空后不足一页时，丢弃已缓存的更早记录，避免已删除历史重新出现。
@@ -111,7 +122,7 @@ async function clearHistory() {
     hasMoreLogs.value = true
     clearOpen.value = false
     notify(t('monitor.cleared', { count: result.deleted }))
-    await refresh()
+    await Promise.all([refresh(), refreshLatency()])
   })
 }
 </script>
@@ -169,6 +180,17 @@ async function clearHistory() {
       </div>
       <HeartbeatStrip :beats="data.monitor.summary.heartbeats" @capacity="resizeHeartbeat" />
       <p class="field-hint mt-2">{{ t('status.heartbeatHint') }}</p>
+      <LatencyHistoryChart :history="latencyHistory" :interval="data.monitor.interval" :loading="latencyLoading || (!latencyHistory && latencyRefreshing)">
+        <template #controls>
+          <div class="latency-ranges" role="group" :aria-label="t('status.latencyRange')">
+            <button v-for="range in latencyRanges" :key="range" type="button" :aria-pressed="latencyRange === range" @click="latencyRange = range">{{ t(`status.latencyRanges.${range}`) }}</button>
+          </div>
+        </template>
+      </LatencyHistoryChart>
+      <div v-if="latencyError && !latencyRefreshing" class="flex flex-wrap items-center gap-2 text-sm text-destructive" role="alert">
+        {{ latencyError }}
+        <Button variant="outline" size="sm" @click="refreshLatency">{{ t('common.retry') }}</Button>
+      </div>
       <ConnectionDetails :beat="data.monitor.summary.latest" />
       <p v-if="data.monitor.description" class="detail-description">
         {{ data.monitor.description }}
@@ -278,3 +300,29 @@ async function clearHistory() {
     />
   </template>
 </template>
+
+<style scoped>
+.latency-ranges {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.latency-ranges button {
+  min-height: 32px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.latency-ranges button:hover { color: var(--foreground); background: var(--muted); }
+.latency-ranges button[aria-pressed='true'] { color: var(--foreground); background: var(--muted); }
+.latency-ranges button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+</style>

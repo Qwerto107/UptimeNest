@@ -51,6 +51,7 @@ func New(s *store.Store, engine *monitor.Engine, cfg config.Config) http.Handler
 	mux.Handle("DELETE /api/admin/monitors/{id}", a.auth(a.deleteMonitor))
 	mux.Handle("PUT /api/admin/monitors/{id}/enabled", a.auth(a.setEnabled))
 	mux.Handle("GET /api/admin/monitors/{id}/heartbeats", a.auth(a.heartbeats))
+	mux.Handle("GET /api/admin/monitors/{id}/latency", a.auth(a.latencyHistory))
 	mux.Handle("DELETE /api/admin/monitors/{id}/heartbeats", a.auth(a.clearHeartbeats))
 	mux.Handle("GET /api/admin/monitors/{id}/logs", a.auth(a.logs))
 	mux.Handle("DELETE /api/admin/monitors/{id}/logs", a.auth(a.clearLogs))

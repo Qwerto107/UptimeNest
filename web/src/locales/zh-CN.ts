@@ -164,6 +164,32 @@ export default {
     latest: '最近检测',
     showDetails: '查看 {name} 的连接详情',
     panel: '切换状态面板',
+
+    rangeChartHelp: '移动指针，或聚焦后使用左右方向键、Home 和 End 查看时间段的平均、最小、最大延迟及故障次数。无数据处断线，统计根据所选时段全部成功记录计算。',
+
+    bucketChecks: '{count} 次检测 · {failures} 次故障',
+
+    rangeRetentionHint: '受历史保留设置限制，仅查询 {start} 之后的记录。',
+
+    rangeChartHint: '曲线显示各时间段平均延迟，竖线保留最小值与最大值；含故障的时间段标红，无数据处断线。',
+
+    rangeStatisticsHint: '根据所选时段内全部成功检测的有效延迟计算，不使用图表聚合值估算。',
+
+    historyMinimum: '最小',
+
+    rangeChecks: '时段内 {count} 次检测',
+
+    latencyRanges: {
+      '1h': '1 小时',
+      '3h': '3 小时',
+      '6h': '6 小时',
+      '12h': '12 小时',
+      '24h': '24 小时',
+      '3d': '3 天',
+      '1w': '7 天',
+    },
+
+    latencyRange: '响应延迟时间范围',
   },
   http: {
     ignoreTLS: '忽略 HTTPS 站点的 TLS/SSL 错误',

@@ -189,6 +189,34 @@ type Summary struct {
 	Heartbeats []Heartbeat `json:"heartbeats"`
 }
 
+type LatencyStatistics struct {
+	Average float64 `json:"average"`
+	P95     float64 `json:"p95"`
+	Maximum float64 `json:"maximum"`
+}
+
+// LatencyBucket 描述一个时间段的真实记录；延迟只统计有效的成功检测。
+type LatencyBucket struct {
+	Start     int64    `json:"start"`
+	End       int64    `json:"end"`
+	Count     int      `json:"count"`
+	Successes int      `json:"successes"`
+	Failures  int      `json:"failures"`
+	Average   *float64 `json:"average"`
+	Minimum   *float64 `json:"minimum"`
+	Maximum   *float64 `json:"maximum"`
+}
+
+type LatencyHistory struct {
+	Start          int64              `json:"start"`
+	End            int64              `json:"end"`
+	AvailableStart int64              `json:"availableStart"`
+	Total          int                `json:"total"`
+	Failures       int                `json:"failures"`
+	Statistics     *LatencyStatistics `json:"statistics"`
+	Buckets        []LatencyBucket    `json:"buckets"`
+}
+
 type MonitorView struct {
 	Monitor
 	Summary Summary `json:"summary"`
