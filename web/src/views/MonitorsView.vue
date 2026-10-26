@@ -8,6 +8,7 @@ import {
   FolderPlus,
   Search,
   Pencil,
+  Copy,
   Pause,
   Play,
   Trash2,
@@ -50,6 +51,7 @@ const groupId = ref(String(route.query.group || 'all'))
 const status = ref('all')
 const editorOpen = ref(false)
 const selected = ref<MonitorView | null>(null)
+const duplicating = ref(false)
 const deleteOpen = ref(false)
 const deleting = ref<MonitorView | null>(null)
 const groupEditorOpen = ref(false)
@@ -119,8 +121,9 @@ const overview = computed(() => {
     { key: 'paused', count: monitors.filter((monitor) => !monitor.enabled).length },
   ]
 })
-function edit(monitor: MonitorView | null) {
+function edit(monitor: MonitorView | null, duplicate = false) {
   selected.value = monitor
+  duplicating.value = duplicate
   editorOpen.value = true
 }
 function askDelete(monitor: MonitorView) {
@@ -338,6 +341,15 @@ async function toggle(monitor: MonitorView) {
               <Button
                 variant="ghost"
                 size="icon"
+                :aria-label="`${t('monitor.duplicate')} ${monitor.name}`"
+                :title="t('monitor.duplicate')"
+                @click="edit(monitor, true)"
+              >
+                <Copy />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 :disabled="busy"
                 :aria-label="`${monitor.enabled ? t('monitor.pause') : t('monitor.start')} ${monitor.name}`"
                 @click="toggle(monitor)"
@@ -364,6 +376,7 @@ async function toggle(monitor: MonitorView) {
   <MonitorEditor
     v-model:open="editorOpen"
     :monitor="selected"
+    :duplicate="duplicating"
     :groups="data?.groups || []"
     @saved="refresh"
   />

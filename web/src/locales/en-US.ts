@@ -295,6 +295,10 @@ const enUS: typeof zhCN = {
     privateHint: 'The name, description, and tags are visible on public status pages.',
     hideAddress: 'Hide address on status pages',
     hideAddressHint: 'When enabled, the public status page and its API omit this monitor’s address.',
+
+    copyNameSuffix: ' (copy)',
+
+    duplicate: 'Clone monitor',
   },
   group: {
     title: 'Monitor groups',

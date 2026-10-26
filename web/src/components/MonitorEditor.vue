@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Select } from '@/components/ui/select'
 const open = defineModel<boolean>('open', { required: true })
-const props = defineProps<{ monitor?: Monitor | null; groups: Group[] }>()
+const props = defineProps<{ monitor?: Monitor | null; groups: Group[]; duplicate?: boolean }>()
 const emit = defineEmits<{ saved: [] }>()
 const { t } = useI18n()
 const groupOptions = computed(() => groupChoices(props.groups))
@@ -72,6 +72,18 @@ watch(open, (value) => {
     validStatusCodes: [...(next.http?.validStatusCodes || httpDefaults.validStatusCodes)],
     auth: { ...httpDefaults.auth, ...next.http?.auth },
   }
+  if (props.duplicate && props.monitor) {
+    // 副本使用新增接口；按后端的 200 字节上限预留名称后缀，避免截断 Unicode 字符。
+    form.id = 0
+    const suffix = t('monitor.copyNameSuffix')
+    const encoder = new TextEncoder()
+    let name = ''
+    for (const character of next.name) {
+      if (encoder.encode(name + character + suffix).length > 200) break
+      name += character
+    }
+    form.name = name + suffix
+  }
   tags.value = next.tags.join(', ')
 })
 async function submit(event: Event) {
@@ -117,7 +129,7 @@ async function submit(event: Event) {
 <template>
   <Modal
     v-model:open="open"
-    :title="monitor ? t('monitor.edit') : t('monitor.add')"
+    :title="duplicate ? t('monitor.duplicate') : monitor ? t('monitor.edit') : t('monitor.add')"
     :description="t('monitor.privateHint')"
     wide
     :busy="busy"

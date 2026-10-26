@@ -294,6 +294,10 @@ export default {
     privateHint: '名称、备注和标签会出现在公开面板。',
     hideAddress: '在状态页隐藏地址',
     hideAddressHint: '隐藏后，公开状态页及其接口均不返回该项地址。',
+
+    copyNameSuffix: '（副本）',
+
+    duplicate: '复制创建',
   },
   group: {
     title: '监控分组',

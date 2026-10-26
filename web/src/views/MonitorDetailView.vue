@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ArrowLeft, Pencil, Pause, Play, Trash2 } from 'lucide-vue-next'
+import { ArrowLeft, Pencil, Copy, Pause, Play, Trash2 } from 'lucide-vue-next'
 import type { MonitorView, Group, Heartbeat, MonitorLog, Settings } from '@/types'
 import { request, send } from '@/lib/api'
 import { useResource } from '@/composables/useResource'
@@ -23,6 +23,7 @@ const route = useRoute()
 const id = Number(route.params.id)
 const tab = ref<'heartbeats' | 'logs'>('heartbeats')
 const editorOpen = ref(false)
+const duplicating = ref(false)
 const clearOpen = ref(false)
 const { busy, run } = useAction()
 const olderBeats = ref<Heartbeat[]>([])
@@ -87,6 +88,10 @@ async function loadMore() {
     }
   })
 }
+function edit(duplicate = false) {
+  duplicating.value = duplicate
+  editorOpen.value = true
+}
 async function toggle() {
   if (!data.value?.monitor) return
   const enabled = !data.value.monitor.enabled
@@ -128,13 +133,17 @@ async function clearHistory() {
           <template v-if="data.monitor.type === 'tcp'">:{{ data.monitor.port }}</template>
         </p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <Button variant="outline" :disabled="busy" @click="toggle">
           <Pause v-if="data.monitor.enabled" />
           <Play v-else />
           {{ data.monitor.enabled ? t('monitor.pause') : t('monitor.start') }}
         </Button>
-        <Button @click="editorOpen = true">
+        <Button variant="outline" @click="edit(true)">
+          <Copy />
+          {{ t('monitor.duplicate') }}
+        </Button>
+        <Button @click="edit()">
           <Pencil />
           {{ t('common.edit') }}
         </Button>
@@ -251,6 +260,7 @@ async function clearHistory() {
     <MonitorEditor
       v-model:open="editorOpen"
       :monitor="data.monitor"
+      :duplicate="duplicating"
       :groups="data.groups"
       @saved="refresh"
     />
