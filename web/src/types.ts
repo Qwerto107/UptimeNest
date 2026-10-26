@@ -1,5 +1,5 @@
 export type MonitorStatus = 'up' | 'down' | 'unknown' | 'paused'
-export type MonitorType = 'http' | 'tcp' | 'ping' | 'dns'
+export type MonitorType = 'http' | 'websocket' | 'tcp' | 'ping' | 'dns'
 
 export interface Heartbeat {
   id: number
@@ -56,6 +56,15 @@ export interface Monitor {
   groupId: number
   enabled: boolean
   http?: HTTPOptions
+  websocket?: WebSocketOptions
+}
+
+export interface WebSocketOptions {
+  mode: 'handshake' | 'ping'
+  connectIP: string
+  origin: string
+  subprotocols: string[]
+  headers: string
 }
 
 export interface HTTPAuth {

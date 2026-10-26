@@ -247,7 +247,7 @@ export default {
     down: '{count} 项故障',
     paused: '{count} 项停用',
     emptyTitle: '添加你的第一个监控',
-    emptyDescription: '从网站、TCP 端口、Ping 或 DNS 开始。',
+    emptyDescription: '从网站、WebSocket、TCP 端口、Ping 或 DNS 开始。',
     noMatch: '没有符合条件的监控或分组',
     type: '监控类型',
     target: '目标地址',
@@ -308,6 +308,8 @@ export default {
     copyNameSuffix: '（副本）',
 
     duplicate: '复制创建',
+
+    websocket: 'WebSocket（WS / WSS）',
   },
   group: {
     title: '监控分组',
@@ -436,4 +438,19 @@ export default {
     passwordChanged: '密码已修改，其他登录会话已失效',
     passwordHint: '修改后，其他浏览器的管理员会话将失效。',
   },
-}
+
+    websocket: {
+    connectIPHint: '可选，填写单个 IPv4 或 IPv6，不含端口。直连此 IP，保留 Host、WSS 的 SNI 和证书域名校验；留空使用 DNS。',
+    options: 'WebSocket 设置',
+    targetExample: 'wss://example.com/ws',
+    mode: '检测方式',
+    mode_handshake: '握手检测',
+    mode_ping: '握手 + Ping/Pong',
+    modeHint: '默认只验证握手；Ping/Pong 模式还需收到匹配的心跳响应。每次检测重新连接，受整体超时限制。',
+    originHint: '可选，填写 HTTP/HTTPS 来源，不含路径和参数；留空不发送 Origin。',
+    subprotocols: '子协议（可选）',
+    subprotocolsHint: '用英文逗号分隔，最多 16 项；按填写顺序请求协商。',
+    headersHint: 'JSON 对象，名称和值均为字符串，可填写 Authorization、Cookie 或 Host。握手头由系统管理；Origin 和子协议使用上方字段。',
+    tlsHint: 'WSS 始终校验证书，连接详情单独显示 TLS 握手耗时。响应延迟包含连接、握手及所选的心跳检测；不跟随重定向。',
+  },
+  }

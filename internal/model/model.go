@@ -7,25 +7,50 @@ const DefaultUserAgent = "UptimeNest"
 
 // Monitor 保存检测配置；访客仅能看到未隐藏的主机地址，不返回完整目标配置。
 type Monitor struct {
-	ID            int64        `json:"id"`
-	Name          string       `json:"name"`
-	Type          string       `json:"type"`
-	Target        string       `json:"target"`
-	HideAddress   bool         `json:"hideAddress"`
-	Port          int          `json:"port"`
-	DNSRecord     string       `json:"dnsRecord"`
-	DNSServer     string       `json:"dnsServer"`
-	Expected      string       `json:"expected"`
-	Interval      int          `json:"interval"`
-	Retries       int          `json:"retries"`
-	RetryInterval int          `json:"retryInterval"`
-	Timeout       int          `json:"timeout"`
-	Invert        bool         `json:"invert"`
-	Description   string       `json:"description"`
-	Tags          []string     `json:"tags"`
-	GroupID       int64        `json:"groupId"`
-	Enabled       bool         `json:"enabled"`
-	HTTP          *HTTPOptions `json:"http,omitempty"`
+	ID            int64             `json:"id"`
+	Name          string            `json:"name"`
+	Type          string            `json:"type"`
+	Target        string            `json:"target"`
+	HideAddress   bool              `json:"hideAddress"`
+	Port          int               `json:"port"`
+	DNSRecord     string            `json:"dnsRecord"`
+	DNSServer     string            `json:"dnsServer"`
+	Expected      string            `json:"expected"`
+	Interval      int               `json:"interval"`
+	Retries       int               `json:"retries"`
+	RetryInterval int               `json:"retryInterval"`
+	Timeout       int               `json:"timeout"`
+	Invert        bool              `json:"invert"`
+	Description   string            `json:"description"`
+	Tags          []string          `json:"tags"`
+	GroupID       int64             `json:"groupId"`
+	Enabled       bool              `json:"enabled"`
+	HTTP          *HTTPOptions      `json:"http,omitempty"`
+	WebSocket     *WebSocketOptions `json:"websocket,omitempty"`
+}
+
+// WebSocketOptions 的请求头和目标路径仅供后台使用，不进入公开状态页。
+type WebSocketOptions struct {
+	Mode         string   `json:"mode"`
+	ConnectIP    string   `json:"connectIP,omitempty"`
+	Origin       string   `json:"origin"`
+	Subprotocols []string `json:"subprotocols"`
+	Headers      string   `json:"headers"`
+}
+
+// WebSocketConfig 为未填写的检测方式补齐握手默认值，不改变已明确选择的模式。
+func (m Monitor) WebSocketConfig() WebSocketOptions {
+	v := WebSocketOptions{Mode: "handshake", Subprotocols: []string{}}
+	if m.WebSocket != nil {
+		v = *m.WebSocket
+	}
+	if v.Mode == "" {
+		v.Mode = "handshake"
+	}
+	if v.Subprotocols == nil {
+		v.Subprotocols = []string{}
+	}
+	return v
 }
 
 // HTTPOptions 保存单项 HTTP 检测配置；省略的字段由 HTTPConfig 补齐默认值。

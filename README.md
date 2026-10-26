@@ -45,7 +45,7 @@
 
 | 能力 | 使用方式 |
 | --- | --- |
-| 常规监控 | HTTP/HTTPS、TCP 端口、Ping 和 DNS；自定义间隔、超时、重试及反转模式 |
+| 常规监控 | HTTP/HTTPS、WebSocket（WS/WSS）、TCP 端口、Ping 和 DNS；自定义间隔、超时、重试及反转模式 |
 | HTTP 请求 | HTTP/3 优先回退或仅 HTTP/3，设置方法、有效状态码、重定向、请求体与请求头 |
 | 请求验证 | Basic、OAuth2 客户端凭据和 PEM 格式 mTLS |
 | 连接详情 | TLS/HTTP 版本、握手耗时、证书剩余有效期及签发者组织；展开查看密钥交换与加密套件，HTTP/3 额外显示 QUIC 版本和实际 0-RTT 使用状态 |

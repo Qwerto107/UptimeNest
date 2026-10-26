@@ -188,9 +188,9 @@ func (a *Server) publicPanelData(ctx context.Context, slug string, count int) (a
 func publicEndpoint(m model.Monitor) (address, protocol string) {
 	protocol = strings.ToUpper(m.Type)
 	switch m.Type {
-	case "http":
+	case "http", "websocket":
 		u, err := url.Parse(m.Target)
-		if err == nil && (u.Scheme == "http" || u.Scheme == "https") {
+		if err == nil && (u.Scheme == "http" || u.Scheme == "https" || u.Scheme == "ws" || u.Scheme == "wss") {
 			address = u.Host
 			protocol = strings.ToUpper(u.Scheme)
 		}

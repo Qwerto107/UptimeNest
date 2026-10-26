@@ -2,12 +2,13 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { TabsRoot, TabsList, TabsTrigger, TabsContent } from 'reka-ui'
-import type { Monitor, Group } from '@/types'
+import type { Monitor, Group, WebSocketOptions } from '@/types'
 import { send } from '@/lib/api'
 import { defaultHTTPOptions } from '@/lib/http'
 import { groupChoices } from '@/lib/groups'
 import HTTPOptionsEditor from '@/components/HTTPOptionsEditor.vue'
 import HTTPAuthenticationEditor from '@/components/HTTPAuthenticationEditor.vue'
+import WebSocketOptionsEditor from '@/components/WebSocketOptionsEditor.vue'
 import { useAction, notify } from '@/composables/useFeedback'
 import Modal from '@/components/Modal.vue'
 import Field from '@/components/Field.vue'
@@ -22,6 +23,9 @@ const emit = defineEmits<{ saved: [] }>()
 const { t } = useI18n()
 const groupOptions = computed(() => groupChoices(props.groups))
 const { busy, run } = useAction()
+function defaultWebSocketOptions(): WebSocketOptions {
+  return { mode: 'handshake', connectIP: '', origin: '', subprotocols: [], headers: '' }
+}
 function defaults(): Monitor {
   return {
     id: 0,
@@ -43,6 +47,7 @@ function defaults(): Monitor {
     groupId: 0,
     enabled: true,
     http: defaultHTTPOptions(),
+    websocket: defaultWebSocketOptions(),
   }
 }
 const form = reactive<Monitor>(defaults())
@@ -52,6 +57,7 @@ watch(
   () => form.type,
   (type) => {
     if (type !== 'http' && (tab.value === 'http' || tab.value === 'auth')) tab.value = 'basics'
+    if (type !== 'websocket' && tab.value === 'websocket') tab.value = 'basics'
   },
 )
 watch(open, (value) => {
@@ -60,7 +66,7 @@ watch(open, (value) => {
   const next = props.monitor || defaults()
   // 逐字段复制，避免把列表接口的 summary 等只读数据发送到配置接口。
   for (const key of Object.keys(defaults()) as (keyof Monitor)[]) {
-    if (key === 'http') continue
+    if (key === 'http' || key === 'websocket') continue
     const value = next[key]
     if (Array.isArray(value)) Object.assign(form, { [key]: [...value] })
     else Object.assign(form, { [key]: value })
@@ -71,6 +77,11 @@ watch(open, (value) => {
     ...next.http,
     validStatusCodes: [...(next.http?.validStatusCodes || httpDefaults.validStatusCodes)],
     auth: { ...httpDefaults.auth, ...next.http?.auth },
+  }
+  form.websocket = {
+    ...defaultWebSocketOptions(),
+    ...next.websocket,
+    subprotocols: [...(next.websocket?.subprotocols || [])],
   }
   if (props.duplicate && props.monitor) {
     // 副本使用新增接口；按后端的 200 字节上限预留名称后缀，避免截断 Unicode 字符。
@@ -118,6 +129,7 @@ async function submit(event: Event) {
     if (payload.http)
       payload.http = { ...payload.http, maxRedirects: Number(payload.http.maxRedirects) }
     if (form.type !== 'http') delete payload.http
+    if (form.type !== 'websocket') delete payload.websocket
     const path = '/admin/monitors' + (form.id ? `/${form.id}` : '')
     await send(path, form.id ? 'PUT' : 'POST', payload)
     notify(t('common.saved'))
@@ -141,6 +153,7 @@ async function submit(event: Event) {
           <TabsTrigger v-if="form.type === 'http'" value="http" class="editor-tab">
             {{ t('http.options') }}
           </TabsTrigger>
+          <TabsTrigger v-if="form.type === 'websocket'" value="websocket" class="editor-tab">{{ t('websocket.options') }}</TabsTrigger>
           <TabsTrigger value="probe" class="editor-tab">{{ t('monitor.advanced') }}</TabsTrigger>
           <TabsTrigger v-if="form.type === 'http'" value="auth" class="editor-tab">
             {{ t('http.authentication') }}
@@ -170,12 +183,12 @@ async function submit(event: Event) {
                     id="monitor-type"
                     v-model="form.type"
                     :disabled="busy"
-                    :options="(['http', 'tcp', 'ping', 'dns'] as const).map((kind) => ({ value: kind, label: t(`monitor.${kind}`) }))"
+                    :options="(['http', 'websocket', 'tcp', 'ping', 'dns'] as const).map((kind) => ({ value: kind, label: t(`monitor.${kind}`) }))"
                   />
                 </Field>
                 <Field
                   id="monitor-target"
-                  :label="form.type === 'http' ? t('monitor.target') : t('monitor.host')"
+                  :label="form.type === 'http' || form.type === 'websocket' ? t('monitor.target') : t('monitor.host')"
                   :hint="form.type === 'ping' ? t('monitor.pingHint') : undefined"
                   required
                   class="col-span-full"
@@ -184,9 +197,9 @@ async function submit(event: Event) {
                     id="monitor-target"
                     v-model="form.target"
                     required
-                    :type="form.type === 'http' ? 'url' : 'text'"
+                    :type="form.type === 'http' || form.type === 'websocket' ? 'url' : 'text'"
                     :placeholder="
-                      form.type === 'http' ? t('monitor.targetExample') : t('monitor.hostExample')
+                      form.type === 'websocket' ? t('websocket.targetExample') : form.type === 'http' ? t('monitor.targetExample') : t('monitor.hostExample')
                     "
                   />
                 </Field>
@@ -345,6 +358,9 @@ async function submit(event: Event) {
                 <Switch id="monitor-enabled" v-model="form.enabled" />
               </div>
             </fieldset>
+          </TabsContent>
+          <TabsContent v-if="form.type === 'websocket' && form.websocket" value="websocket" force-mount v-show="tab === 'websocket'" data-editor-panel="websocket">
+            <WebSocketOptionsEditor v-model="form.websocket" :busy="busy" />
           </TabsContent>
           <TabsContent
             v-if="form.type === 'http' && form.http"

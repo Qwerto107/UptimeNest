@@ -1,5 +1,12 @@
 // 保持现有接口错误格式兼容，仅翻译已知提示；未知诊断详情保留原文。
 const englishErrors: Record<string, string> = {
+  '请输入有效的 WS/WSS 地址，不允许携带账户密码或片段': 'Enter a valid WS/WSS URL without embedded credentials or a fragment.',
+  'WebSocket 端口应为 1 至 65535': 'The WebSocket port must be between 1 and 65535.',
+  'WebSocket 检测模式无效': 'Invalid WebSocket check mode.',
+  'Origin 应为不含路径、参数或凭据的 HTTP/HTTPS 来源': 'Origin must be an HTTP/HTTPS origin without a path, query, or credentials.',
+  'WebSocket 子协议最多 16 项，每项最多 128 字节且不能重复': 'Enter up to 16 distinct WebSocket subprotocols, each a valid token of at most 128 bytes.',
+  'WebSocket 请求头最多 64 KiB': 'WebSocket headers must not exceed 64 KiB.',
+  'WebSocket 握手头由系统管理，Origin 和子协议请使用专属字段': 'WebSocket handshake headers are managed automatically. Use the dedicated fields for Origin and subprotocols.',
   '指定连接 IP 应为有效的 IPv4 或 IPv6 地址，不含端口': 'Enter a valid IPv4 or IPv6 connection address without a port.',
   '请先登录管理员账户': 'Please log in as an admin first.',
   '管理员已设置，请直接登录': 'An admin account already exists. Please log in.',
@@ -51,7 +58,7 @@ const englishErrors: Record<string, string> = {
   'DNS 期望值过长': 'The expected DNS answer is too long.',
   'DNS 服务器应填写 IP:端口，例如 1.1.1.1:53': 'Enter the DNS server as IP:port, for example 1.1.1.1:53.',
   'DNS 服务器端口无效': 'Invalid DNS server port.',
-  '请选择 HTTP、TCP、Ping 或 DNS 类型': 'Select HTTP, TCP, Ping, or DNS.',
+  '请选择 HTTP、WebSocket、TCP、Ping 或 DNS 类型': 'Select HTTP, WebSocket, TCP, Ping, or DNS.',
   '请选择明确的 IANA 时区名称，例如 Asia/Singapore 或 UTC': 'Select an explicit IANA timezone, such as Asia/Singapore or UTC.',
   '时区无效，请使用 IANA 时区名称': 'Invalid timezone. Use an IANA timezone name.',
   '请选择英语或简体中文': 'Select English or Simplified Chinese.',

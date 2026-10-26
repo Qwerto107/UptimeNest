@@ -26,6 +26,8 @@ func Probe(ctx context.Context, m model.Monitor, ua string) model.Heartbeat {
 	switch m.Type {
 	case "http":
 		err = probeHTTP(ctx, m, ua, &h)
+	case "websocket":
+		err = probeWebSocket(ctx, m, ua, &h)
 	case "tcp":
 		var conn net.Conn
 		conn, err = (&net.Dialer{}).DialContext(ctx, "tcp", net.JoinHostPort(m.Target, strconv.Itoa(m.Port)))

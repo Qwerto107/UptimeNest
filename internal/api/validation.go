@@ -67,6 +67,10 @@ func validateMonitor(m *model.Monitor) error {
 		if err := monitor.ValidateHTTP(m); err != nil {
 			return err
 		}
+	case "websocket":
+		if err := monitor.ValidateWebSocket(m); err != nil {
+			return err
+		}
 	case "tcp":
 		if !validHost(m.Target) || m.Port < 1 || m.Port > 65535 {
 			return fmt.Errorf("TCP 目标应为主机名或 IP，端口应为 1 至 65535")
@@ -98,10 +102,13 @@ func validateMonitor(m *model.Monitor) error {
 			}
 		}
 	default:
-		return fmt.Errorf("请选择 HTTP、TCP、Ping 或 DNS 类型")
+		return fmt.Errorf("请选择 HTTP、WebSocket、TCP、Ping 或 DNS 类型")
 	}
 	if m.Type != "http" {
 		m.HTTP = nil
+	}
+	if m.Type != "websocket" {
+		m.WebSocket = nil
 	}
 	return nil
 }

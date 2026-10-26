@@ -249,7 +249,7 @@ const enUS: typeof zhCN = {
     down: '{count} down',
     paused: '{count} paused',
     emptyTitle: 'Add your first monitor',
-    emptyDescription: 'Start with an HTTP, TCP, Ping, or DNS check.',
+    emptyDescription: 'Start with an HTTP, WebSocket, TCP, Ping, or DNS check.',
     noMatch: 'No matching monitors or groups',
     type: 'Monitor type',
     target: 'Target URL',
@@ -309,6 +309,8 @@ const enUS: typeof zhCN = {
     copyNameSuffix: ' (copy)',
 
     duplicate: 'Clone monitor',
+
+    websocket: 'WebSocket (WS / WSS)',
   },
   group: {
     title: 'Monitor groups',
@@ -433,6 +435,21 @@ const enUS: typeof zhCN = {
     passwordChanged: 'Password changed. Other login sessions have been signed out.',
     passwordHint: 'Changing the password signs out admin sessions in other browsers.',
   },
-}
+
+    websocket: {
+    connectIPHint: 'Optional single IPv4 or IPv6 address without a port. Connect directly while preserving Host, WSS SNI, and certificate hostname verification. Leave empty to use DNS.',
+    options: 'WebSocket settings',
+    targetExample: 'wss://example.com/ws',
+    mode: 'Check mode',
+    mode_handshake: 'Handshake',
+    mode_ping: 'Handshake + Ping/Pong',
+    modeHint: 'Handshake is the default. Ping/Pong also requires a matching heartbeat reply. Each check opens a new connection within the overall timeout.',
+    originHint: 'Optional HTTP/HTTPS origin without a path or query. Leave empty to omit Origin.',
+    subprotocols: 'Subprotocols (optional)',
+    subprotocolsHint: 'Separate up to 16 values with commas; requested in the order entered.',
+    headersHint: 'A JSON object with string names and values. Authorization, Cookie, and Host are supported. Handshake headers are managed automatically; use the fields above for Origin and subprotocols.',
+    tlsHint: 'WSS always verifies certificates. Connection details show TLS handshake time separately. Response latency includes connection, handshake, and the selected heartbeat check; redirects are not followed.',
+  },
+  }
 
 export default enUS
