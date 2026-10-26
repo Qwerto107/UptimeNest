@@ -2,6 +2,7 @@ name: uptimenest
 
 services:
   uptimenest:
+    container_name: uptimenest
     image: ghcr.io/qwerto107/uptimenest:latest
     restart: unless-stopped
     ports:
