@@ -13,7 +13,6 @@ import {
   Play,
   Trash2,
   ArrowUpRight,
-  RefreshCw,
 } from 'lucide-vue-next'
 import type { MonitorView, Group } from '@/types'
 import { request, send } from '@/lib/api'
@@ -22,6 +21,8 @@ import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
 import { useAction, notify } from '@/composables/useFeedback'
 import { percent, latency } from '@/lib/format'
 import LoadState from '@/components/LoadState.vue'
+import RefreshIcon from '@/components/RefreshIcon.vue'
+import AnimatedValue from '@/components/AnimatedValue.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import HeartbeatStrip from '@/components/HeartbeatStrip.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -187,7 +188,7 @@ async function toggle(monitor: MonitorView) {
       </Button>
     </div>
   </div>
-  <LoadState :loading="loading" :error="error" :has-data="!!data" @retry="refresh" />
+  <LoadState :loading="loading" :error="error" :has-data="!!data" skeleton="monitors" @retry="refresh" />
   <template v-if="data">
     <div class="monitor-overview">
       <div
@@ -198,7 +199,7 @@ async function toggle(monitor: MonitorView) {
       >
         <span class="overview-caption">{{ t('monitor.' + item.key + 'Caption') }}</span>
         <div>
-          <strong>{{ item.count }}</strong>
+          <strong><AnimatedValue :value="item.count" /></strong>
           <span>{{ t('monitor.' + item.key + 'Label') }}</span>
         </div>
       </div>
@@ -243,7 +244,7 @@ async function toggle(monitor: MonitorView) {
           :aria-label="t('common.refresh')"
           @click="refresh"
         >
-          <RefreshCw :class="{ 'animate-spin': refreshing }" />
+          <RefreshIcon :refreshing="refreshing" />
         </Button>
       </div>
       <EmptyState

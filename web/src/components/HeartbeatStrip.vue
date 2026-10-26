@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useDevicePixelRatio, useEventListener, useResizeObserver } from '@vueuse/core'
+import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { useDevicePixelRatio, useDocumentVisibility, useEventListener, useIntersectionObserver, usePreferredReducedMotion, useResizeObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import type { HeartbeatPoint } from '@/types'
 import { formatTime, latency } from '@/lib/format'
@@ -10,6 +10,18 @@ const { t } = useI18n()
 const strip = ref<HTMLDivElement>()
 const positions = ref<{ left: string; width: string }[]>([])
 const activeIndex = ref<number>()
+const intro = ref(false)
+const introRunning = ref(false)
+const inView = ref(false)
+const visibility = useDocumentVisibility()
+const introDuration = ref(1000)
+const stripWidth = ref(900)
+const revealId = `heartbeat-reveal-${useId()}`
+const reducedMotion = usePreferredReducedMotion()
+let introduced = false
+let introTimer: ReturnType<typeof setTimeout> | undefined
+let introFrame = 0
+useIntersectionObserver(strip, ([entry]) => { inView.value = !!entry?.isIntersecting })
 
 const { pixelRatio } = useDevicePixelRatio()
 
@@ -18,6 +30,7 @@ function align() {
   const rect = strip.value.getBoundingClientRect()
   const layoutWidth = parseFloat(getComputedStyle(strip.value).width)
   if (!rect.width || !layoutWidth) return
+  stripWidth.value = layoutWidth
 
   // 条宽和间距固定为 3px，再对齐物理像素；窗口大小只影响显示数量。
   const ratio = pixelRatio.value
@@ -47,6 +60,31 @@ const slots = computed(() => {
   const recent = props.beats.slice(-count)
   return [...Array<null>(Math.max(0, count - recent.length)).fill(null), ...recent]
 })
+watch([() => slots.value.length, inView, visibility], ([count, visible, pageVisibility]) => {
+  if (!count || introduced) return
+  if (reducedMotion.value === 'reduce') { introduced = true; return }
+  if (!visible || pageVisibility !== 'visible') return
+  introduced = true
+  introDuration.value = Math.min(1200, Math.max(800, count * 6 + 200))
+  intro.value = true
+  // 遮罩先停在最左侧，等待内容真正绘制后起播，避免首屏出现时已扫到中间。
+  introFrame = requestAnimationFrame(() => {
+    introFrame = requestAnimationFrame(() => {
+      if (!inView.value || visibility.value !== 'visible') { introduced = false; intro.value = false; return }
+      if (reducedMotion.value === 'reduce') return
+      introRunning.value = true
+      introTimer = setTimeout(stopIntro, introDuration.value + 120)
+    })
+  })
+}, { flush: 'post' })
+function stopIntro() {
+  cancelAnimationFrame(introFrame)
+  clearTimeout(introTimer)
+  intro.value = false
+  introRunning.value = false
+}
+watch(reducedMotion, (value) => { if (value === 'reduce') { introduced = true; stopIntro() } })
+onBeforeUnmount(stopIntro)
 function label(beat: HeartbeatPoint | null) {
   if (!beat) return t('common.noData')
   return t('status.heartbeatPoint', {
@@ -72,6 +110,12 @@ const labels = computed(() => slots.value.map(label))
       focusable="false"
       shape-rendering="geometricPrecision"
     >
+      <!-- 一条遮罩代替逐根独立动画；底层记录从首帧可见，不等待动效结束。 -->
+      <defs v-if="intro"><mask :id="revealId" maskUnits="userSpaceOnUse" x="0" y="0" :width="stripWidth" height="16">
+        <rect :width="stripWidth" height="16" fill="white" fill-opacity=".5" />
+        <path :d="`M0 0H${stripWidth}L${stripWidth + 64} 16H0Z`" fill="white" class="heartbeat-sweep" :style="{ '--sweep-start': `${-stripWidth - 64}px`, animationDuration: `${introDuration}ms`, animationPlayState: introRunning ? 'running' : 'paused' }" />
+      </mask></defs>
+      <g :mask="intro ? `url(#${revealId})` : undefined">
       <rect
         v-for="(beat, index) in slots"
         :key="index"
@@ -86,6 +130,7 @@ const labels = computed(() => slots.value.map(label))
           { 'heartbeat-shape-active': activeIndex === index },
         ]"
       />
+      </g>
     </svg>
     <span
       v-for="(beat, index) in slots"
@@ -104,3 +149,13 @@ const labels = computed(() => slots.value.map(label))
     </span>
   </div>
 </template>
+
+<style scoped>
+.heartbeat-sweep {
+  animation: heartbeat-sweep var(--motion-ease) 120ms backwards;
+}
+@keyframes heartbeat-sweep {
+  from { transform: translateX(var(--sweep-start)); }
+  to { transform: translateX(0); }
+}
+</style>

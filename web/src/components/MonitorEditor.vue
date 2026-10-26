@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { TabsRoot, TabsList, TabsTrigger, TabsContent } from 'reka-ui'
 import type { Monitor, Group, WebSocketOptions } from '@/types'
@@ -10,6 +10,7 @@ import HTTPOptionsEditor from '@/components/HTTPOptionsEditor.vue'
 import HTTPAuthenticationEditor from '@/components/HTTPAuthenticationEditor.vue'
 import WebSocketOptionsEditor from '@/components/WebSocketOptionsEditor.vue'
 import { useAction, notify } from '@/composables/useFeedback'
+import { useMotion } from '@/composables/useMotion'
 import Modal from '@/components/Modal.vue'
 import Field from '@/components/Field.vue'
 import { Button } from '@/components/ui/button'
@@ -53,6 +54,37 @@ function defaults(): Monitor {
 const form = reactive<Monitor>(defaults())
 const tags = ref('')
 const tab = ref('basics')
+const tabScroll = ref<HTMLElement>()
+const { animate, reducedMotion } = useMotion()
+let ghost: HTMLElement | undefined
+watch(tab, async (_, previous) => {
+  ghost?.remove()
+  if (reducedMotion.value === 'reduce' || !tabScroll.value) return
+  const panel = tabScroll.value.querySelector<HTMLElement>(`[data-editor-panel="${previous}"]`)
+  if (!panel || !panel.getBoundingClientRect().height) return
+  // 旧内容只作无交互的淡出快照，真实表单保持挂载，不丢弃未保存的输入。
+  const snapshot = panel.cloneNode(true) as HTMLElement
+  snapshot.inert = true
+  snapshot.setAttribute('aria-hidden', 'true')
+  snapshot.removeAttribute('id')
+  snapshot.removeAttribute('role')
+  snapshot.removeAttribute('data-editor-panel')
+  for (const child of snapshot.querySelectorAll('[id]')) child.removeAttribute('id')
+  for (const control of snapshot.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLButtonElement>('input, select, textarea, button')) control.disabled = true
+  const rect = panel.getBoundingClientRect()
+  const parent = tabScroll.value.getBoundingClientRect()
+  Object.assign(snapshot.style, { position: 'absolute', left: `${rect.left - parent.left}px`, top: `${rect.top - parent.top + tabScroll.value.scrollTop}px`, width: `${rect.width}px`, pointerEvents: 'none' })
+  tabScroll.value.append(snapshot)
+  ghost = snapshot
+  await nextTick()
+  if (!snapshot.isConnected || !open.value) { snapshot.remove(); return }
+  const current = tabScroll.value?.querySelector<HTMLElement>(`[data-editor-panel="${tab.value}"]`)
+  animate(current, [{ opacity: 0 }, { opacity: 1 }], 180)
+  const animation = animate(snapshot, [{ opacity: 1 }, { opacity: 0 }], 180)
+  if (animation) void animation.finished.catch(() => {}).finally(() => snapshot.remove())
+  else snapshot.remove()
+})
+onBeforeUnmount(() => ghost?.remove())
 watch(
   () => form.type,
   (type) => {
@@ -159,7 +191,7 @@ async function submit(event: Event) {
             {{ t('http.authentication') }}
           </TabsTrigger>
         </TabsList>
-        <div class="editor-tab-scroll">
+        <div ref="tabScroll" class="editor-tab-scroll">
           <TabsContent
             value="basics"
             force-mount

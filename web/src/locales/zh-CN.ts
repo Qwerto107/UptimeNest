@@ -121,12 +121,31 @@ export default {
     legendUnknown: '暂无数据',
     updated: '更新于 {time}',
     lastUpdated: '最后更新于',
+    refreshCountdown: '距离下次刷新还有 {seconds} 秒',
+    refreshing: '刷新中',
     copyright: 'Copyright © 2026 Qwerto107. All rights reserved.',
     earlier: '较早',
     now: '最近',
     heartbeatHint: '心跳按检测次数排列，不代表固定 24 小时。',
     heartbeatPoint: '{time} · {status} · {latency}',
     latencyHistory: '响应延迟',
+    latencyRange: '响应延迟时间范围',
+    latencyRanges: {
+      '1h': '1 小时',
+      '3h': '3 小时',
+      '6h': '6 小时',
+      '12h': '12 小时',
+      '24h': '24 小时',
+      '3d': '3 天',
+      '1w': '7 天',
+    },
+    rangeChecks: '时段内 {count} 次检测',
+    historyMinimum: '最小',
+    rangeStatisticsHint: '根据所选时段内全部成功检测的有效延迟计算，不使用图表聚合值估算。',
+    rangeChartHint: '曲线显示各时间段平均延迟，竖线保留最小值与最大值；含故障的时间段标红，无数据处断线。',
+    rangeRetentionHint: '受历史保留设置限制，仅查询 {start} 之后的记录。',
+    bucketChecks: '{count} 次检测 · {failures} 次故障',
+    rangeChartHelp: '移动指针，或聚焦后使用左右方向键、Home 和 End 查看时间段的平均、最小、最大延迟及故障次数。无数据处断线，统计根据所选时段全部成功记录计算。',
     historyAverage: '平均',
     historyMaximum: '最大',
     historyFailures: '故障',
@@ -153,6 +172,7 @@ export default {
     tlsVersion: 'TLS 版本',
     httpVersion: 'HTTP 版本',
     handshake: 'TLS 握手耗时',
+    handshakeWarning: 'TLS 握手 {value}，超过管理员设置的 {threshold} 提醒阈值',
     issuer: '证书颁发者（组织 O）',
     keyExchange: 'TLS 密钥交换机制',
     cipherSuite: 'TLS 加密算法',
@@ -163,43 +183,34 @@ export default {
     latest: '最近检测',
     showDetails: '查看 {name} 的连接详情',
     panel: '切换状态面板',
-
-    rangeChartHelp: '移动指针，或聚焦后使用左右方向键、Home 和 End 查看时间段的平均、最小、最大延迟及故障次数。无数据处断线，统计根据所选时段全部成功记录计算。',
-
-    bucketChecks: '{count} 次检测 · {failures} 次故障',
-
-    rangeRetentionHint: '受历史保留设置限制，仅查询 {start} 之后的记录。',
-
-    rangeChartHint: '曲线显示各时间段平均延迟，竖线保留最小值与最大值；含故障的时间段标红，无数据处断线。',
-
-    rangeStatisticsHint: '根据所选时段内全部成功检测的有效延迟计算，不使用图表聚合值估算。',
-
-    historyMinimum: '最小',
-
-    rangeChecks: '时段内 {count} 次检测',
-
-    latencyRanges: {
-      '1h': '1 小时',
-      '3h': '3 小时',
-      '6h': '6 小时',
-      '12h': '12 小时',
-      '24h': '24 小时',
-      '3d': '3 天',
-      '1w': '7 天',
-    },
-
-    latencyRange: '响应延迟时间范围',
-
-    handshakeWarning: 'TLS 握手 {value}，超过管理员设置的 {threshold} 提醒阈值',
+  },
+  websocket: {
+    connectIPHint: '可选，填写单个 IPv4 或 IPv6，不含端口。直连此 IP，保留 Host、WSS 的 SNI 和证书域名校验；留空使用 DNS。',
+    options: 'WebSocket 设置',
+    targetExample: 'wss://example.com/ws',
+    mode: '检测方式',
+    mode_handshake: '握手检测',
+    mode_ping: '握手 + Ping/Pong',
+    modeHint: '默认只验证握手；Ping/Pong 模式还需收到匹配的心跳响应。每次检测重新连接，受整体超时限制。',
+    originHint: '可选，填写 HTTP/HTTPS 来源，不含路径和参数；留空不发送 Origin。',
+    subprotocols: '子协议（可选）',
+    subprotocolsHint: '用英文逗号分隔，最多 16 项；按填写顺序请求协商。',
+    headersHint: 'JSON 对象，名称和值均为字符串，可填写 Authorization、Cookie 或 Host。握手头由系统管理；Origin 和子协议使用上方字段。',
+    tlsHint: 'WSS 始终校验证书，连接详情单独显示 TLS 握手耗时。响应延迟包含连接、握手及所选的心跳检测；不跟随重定向。',
   },
   http: {
+    connectIP: '指定连接 IP',
+    connectIPHint: '可选，填写单个 IPv4 或 IPv6，不含端口。仅对目标域名直连此 IP，保留 Host 和 HTTPS 域名校验；留空使用 DNS。',
+    connectIPExample: '例如 192.168.0.88 或 2001:db8::1',
     ignoreTLS: '忽略 HTTPS 站点的 TLS/SSL 错误',
     ignoreTLSHint: '跳过检测目标的证书链及域名校验；仅对本监控的 HTTPS 请求生效，默认关闭。',
     options: 'HTTP 选项',
     version: 'HTTP 协议模式',
+    version_http1: 'HTTP/1.1',
+    version_http2: 'HTTP/2（h2）',
+    version_http3: 'HTTP/3（h3）',
     version_standard: '自动协商（h2 > h1.1）',
     version_auto: '自动协商（h3 > h2 > h1.1）',
-    version_http3: 'HTTP/3（h3）',
     versionHint: '手动模式不降级。明文 HTTP/2 需要服务端支持 h2c；HTTP/3 需要 HTTPS 和 UDP。使用环境代理时，自动模式协商 h2 > h1.1。',
     redirects: '最大重定向次数',
     redirectsHint: '允许的最大重定向次数，设置为 0 禁用重定向。',
@@ -242,16 +253,6 @@ export default {
     clientKeyHint: '需与证书匹配，使用未加密的 PEM 私钥。',
     caCert: '附加 CA 证书（可选，PEM）',
     caCertHint: '用于信任服务端的私有 CA；保留系统证书校验。',
-
-    connectIPExample: '例如 192.168.0.88 或 2001:db8::1',
-
-    connectIPHint: '可选，填写单个 IPv4 或 IPv6，不含端口。仅对目标域名直连此 IP，保留 Host 和 HTTPS 域名校验；留空使用 DNS。',
-
-    connectIP: '指定连接 IP',
-
-    version_http2: 'HTTP/2（h2）',
-
-    version_http1: 'HTTP/1.1',
   },
   monitor: {
     totalCaption: 'TOTAL',
@@ -269,6 +270,8 @@ export default {
     subtitle: '掌握服务状态，管理每一次心跳。',
     add: '添加监控',
     edit: '编辑监控',
+    duplicate: '复制创建',
+    copyNameSuffix: '（副本）',
     total: '{count} 项监控',
     up: '{count} 项正常',
     down: '{count} 项故障',
@@ -280,6 +283,7 @@ export default {
     target: '目标地址',
     host: '主机名或 IP 地址',
     http: 'HTTP / HTTPS',
+    websocket: 'WebSocket（WS / WSS）',
     tcp: 'TCP 端口',
     ping: 'Ping',
     dns: 'DNS',
@@ -331,12 +335,6 @@ export default {
     privateHint: '名称、备注和标签会出现在公开面板。',
     hideAddress: '在状态页隐藏地址',
     hideAddressHint: '隐藏后，公开状态页及其接口均不返回该项地址。',
-
-    copyNameSuffix: '（副本）',
-
-    duplicate: '复制创建',
-
-    websocket: 'WebSocket（WS / WSS）',
   },
   group: {
     title: '监控分组',
@@ -345,6 +343,7 @@ export default {
     root: '无（顶级分组）',
     toggle: '展开或折叠 {name}',
     addChild: '在 {name} 下创建子分组',
+    addMonitor: '在 {name} 下添加监控',
     add: '创建分组',
     edit: '编辑分组',
     delete: '删除分组',
@@ -356,8 +355,6 @@ export default {
       '删除“{name}”后，直属监控移至未分组，子分组上移一级；监控及历史、各状态页分组保留。',
     nameExample: '例如：基础设施',
     manage: '管理组内监控',
-
-    addMonitor: '在 {name} 下添加监控',
   },
   panel: {
     title: '状态面板',
@@ -447,6 +444,8 @@ export default {
     dark: '夜间模式',
     themeHint: '主题偏好保存在当前浏览器。',
     monitoring: '全局检测设置',
+    tlsLatencyWarning: 'TLS 握手延迟提醒阈值（ms）',
+    tlsLatencyWarningHint: '填写 0–120000 的整数，0 表示关闭（默认）。状态页仅在 TLS 握手耗时超过此值时标为琥珀色；只影响显示，不改变监控状态。',
     ua: 'User-Agent',
     uaHint: '用于所有 HTTP/HTTPS 检测；留空使用 UptimeNest，下一次检测起生效。',
     history: '历史数据管理',
@@ -466,24 +465,5 @@ export default {
     confirmPassword: '确认新密码',
     passwordChanged: '密码已修改，其他登录会话已失效',
     passwordHint: '修改后，其他浏览器的管理员会话将失效。',
-
-    tlsLatencyWarningHint: '填写 0–120000 的整数，0 表示关闭（默认）。状态页仅在 TLS 握手耗时超过此值时标为琥珀色；只影响显示，不改变监控状态。',
-
-    tlsLatencyWarning: 'TLS 握手延迟提醒阈值（ms）',
   },
-
-    websocket: {
-    connectIPHint: '可选，填写单个 IPv4 或 IPv6，不含端口。直连此 IP，保留 Host、WSS 的 SNI 和证书域名校验；留空使用 DNS。',
-    options: 'WebSocket 设置',
-    targetExample: 'wss://example.com/ws',
-    mode: '检测方式',
-    mode_handshake: '握手检测',
-    mode_ping: '握手 + Ping/Pong',
-    modeHint: '默认只验证握手；Ping/Pong 模式还需收到匹配的心跳响应。每次检测重新连接，受整体超时限制。',
-    originHint: '可选，填写 HTTP/HTTPS 来源，不含路径和参数；留空不发送 Origin。',
-    subprotocols: '子协议（可选）',
-    subprotocolsHint: '用英文逗号分隔，最多 16 项；按填写顺序请求协商。',
-    headersHint: 'JSON 对象，名称和值均为字符串，可填写 Authorization、Cookie 或 Host。握手头由系统管理；Origin 和子协议使用上方字段。',
-    tlsHint: 'WSS 始终校验证书，连接详情单独显示 TLS 握手耗时。响应延迟包含连接、握手及所选的心跳检测；不跟随重定向。',
-  },
-  }
+}

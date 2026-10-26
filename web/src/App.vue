@@ -26,6 +26,7 @@ onBeforeUnmount(() => window.removeEventListener('session-expired', expired))
   <Transition name="toast">
     <div
       v-if="feedback"
+      :key="feedback.id"
       class="toast"
       :class="{ 'toast-error': feedback.error }"
       :role="feedback.error ? 'alert' : 'status'"

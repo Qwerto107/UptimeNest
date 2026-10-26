@@ -112,7 +112,7 @@ async function setDefault(panel: Panel) {
       {{ t('panel.add') }}
     </Button>
   </div>
-  <LoadState :loading="loading" :error="error" :has-data="!!data" @retry="refresh" />
+  <LoadState :loading="loading" :error="error" :has-data="!!data" skeleton="panels" @retry="refresh" />
   <template v-if="data">
     <EmptyState
       v-if="!data.panels.length"

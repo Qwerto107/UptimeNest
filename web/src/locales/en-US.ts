@@ -124,12 +124,31 @@ const enUS: typeof zhCN = {
     legendUnknown: 'No data',
     updated: 'Updated at {time}',
     lastUpdated: 'Last updated',
+    refreshCountdown: 'Next refresh in {seconds} seconds',
+    refreshing: 'Refreshing',
     copyright: 'Copyright © 2026 Qwerto107. All rights reserved.',
     earlier: 'Earlier',
     now: 'Latest',
     heartbeatHint: 'Heartbeats represent individual checks, not a fixed 24-hour period.',
     heartbeatPoint: '{time} · {status} · {latency}',
     latencyHistory: 'Response latency',
+    latencyRange: 'Response latency time range',
+    latencyRanges: {
+      '1h': '1 hour',
+      '3h': '3 hours',
+      '6h': '6 hours',
+      '12h': '12 hours',
+      '24h': '24 hours',
+      '3d': '3 days',
+      '1w': '7 days',
+    },
+    rangeChecks: '{count} checks in range',
+    historyMinimum: 'Min',
+    rangeStatisticsHint: 'Calculated from all valid successful checks in the selected range, rather than chart aggregates.',
+    rangeChartHint: 'The curve shows bucket averages; vertical lines preserve minimum and maximum values. Buckets with failures are red; missing data breaks the curve.',
+    rangeRetentionHint: 'History retention limits results to records after {start}.',
+    bucketChecks: '{count} checks · {failures} failures',
+    rangeChartHelp: 'Move the pointer, or focus and use arrow keys, Home, and End to inspect bucket averages, minima, maxima, and failure counts. Missing data breaks the curve. Statistics use all successful checks in the selected range.',
     historyAverage: 'Average',
     historyMaximum: 'Max',
     historyFailures: 'Failures',
@@ -156,6 +175,7 @@ const enUS: typeof zhCN = {
     tlsVersion: 'TLS version',
     httpVersion: 'HTTP version',
     handshake: 'TLS handshake time',
+    handshakeWarning: 'TLS handshake {value}, above the admin warning threshold of {threshold}',
     issuer: 'Certificate issuer (organization)',
     keyExchange: 'TLS key exchange',
     cipherSuite: 'TLS cipher suite',
@@ -166,43 +186,34 @@ const enUS: typeof zhCN = {
     latest: 'Latest check',
     showDetails: 'View connection details for {name}',
     panel: 'Switch status page',
-
-    rangeChartHelp: 'Move the pointer, or focus and use arrow keys, Home, and End to inspect bucket averages, minima, maxima, and failure counts. Missing data breaks the curve. Statistics use all successful checks in the selected range.',
-
-    bucketChecks: '{count} checks · {failures} failures',
-
-    rangeRetentionHint: 'History retention limits results to records after {start}.',
-
-    rangeChartHint: 'The curve shows bucket averages; vertical lines preserve minimum and maximum values. Buckets with failures are red; missing data breaks the curve.',
-
-    rangeStatisticsHint: 'Calculated from all valid successful checks in the selected range, rather than chart aggregates.',
-
-    historyMinimum: 'Min',
-
-    rangeChecks: '{count} checks in range',
-
-    latencyRanges: {
-      '1h': '1 hour',
-      '3h': '3 hours',
-      '6h': '6 hours',
-      '12h': '12 hours',
-      '24h': '24 hours',
-      '3d': '3 days',
-      '1w': '7 days',
-    },
-
-    latencyRange: 'Response latency time range',
-
-    handshakeWarning: 'TLS handshake {value}, above the admin warning threshold of {threshold}',
+  },
+  websocket: {
+    connectIPHint: 'Optional single IPv4 or IPv6 address without a port. Connect directly while preserving Host, WSS SNI, and certificate hostname verification. Leave empty to use DNS.',
+    options: 'WebSocket settings',
+    targetExample: 'wss://example.com/ws',
+    mode: 'Check mode',
+    mode_handshake: 'Handshake',
+    mode_ping: 'Handshake + Ping/Pong',
+    modeHint: 'Handshake is the default. Ping/Pong also requires a matching heartbeat reply. Each check opens a new connection within the overall timeout.',
+    originHint: 'Optional HTTP/HTTPS origin without a path or query. Leave empty to omit Origin.',
+    subprotocols: 'Subprotocols (optional)',
+    subprotocolsHint: 'Separate up to 16 values with commas; requested in the order entered.',
+    headersHint: 'A JSON object with string names and values. Authorization, Cookie, and Host are supported. Handshake headers are managed automatically; use the fields above for Origin and subprotocols.',
+    tlsHint: 'WSS always verifies certificates. Connection details show TLS handshake time separately. Response latency includes connection, handshake, and the selected heartbeat check; redirects are not followed.',
   },
   http: {
+    connectIP: 'Connect to IP',
+    connectIPHint: 'Optional single IPv4 or IPv6 address without a port. Connect directly for the target hostname while retaining Host and HTTPS hostname verification. Leave empty to use DNS.',
+    connectIPExample: 'e.g. 192.168.0.88 or 2001:db8::1',
     ignoreTLS: 'Ignore TLS/SSL errors for HTTPS targets',
     ignoreTLSHint: 'Skip certificate chain and hostname verification for this monitor’s HTTPS requests only. Off by default.',
     options: 'HTTP options',
     version: 'HTTP protocol mode',
+    version_http1: 'HTTP/1.1',
+    version_http2: 'HTTP/2 (h2)',
+    version_http3: 'HTTP/3 (h3)',
     version_standard: 'Automatic (h2 > h1.1)',
     version_auto: 'Automatic (h3 > h2 > h1.1)',
-    version_http3: 'HTTP/3 (h3)',
     versionHint: 'Manual modes do not downgrade. Cleartext HTTP/2 requires h2c support; HTTP/3 requires HTTPS and UDP. Automatic modes use h2 > h1.1 when using an environment proxy.',
     redirects: 'Maximum redirects',
     redirectsHint: 'Maximum number of redirects to follow. Set to 0 to disable redirects.',
@@ -244,16 +255,6 @@ const enUS: typeof zhCN = {
     clientKeyHint: 'Use an unencrypted PEM private key that matches the certificate.',
     caCert: 'Additional CA certificate (optional, PEM)',
     caCertHint: 'Trust a private server CA while retaining system certificate verification.',
-
-    connectIPExample: 'e.g. 192.168.0.88 or 2001:db8::1',
-
-    connectIPHint: 'Optional single IPv4 or IPv6 address without a port. Connect directly for the target hostname while retaining Host and HTTPS hostname verification. Leave empty to use DNS.',
-
-    connectIP: 'Connect to IP',
-
-    version_http2: 'HTTP/2 (h2)',
-
-    version_http1: 'HTTP/1.1',
   },
   monitor: {
     totalCaption: 'TOTAL',
@@ -271,6 +272,8 @@ const enUS: typeof zhCN = {
     subtitle: 'Track service status and manage your checks.',
     add: 'Add monitor',
     edit: 'Edit monitor',
+    duplicate: 'Clone monitor',
+    copyNameSuffix: ' (copy)',
     total: '{count} monitor | {count} monitors',
     up: '{count} up',
     down: '{count} down',
@@ -282,6 +285,7 @@ const enUS: typeof zhCN = {
     target: 'Target URL',
     host: 'Hostname or IP address',
     http: 'HTTP / HTTPS',
+    websocket: 'WebSocket (WS / WSS)',
     tcp: 'TCP port',
     ping: 'Ping',
     dns: 'DNS',
@@ -332,12 +336,6 @@ const enUS: typeof zhCN = {
     privateHint: 'The name, description, and tags are visible on public status pages.',
     hideAddress: 'Hide address on status pages',
     hideAddressHint: 'When enabled, the public status page and its API omit this monitor’s address.',
-
-    copyNameSuffix: ' (copy)',
-
-    duplicate: 'Clone monitor',
-
-    websocket: 'WebSocket (WS / WSS)',
   },
   group: {
     title: 'Monitor groups',
@@ -346,6 +344,7 @@ const enUS: typeof zhCN = {
     root: 'None (top-level group)',
     toggle: 'Expand or collapse {name}',
     addChild: 'Add a subgroup to {name}',
+    addMonitor: 'Add a monitor to {name}',
     add: 'Create group',
     edit: 'Edit group',
     delete: 'Delete group',
@@ -356,8 +355,6 @@ const enUS: typeof zhCN = {
     deleteDescription: 'Delete “{name}”. Direct monitors become ungrouped, and child groups move up one level. Monitors, history, and status page groups are kept.',
     nameExample: 'e.g. Infrastructure',
     manage: 'Manage monitors in this group',
-
-    addMonitor: 'Add a monitor to {name}',
   },
   panel: {
     title: 'Status pages',
@@ -445,6 +442,8 @@ const enUS: typeof zhCN = {
     dark: 'Dark mode',
     themeHint: 'Your theme preference is saved in this browser.',
     monitoring: 'Global check settings',
+    tlsLatencyWarning: 'TLS handshake warning threshold (ms)',
+    tlsLatencyWarningHint: 'An integer from 0 to 120000. Set 0 to disable (default). The status page uses amber only when TLS handshake time exceeds this value. This changes display only, not monitor status.',
     ua: 'User-Agent',
     uaHint: 'Used for all HTTP/HTTPS checks. Leave blank to use UptimeNest. Takes effect on the next check.',
     history: 'History',
@@ -463,26 +462,7 @@ const enUS: typeof zhCN = {
     confirmPassword: 'Confirm new password',
     passwordChanged: 'Password changed. Other login sessions have been signed out.',
     passwordHint: 'Changing the password signs out admin sessions in other browsers.',
-
-    tlsLatencyWarningHint: 'An integer from 0 to 120000. Set 0 to disable (default). The status page uses amber only when TLS handshake time exceeds this value. This changes display only, not monitor status.',
-
-    tlsLatencyWarning: 'TLS handshake warning threshold (ms)',
   },
-
-    websocket: {
-    connectIPHint: 'Optional single IPv4 or IPv6 address without a port. Connect directly while preserving Host, WSS SNI, and certificate hostname verification. Leave empty to use DNS.',
-    options: 'WebSocket settings',
-    targetExample: 'wss://example.com/ws',
-    mode: 'Check mode',
-    mode_handshake: 'Handshake',
-    mode_ping: 'Handshake + Ping/Pong',
-    modeHint: 'Handshake is the default. Ping/Pong also requires a matching heartbeat reply. Each check opens a new connection within the overall timeout.',
-    originHint: 'Optional HTTP/HTTPS origin without a path or query. Leave empty to omit Origin.',
-    subprotocols: 'Subprotocols (optional)',
-    subprotocolsHint: 'Separate up to 16 values with commas; requested in the order entered.',
-    headersHint: 'A JSON object with string names and values. Authorization, Cookie, and Host are supported. Handshake headers are managed automatically; use the fields above for Origin and subprotocols.',
-    tlsHint: 'WSS always verifies certificates. Connection details show TLS handshake time separately. Response latency includes connection, handshake, and the selected heartbeat check; redirects are not followed.',
-  },
-  }
+}
 
 export default enUS

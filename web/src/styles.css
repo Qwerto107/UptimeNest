@@ -6,6 +6,7 @@
 
 /* 前后台共用基础控件；访客状态页在自身作用域覆盖主题变量。 */
 :root {
+  --motion-ease: cubic-bezier(.2,.7,.2,1);
   color-scheme: light;
   --background: #f6f7f9;
   --foreground: #12161c;
@@ -772,7 +773,7 @@ svg {
   fill: var(--heartbeat-empty);
   transform-box: fill-box;
   transform-origin: center;
-  transition: transform 120ms ease-out;
+  transition: transform 120ms var(--motion-ease);
 }
 .heartbeat-shape.beat-up {
   fill: var(--heartbeat);
@@ -781,16 +782,20 @@ svg {
   fill: var(--heartbeat-down);
 }
 .heartbeat-shape-active {
-  transform: scaleY(1.2);
+  transform: scaleY(1.25);
 }
 .heartbeat::after {
-  display: none;
+  display: block;
+  --tooltip-x: -50%;
+  opacity: 0;
+  visibility: hidden;
   content: attr(data-tooltip);
   position: absolute;
   z-index: 10;
   bottom: calc(100% + 9px);
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(var(--tooltip-x), 4px);
+  transition: opacity 120ms var(--motion-ease), transform 120ms var(--motion-ease);
   width: max-content;
   max-width: 240px;
   padding: 7px 10px;
@@ -803,16 +808,18 @@ svg {
 }
 .heartbeat:hover::after,
 .heartbeat:focus-visible::after {
-  display: block;
+  opacity: 1;
+  visibility: visible;
+  transform: translate(var(--tooltip-x), 0);
 }
 .heartbeat-strip > :nth-child(-n + 12)::after {
   left: 0;
-  transform: none;
+  --tooltip-x: 0px;
 }
 .heartbeat-strip > :nth-last-child(-n + 12)::after {
   left: auto;
   right: 0;
-  transform: none;
+  --tooltip-x: 0px;
 }
 .entity-list {
   border: 1px solid var(--border);
@@ -1027,6 +1034,20 @@ svg {
   background: var(--card);
   box-shadow: 0 24px 80px rgb(18 22 28 / 18%);
 }
+.modal-overlay[data-state='open'] { animation: overlay-in 240ms var(--motion-ease); }
+.modal-overlay[data-state='closed'] { animation: overlay-out 180ms var(--motion-ease); }
+.modal-content[data-state='open'] { animation: modal-in 240ms var(--motion-ease); }
+.modal-content[data-state='closed'] { animation: modal-out 180ms var(--motion-ease); }
+@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlay-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes modal-in {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 10px)); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+@keyframes modal-out {
+  from { opacity: 1; transform: translate(-50%, -50%); }
+  to { opacity: 0; transform: translate(-50%, calc(-50% + 6px)); }
+}
 .modal-wide {
   max-width: 640px;
 }
@@ -1158,6 +1179,7 @@ svg {
   border-bottom-color: var(--heartbeat);
 }
 .editor-tab-scroll {
+  position: relative;
   min-height: 0;
   padding: 22px 24px;
   overflow-y: auto;
@@ -1540,14 +1562,35 @@ svg {
 .toast-enter-active,
 .toast-leave-active {
   transition:
-    opacity 180ms ease-out,
-    bottom 180ms ease-out;
+    opacity 220ms var(--motion-ease),
+    transform 220ms var(--motion-ease);
 }
+.toast-leave-active { transition-duration: 160ms; }
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
-  bottom: 16px;
+  transform: translateX(24px);
 }
+.refresh-icon { display: inline-flex; align-items: center; justify-content: center; }
+.motion-value { position: relative; isolation: isolate; display: inline-grid; vertical-align: baseline; }
+.motion-value-text { grid-area: 1 / 1; }
+.metric-enter-active, .metric-leave-active {
+  transition: opacity 300ms var(--motion-ease), transform 300ms var(--motion-ease);
+}
+.metric-leave-active { position: absolute; inset: 0; }
+.metric-enter-from { opacity: 0; transform: translateY(8px); }
+.metric-leave-to { opacity: 0; transform: translateY(-8px); }
+.metric-enter-active::before {
+  content: '';
+  position: absolute;
+  inset: -2px -4px;
+  z-index: -1;
+  border-radius: 4px;
+  background: var(--pulse-ok-soft, var(--accent));
+  pointer-events: none;
+  animation: metric-flash 300ms var(--motion-ease);
+}
+@keyframes metric-flash { from { opacity: .8; } to { opacity: 0; } }
 .public-page {
   min-height: 100dvh;
 }
@@ -1573,7 +1616,7 @@ svg {
 
 @media (max-width: 1200px) {
   .monitor-list-row {
-    grid-template-columns: minmax(120px, 1.2fr) 90px 105px minmax(110px, 1.7fr) 128px;
+    grid-template-columns: minmax(120px, 1.2fr) 90px 105px minmax(110px, 1.7fr) auto;
     gap: 12px;
   }
 }
@@ -1911,4 +1954,16 @@ svg {
   html[lang="en-US"] .pagination-actions .control {
     flex-basis: 100%;
   }
+}
+
+/* 系统减少动态效果优先于组件库动效；状态和提示仍立即显示。 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .heartbeat-shape-active, .heartbeat:hover, .heartbeat:focus-visible,
+  .metric-enter-from, .metric-leave-to, .toast-enter-from, .toast-leave-to { transform: none !important; }
+  .heartbeat::after { transform: translate(var(--tooltip-x), 0) !important; }
 }

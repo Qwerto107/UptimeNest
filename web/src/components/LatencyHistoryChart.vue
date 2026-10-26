@@ -5,10 +5,12 @@ import { useI18n } from 'vue-i18n'
 import type { HeartbeatPoint, LatencyBucket, LatencyHistory } from '@/types'
 import { timezone } from '@/composables/useApp'
 import { formatTime, latency } from '@/lib/format'
+import AnimatedValue from '@/components/AnimatedValue.vue'
 
 const props = defineProps<{ beats?: HeartbeatPoint[]; history?: LatencyHistory; interval?: number; loading?: boolean }>()
 const { t, locale } = useI18n()
 const helpId = `latency-help-${useId()}`
+const revealId = `latency-reveal-${useId()}`
 const plot = ref<HTMLElement>()
 const width = ref(900)
 const activeIndex = ref<number>()
@@ -252,11 +254,11 @@ function moveSelection(event: KeyboardEvent) {
       <slot name="controls" />
       <dl v-if="!loading && (statistics || failureCount)" class="pulse-latency-statistics pulse-mono" :title="t(history ? 'status.rangeStatisticsHint' : 'status.latencyStatisticsHint')">
         <template v-if="statistics">
-          <div><dt>{{ t('status.historyAverage') }}</dt><dd>{{ latency(statistics.average) }}</dd></div>
-          <div><dt><abbr :title="t('status.latencyP95Hint')">P95</abbr></dt><dd>{{ latency(statistics.p95) }}</dd></div>
-          <div><dt>{{ t('status.historyMaximum') }}</dt><dd>{{ latency(statistics.maximum) }}</dd></div>
+          <div><dt>{{ t('status.historyAverage') }}</dt><dd><AnimatedValue :value="latency(statistics.average)" /></dd></div>
+          <div><dt><abbr :title="t('status.latencyP95Hint')">P95</abbr></dt><dd><AnimatedValue :value="latency(statistics.p95)" /></dd></div>
+          <div><dt>{{ t('status.historyMaximum') }}</dt><dd><AnimatedValue :value="latency(statistics.maximum)" /></dd></div>
         </template>
-        <div v-if="failureCount" class="pulse-latency-failure-count"><dt>{{ t('status.historyFailures') }}</dt><dd>{{ t('status.failureChecks', { count: failureCount }) }}</dd></div>
+        <div v-if="failureCount" class="pulse-latency-failure-count"><dt>{{ t('status.historyFailures') }}</dt><dd><AnimatedValue :value="t('status.failureChecks', { count: failureCount })" /></dd></div>
       </dl>
     </div>
     <p v-if="loading" class="pulse-latency-empty pulse-latency-no-data" role="status">{{ t('common.loading') }}</p>
@@ -269,12 +271,14 @@ function moveSelection(event: KeyboardEvent) {
         @focus="activeIndex = chart.points.length - 1" @blur="activeIndex = undefined" @keydown="moveSelection"
       >
         <svg :viewBox="`0 0 ${width} ${height}`" role="img" :aria-label="t('status.latencyChartSummary', { count: recordCount, start: formatTime(chart.start), end: formatTime(chart.end) })">
+          <defs><clipPath :id="revealId"><rect :width="width" :height="height" class="pulse-latency-reveal" /></clipPath></defs>
           <path :d="`M${inset} 24H${width - inset} M${inset} 52H${width - inset}`" class="pulse-latency-grid" />
           <g v-for="span in chart.spans" :key="span.first.index" class="pulse-latency-outage">
             <rect :x="span.x" y="0" :width="span.width" :height="bottom" class="pulse-latency-outage-area" />
             <rect :x="span.x" :y="bottom - 2" :width="span.width" height="2" class="pulse-latency-outage-edge" />
             <path v-if="span.first.beat.failure === 'timeout'" :d="`M${Math.max(inset, Math.min(width - inset - 9, span.first.x - 4.5))} 1.5h9l-4.5 7z`" class="pulse-latency-timeout" />
           </g>
+          <g :clip-path="`url(#${revealId})`">
           <path :d="chart.area" class="pulse-latency-area" />
           <path v-for="point in chart.points.filter((point) => point.beat.bucket && point.measured)" :key="point.index" :d="`M${point.x} ${point.maximumY}V${point.minimumY}`" class="pulse-latency-envelope" />
           <path :d="chart.line" class="pulse-latency-line" />
@@ -285,6 +289,7 @@ function moveSelection(event: KeyboardEvent) {
           <circle v-for="point in chart.responses" :key="point.index" :cx="point.x" :cy="point.y" r="3.5" class="pulse-latency-response" />
           <circle v-for="point in chart.recoveries" :key="point.index" :cx="point.x" :cy="point.y" r="3.5" class="pulse-latency-recovered" />
           <circle v-if="chart.latest?.successful && !chart.latest.recovered" :cx="chart.latest.x" :cy="chart.latest.y" r="4" class="pulse-latency-latest" />
+          </g>
           <template v-if="selected">
             <path :d="`M${selected.x} ${top}V${bottom}`" class="pulse-latency-guide" />
             <circle :cx="selected.x" :cy="selected.y" r="4" :class="['pulse-latency-selected', `pulse-latency-selected-${selected.beat.status}`, { 'pulse-latency-recovered': selected.recovered }]" />
@@ -395,7 +400,14 @@ function moveSelection(event: KeyboardEvent) {
 .pulse-latency-area {
   fill: var(--pulse-ok, var(--heartbeat));
   fill-opacity: 0.09;
+  animation: latency-fill 300ms var(--motion-ease) 250ms backwards;
 }
+.pulse-latency-reveal {
+  transform-origin: left;
+  animation: latency-reveal 600ms var(--motion-ease) backwards;
+}
+@keyframes latency-reveal { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes latency-fill { from { opacity: 0; } to { opacity: 1; } }
 .pulse-latency-line {
   fill: none;
   stroke: var(--pulse-ok, var(--heartbeat));

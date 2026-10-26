@@ -7,12 +7,35 @@ export function useResource<T>(loader: (signal: AbortSignal) => Promise<T>, inte
   const loading = ref(true)
   const refreshing = ref(false)
   const error = ref('')
+  const secondsUntilRefresh = ref(0)
   let controller: AbortController | undefined
-  let timer: ReturnType<typeof setInterval> | undefined
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let countdown: ReturnType<typeof setInterval> | undefined
+  let nextRefreshAt = 0
   let disposed = false
   let version = 0
+  function stopTimers() {
+    clearTimeout(timer)
+    clearInterval(countdown)
+  }
+  function updateCountdown() {
+    secondsUntilRefresh.value = Math.max(0, Math.ceil((nextRefreshAt - Date.now()) / 1000))
+  }
+  function schedule() {
+    stopTimers()
+    if (disposed || !interval || document.visibilityState !== 'visible') return
+    updateCountdown()
+    timer = setTimeout(() => void refresh(), Math.max(0, nextRefreshAt - Date.now()))
+    countdown = setInterval(updateCountdown, 1000)
+  }
+  function visibilityChanged() {
+    if (document.visibilityState !== 'visible') stopTimers()
+    else if (!refreshing.value) schedule()
+  }
   async function refresh() {
     if (disposed) return
+    stopTimers()
+    secondsUntilRefresh.value = 0
     // 用户操作后的刷新取消旧请求，避免旧统计覆盖已经清理或停用后的新状态。
     controller?.abort()
     const current = ++version
@@ -36,20 +59,20 @@ export function useResource<T>(loader: (signal: AbortSignal) => Promise<T>, inte
       if (current === version) {
         loading.value = false
         refreshing.value = false
+        nextRefreshAt = Date.now() + interval
+        schedule()
       }
     }
   }
   onMounted(() => {
     void refresh()
-    if (interval)
-      timer = setInterval(() => {
-        if (document.visibilityState === 'visible') void refresh()
-      }, interval)
+    if (interval) document.addEventListener('visibilitychange', visibilityChanged)
   })
   onBeforeUnmount(() => {
     disposed = true
     controller?.abort()
-    clearInterval(timer)
+    stopTimers()
+    document.removeEventListener('visibilitychange', visibilityChanged)
   })
-  return { data, loading, refreshing, error, refresh }
+  return { data, loading, refreshing, error, refresh, secondsUntilRefresh }
 }

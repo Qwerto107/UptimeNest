@@ -13,6 +13,7 @@ import LoadState from '@/components/LoadState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import HeartbeatStrip from '@/components/HeartbeatStrip.vue'
 import LatencyHistoryChart from '@/components/LatencyHistoryChart.vue'
+import AnimatedValue from '@/components/AnimatedValue.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import ConnectionDetails from '@/components/ConnectionDetails.vue'
 import MonitorEditor from '@/components/MonitorEditor.vue'
@@ -164,11 +165,11 @@ async function clearHistory() {
       <div class="detail-stats">
         <div>
           <span>{{ t('status.uptimeShort') }}</span>
-          <strong>{{ percent(data.monitor.summary.uptime) }}</strong>
+          <strong><AnimatedValue :value="percent(data.monitor.summary.uptime)" /></strong>
         </div>
         <div>
           <span>{{ t('monitor.latency') }}</span>
-          <strong>{{ latency(data.monitor.summary.latest?.latency) }}</strong>
+          <strong><AnimatedValue :value="latency(data.monitor.summary.latest?.latency)" /></strong>
         </div>
         <div>
           <span>{{ t('monitor.interval') }}</span>

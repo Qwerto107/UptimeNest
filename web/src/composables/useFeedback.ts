@@ -1,15 +1,16 @@
 import { ref } from 'vue'
 import { i18n } from '@/i18n'
 
-export const feedback = ref<{ text: string; error: boolean } | null>(null)
+export const feedback = ref<{ id: number; text: string; error: boolean } | null>(null)
 let timer: ReturnType<typeof setTimeout>
+let nextID = 0
 
 export function notify(text: string, error = false) {
   clearTimeout(timer)
-  feedback.value = { text, error }
+  feedback.value = { id: ++nextID, text, error }
   timer = setTimeout(() => {
     feedback.value = null
-  }, 6000)
+  }, error ? 6000 : 3000)
 }
 
 export function clearSuccess() {
