@@ -101,7 +101,7 @@ async function logout() {
           <LogOut />
           {{ t('nav.logout') }}
         </Button>
-        <span>v0.4.0</span>
+        <span>v0.5.0</span>
       </div>
     </aside>
     <button

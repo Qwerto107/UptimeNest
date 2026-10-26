@@ -43,7 +43,7 @@ docker compose ps
 
 默认 SQLite 部署无须创建 `.env`。需要调整数据库或 HTTPS Cookie 时，在运行目录创建 `.env`，可参考仓库的 [.env.example](../.env.example)。
 
-`docker-compose.yml` 直接指定镜像 `ghcr.io/qwerto107/uptimenest:latest`。固定版本时修改 `image` 为 `ghcr.io/qwerto107/uptimenest:0.4.0`；更换端口时修改 `127.0.0.1:8090:8090` 中的第一个 `8090`。默认端口仅本机可访问，公网访问需配置反向代理。
+`docker-compose.yml` 直接指定镜像 `ghcr.io/qwerto107/uptimenest:latest`。固定版本时修改 `image` 为 `ghcr.io/qwerto107/uptimenest:0.5.0`；更换端口时修改 `127.0.0.1:8090:8090` 中的第一个 `8090`。默认端口仅本机可访问，公网访问需配置反向代理。
 
 ## 数据与目录
 
@@ -146,6 +146,7 @@ server {
 | 监控类型 | 部署要求 |
 | --- | --- |
 | HTTP/HTTPS | 容器能解析目标域名并访问目标 TCP 端口；系统 CA 用于校验证书 |
+| WebSocket | 容器能连接目标 WS/WSS 端口，服务端允许 HTTP/1.1 Upgrade；WSS 证书需受系统 CA 信任 |
 | HTTP/3 | 目标支持 HTTPS 与 QUIC，容器及宿主机允许对应 UDP 出站流量 |
 | TCP | 目标主机与端口从容器网络可达 |
 | Ping | 允许 ICMP；镜像提供专用 BusyBox Ping 入口，主程序仍以普通用户运行 |
