@@ -16,6 +16,12 @@ services:
     volumes:
       - ./data:/app/data
     read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    sysctls:
+      net.ipv4.ping_group_range: "65532 65532"
     tmpfs:
       - /tmp:size=1g,mode=1777
     healthcheck:

@@ -7,17 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"os/exec"
-	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Qwerto107/UptimeNest/internal/model"
 )
-
-var windowsPingReply = regexp.MustCompile(`(?im):[^\r\n]*[=<]\s*\d+\s*(?:ms|мс|毫秒)(?:\s|$)`)
 
 // Probe 执行单次检测；反转只改变可用性判断，不修改测量信息。
 func Probe(ctx context.Context, m model.Monitor, ua string) model.Heartbeat {
@@ -107,28 +102,6 @@ func resetTLS(h *model.Heartbeat) {
 	h.CertIssuerOrg = ""
 	h.TLSKeyExchange = ""
 	h.TLSCipherSuite = ""
-}
-
-// probePing 使用系统 ping，不通过 shell 拼接命令；取消任务时子进程同步终止。
-func probePing(ctx context.Context, m model.Monitor, h *model.Heartbeat) error {
-	args := []string{"-n", "-c", "1", "-W", strconv.Itoa(m.Timeout), m.Target}
-	if runtime.GOOS == "windows" {
-		args = []string{"-n", "1", "-w", strconv.Itoa(m.Timeout * 1000), m.Target}
-	}
-	if runtime.GOOS == "darwin" {
-		args = []string{"-n", "-c", "1", "-W", strconv.Itoa(m.Timeout * 1000), m.Target}
-	}
-	output, err := exec.CommandContext(ctx, "ping", args...).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("Ping 未收到有效响应（请确认系统已安装 ping 且允许 ICMP）：%w", err)
-	}
-	text := strings.ToLower(string(output))
-	// Windows 的不可达应答也可能返回 0；IPv4 检查 TTL，IPv6 检查应答行中的耗时。
-	if runtime.GOOS == "windows" && !strings.Contains(text, "ttl=") && !windowsPingReply.MatchString(text) {
-		return fmt.Errorf("Ping 目标不可达")
-	}
-	h.Message = "收到 ICMP 应答（响应时间包含系统命令开销）"
-	return nil
 }
 
 func probeDNS(ctx context.Context, m model.Monitor, h *model.Heartbeat) error {

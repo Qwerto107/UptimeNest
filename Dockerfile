@@ -36,7 +36,7 @@ RUN apk add --no-cache ca-certificates tzdata \
     && mkdir -p /app/data \
     && chown 65532:65532 /app/data
 
-# Ping 依赖系统命令，因此保留 Alpine 运行层及对应架构的 BusyBox。
+# 原生 ICMP 不依赖系统 ping，保留现有 Alpine 运行环境。
 FROM alpine:3.23 AS runtime-base
 
 FROM runtime-base AS runtime
@@ -45,8 +45,6 @@ COPY --from=runtime-files /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=runtime-files /etc/passwd /etc/passwd
 COPY --from=runtime-files /etc/group /etc/group
 COPY --from=runtime-files --chown=65532:65532 /app/data /app/data
-# 专用 ping 入口以系统权限打开 ICMP 套接字，主程序仍以普通用户运行。
-COPY --from=runtime-base --chmod=4755 /bin/busybox /usr/local/bin/ping
 ENV UPTIMENEST_ADDRESS=0.0.0.0:8090 \
     UPTIMENEST_DB_DSN=/app/data/uptimenest.db
 USER 65532:65532
