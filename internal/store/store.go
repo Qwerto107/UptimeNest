@@ -3,12 +3,14 @@ package store
 
 import (
 	"context"
+	"crypto/cipher"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -35,6 +37,7 @@ type Store struct {
 	publicVersion atomic.Uint64
 	settingsMu    sync.Mutex
 	settings      atomic.Pointer[model.Settings]
+	secrets       cipher.AEAD
 }
 
 func (s *Store) PublicVersion() uint64 { return s.publicVersion.Load() }
@@ -48,7 +51,14 @@ func (s *Store) commitChange(tx *sql.Tx) error {
 }
 
 // Open 初始化表结构；SQLite 文件库使用单写连接和独立读池。
-func Open(ctx context.Context, dialect, dsn string) (*Store, error) {
+func Open(ctx context.Context, dialect, dsn string, keyFiles ...string) (*Store, error) {
+	keyFile := defaultKeyFile(dialect, dsn)
+	if len(keyFiles) > 0 {
+		keyFile = keyFiles[0]
+	}
+	if keyFile == "" && (dialect != "sqlite" || !sqliteMemory(dsn)) {
+		return nil, errors.New("持久化数据库必须配置加密密钥文件")
+	}
 	driver := "pgx"
 	if dialect == "sqlite" {
 		driver = "sqlite"
@@ -76,6 +86,9 @@ func Open(ctx context.Context, dialect, dsn string) (*Store, error) {
 	s := &Store{DB: db, readDB: db, dialect: dialect}
 	if err = db.PingContext(ctx); err == nil {
 		err = s.migrate(ctx)
+	}
+	if err == nil {
+		err = s.initEncryption(ctx, keyFile)
 	}
 	if err != nil {
 		db.Close()
@@ -149,7 +162,7 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err = tx.QueryRowContext(ctx, "SELECT COALESCE(MAX(version), 0) FROM schema_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 4 {
+	if version > 5 {
 		return errors.New("数据库版本高于当前程序支持的版本")
 	}
 	if version == 0 {
@@ -247,7 +260,7 @@ func (s *Store) monitors(ctx context.Context, query string, args ...any) ([]mode
 			return nil, err
 		}
 		id := m.ID
-		if err := json.Unmarshal([]byte(data), &m); err != nil {
+		if err := s.openJSON(secretDomain("monitors", id), data, &m); err != nil {
 			return nil, err
 		}
 		m.ID = id
@@ -266,13 +279,13 @@ func (s *Store) Monitor(ctx context.Context, id int64) (model.Monitor, error) {
 	if err != nil {
 		return m, err
 	}
-	err = json.Unmarshal([]byte(data), &m)
+	err = s.openJSON(secretDomain("monitors", id), data, &m)
 	m.ID = id
 	return m, err
 }
 
 // SaveMonitor 在同一事务内检查所属分组，避免出现悬空分组引用。
-func (s *Store) SaveMonitor(ctx context.Context, m model.Monitor) (model.Monitor, error) {
+func (s *Store) SaveMonitor(ctx context.Context, m model.Monitor, snapshots ...model.Monitor) (model.Monitor, error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return m, err
@@ -295,19 +308,45 @@ func (s *Store) SaveMonitor(ctx context.Context, m model.Monitor) (model.Monitor
 		}
 	}
 	if m.ID == 0 {
-		err = tx.QueryRowContext(ctx, s.Q("INSERT INTO monitors(data) VALUES(?) RETURNING id"), encode(m)).Scan(&m.ID)
-	} else {
-		var result sql.Result
-		result, err = tx.ExecContext(ctx, s.Q("UPDATE monitors SET data=? WHERE id=?"), encode(m), m.ID)
-		if err == nil {
-			n, _ := result.RowsAffected()
-			if n == 0 {
-				return m, ErrNotFound
-			}
+		// 先分配主键，再将记录身份绑定到密文；占位值不会在事务外可见。
+		if err = tx.QueryRowContext(ctx, "INSERT INTO monitors(data) VALUES('') RETURNING id").Scan(&m.ID); err != nil {
+			return m, err
+		}
+	} else if len(snapshots) > 0 {
+		// 凭据合并后若配置已变化，拒绝保存，避免旧快照覆盖刚更新的凭据。
+		query := "SELECT data FROM monitors WHERE id=?"
+		if s.dialect == "postgres" {
+			query += " FOR UPDATE"
+		}
+		var data string
+		if err = tx.QueryRowContext(ctx, s.Q(query), m.ID).Scan(&data); errors.Is(err, sql.ErrNoRows) {
+			return m, ErrNotFound
+		}
+		if err != nil {
+			return m, err
+		}
+		var current model.Monitor
+		if err = s.openJSON(secretDomain("monitors", m.ID), data, &current); err != nil {
+			return m, err
+		}
+		current.ID = m.ID
+		if !reflect.DeepEqual(current, snapshots[0]) {
+			return m, ErrStale
 		}
 	}
+	data, err := s.sealJSON(secretDomain("monitors", m.ID), m)
 	if err != nil {
 		return m, err
+	}
+	result, err := tx.ExecContext(ctx, s.Q("UPDATE monitors SET data=? WHERE id=?"), data, m.ID)
+	if err != nil {
+		return m, err
+	}
+	if n, err := result.RowsAffected(); err != nil || n == 0 {
+		if err != nil {
+			return m, err
+		}
+		return m, ErrNotFound
 	}
 	if err = s.resetChangedAlerts(ctx, tx, m); err != nil {
 		return m, err
@@ -478,7 +517,7 @@ func (s *Store) DeleteGroup(ctx context.Context, id int64) error {
 			return err
 		}
 		mid := m.ID
-		if err = json.Unmarshal([]byte(data), &m); err != nil {
+		if err = s.openJSON(secretDomain("monitors", mid), data, &m); err != nil {
 			rows.Close()
 			return err
 		}
@@ -494,7 +533,11 @@ func (s *Store) DeleteGroup(ctx context.Context, id int64) error {
 		return err
 	}
 	for _, m := range changed {
-		if _, err = tx.ExecContext(ctx, s.Q("UPDATE monitors SET data=? WHERE id=?"), encode(m), m.ID); err != nil {
+		data, err := s.sealJSON(secretDomain("monitors", m.ID), m)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.ExecContext(ctx, s.Q("UPDATE monitors SET data=? WHERE id=?"), data, m.ID); err != nil {
 			return err
 		}
 	}
@@ -561,7 +604,7 @@ func (s *Store) SavePanel(ctx context.Context, p model.Panel) (model.Panel, erro
 		}
 	}
 	if p.Groups == nil {
-		groups, names, err := legacyGroupData(ctx, tx)
+		groups, names, err := s.legacyGroupData(ctx, tx)
 		if err != nil {
 			return p, err
 		}
@@ -688,6 +731,11 @@ func (s *Store) SaveSettings(ctx context.Context, v model.Settings) error {
 	return err
 }
 
+func cloneSettings(v model.Settings) model.Settings {
+	v.TrustedProxies = slices.Clone(v.TrustedProxies)
+	return v
+}
+
 func conflict(err error) error {
 	if err == nil {
 		return nil
@@ -758,9 +806,4 @@ func (s *Store) Cleanup(ctx context.Context, days int) (map[string]int64, error)
 		return counts, err
 	}
 	return counts, nil
-}
-
-func cloneSettings(v model.Settings) model.Settings {
-	v.TrustedProxies = slices.Clone(v.TrustedProxies)
-	return v
 }

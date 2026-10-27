@@ -14,7 +14,7 @@ import {
   Trash2,
   ArrowUpRight,
 } from 'lucide-vue-next'
-import type { MonitorView, Group } from '@/types'
+import type { Monitor, MonitorView, Group } from '@/types'
 import { request, send } from '@/lib/api'
 import { useResource } from '@/composables/useResource'
 import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
@@ -51,7 +51,7 @@ useEventListener(window, 'keydown', (event) => {
 const groupId = ref(String(route.query.group || 'all'))
 const status = ref('all')
 const editorOpen = ref(false)
-const selected = ref<MonitorView | null>(null)
+const selected = ref<Monitor | null>(null)
 const duplicating = ref(false)
 const newMonitorGroup = ref(0)
 const deleteOpen = ref(false)
@@ -123,11 +123,13 @@ const overview = computed(() => {
     { key: 'paused', count: monitors.filter((monitor) => !monitor.enabled).length },
   ]
 })
-function edit(monitor: MonitorView | null, duplicate = false, initialGroupId = 0) {
-  selected.value = monitor
-  duplicating.value = duplicate
-  newMonitorGroup.value = initialGroupId
-  editorOpen.value = true
+async function edit(monitor: MonitorView | null, duplicate = false, initialGroupId = 0) {
+  await run(async () => {
+    selected.value = monitor ? await request<Monitor>(`/admin/monitors/${monitor.id}/config`) : null
+    duplicating.value = duplicate
+    newMonitorGroup.value = initialGroupId
+    editorOpen.value = true
+  })
 }
 function askDelete(monitor: MonitorView) {
   deleting.value = monitor

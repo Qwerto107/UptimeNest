@@ -4,6 +4,13 @@ import notification from './notifications.en-US'
 // 与中文文案保持相同键名，缺漏或拼写错误由类型检查发现。
 const enUS: typeof zhCN = {
   notification,
+  monitorSecrets: {
+    title: 'Saved sensitive settings',
+    hint: 'Sensitive values are hidden. Leave blank to keep, enter a value to replace, or mark for removal when saving. Copies inherit them on the server.',
+    placeholder: 'Configured; leave blank to keep',
+    clear: 'Clear {field}',
+    undoClear: 'Keep {field}',
+  },
   common: {
     brand: 'UptimeNest',
     save: 'Save',

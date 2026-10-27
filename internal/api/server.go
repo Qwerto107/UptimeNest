@@ -47,6 +47,7 @@ func New(s *store.Store, engine *monitor.Engine, cfg config.Config) http.Handler
 	mux.Handle("PUT /api/admin/password", a.auth(a.password))
 	mux.Handle("GET /api/admin/monitors", a.auth(a.monitors))
 	mux.Handle("GET /api/admin/monitors/{id}", a.auth(a.monitor))
+	mux.Handle("GET /api/admin/monitors/{id}/config", a.auth(a.monitorConfig))
 	mux.Handle("POST /api/admin/monitors", a.auth(a.saveMonitor))
 	mux.Handle("PUT /api/admin/monitors/{id}", a.auth(a.saveMonitor))
 	mux.Handle("DELETE /api/admin/monitors/{id}", a.auth(a.deleteMonitor))
@@ -191,6 +192,8 @@ func fail(w http.ResponseWriter, err error) {
 		writeError(w, 404, "记录不存在，请刷新页面")
 	case errors.Is(err, store.ErrConflict):
 		writeError(w, 409, "名称或访问路径已存在")
+	case errors.Is(err, store.ErrStale):
+		writeError(w, 409, "监控配置已更新，请重新打开编辑窗口")
 	case errors.Is(err, store.ErrInvalid):
 		writeError(w, 400, err.Error())
 	default:

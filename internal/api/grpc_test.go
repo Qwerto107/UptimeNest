@@ -46,12 +46,17 @@ func TestGRPCMonitorSaveAndPrivacy(t *testing.T) {
 	if w := call("POST", "/api/admin/monitors", m, false); w.Code != 401 {
 		t.Fatalf("unauthenticated save: %d", w.Code)
 	}
+	secretMetadata := m.GRPC.Metadata
 	w := call("POST", "/api/admin/monitors", m, true)
 	if w.Code != 201 || json.Unmarshal(w.Body.Bytes(), &m) != nil {
 		t.Fatalf("create: %d %s", w.Code, w.Body.String())
 	}
+	// 创建响应按脱敏规则返回，不含凭据明文，并通过 configured 标明已配置。
+	if strings.Contains(w.Body.String(), "private-token") || !strings.Contains(w.Body.String(), "grpc.metadata") {
+		t.Fatalf("create response not redacted: %s", w.Body.String())
+	}
 	stored, err := s.Monitor(ctx, m.ID)
-	if err != nil || stored.GRPC == nil || stored.GRPC.Security != "tls" || stored.GRPC.ServiceName != "private.Service" || stored.GRPC.Metadata != m.GRPC.Metadata || stored.HTTP != nil || stored.WebSocket != nil {
+	if err != nil || stored.GRPC == nil || stored.GRPC.Security != "tls" || stored.GRPC.ServiceName != "private.Service" || stored.GRPC.Metadata != secretMetadata || stored.HTTP != nil || stored.WebSocket != nil {
 		t.Fatalf("bad persisted configuration: %+v %v", stored, err)
 	}
 	if _, err := s.SavePanel(ctx, model.Panel{Name: "public", Slug: "grpc", MonitorIDs: []int64{m.ID}}); err != nil {

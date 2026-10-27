@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select } from '@/components/ui/select'
 
 const model = defineModel<HTTPOptions>({ required: true })
-defineProps<{ busy: boolean }>()
+withDefaults(defineProps<{ busy: boolean; configured?: string[] }>(), { configured: () => [] })
 const { t } = useI18n()
 const ranges = ['100-199', '200-299', '300-399', '400-499', '500-599']
 const methods = ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE', 'CONNECT']
@@ -130,6 +130,7 @@ watch(customCodes, (value) => {
         <Textarea
           id="http-body"
           v-model="model.body"
+          :placeholder="configured.includes('http.body') ? t('monitorSecrets.placeholder') : undefined"
           :rows="5"
           :maxlength="262144"
           spellcheck="false"
@@ -146,7 +147,7 @@ watch(customCodes, (value) => {
           v-model="model.headers"
           :rows="4"
           :maxlength="65536"
-          :placeholder="t('http.headersExample')"
+          :placeholder="configured.includes('http.headers') ? t('monitorSecrets.placeholder') : t('http.headersExample')"
           spellcheck="false"
         />
       </Field>

@@ -47,7 +47,7 @@ func (s *Store) NotificationChannels(ctx context.Context) ([]model.NotificationC
 		if err = rows.Scan(&id, &data); err != nil {
 			return nil, err
 		}
-		if err = json.Unmarshal([]byte(data), &c); err != nil {
+		if err = s.openJSON(secretDomain("notification_channels", id), data, &c); err != nil {
 			return nil, err
 		}
 		c.ID = id
@@ -66,17 +66,27 @@ func (s *Store) NotificationChannel(ctx context.Context, id int64) (model.Notifi
 	if err != nil {
 		return c, err
 	}
-	err = json.Unmarshal([]byte(data), &c)
+	err = s.openJSON(secretDomain("notification_channels", id), data, &c)
 	c.ID = id
 	return c, err
 }
 
 func (s *Store) SaveNotificationChannel(ctx context.Context, c model.NotificationChannel) (model.NotificationChannel, error) {
-	if c.ID == 0 {
-		err := s.DB.QueryRowContext(ctx, s.Q("INSERT INTO notification_channels(data) VALUES(?) RETURNING id"), encode(c)).Scan(&c.ID)
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
 		return c, err
 	}
-	result, err := s.DB.ExecContext(ctx, s.Q("UPDATE notification_channels SET data=? WHERE id=?"), encode(c), c.ID)
+	defer tx.Rollback()
+	if c.ID == 0 {
+		if err = tx.QueryRowContext(ctx, "INSERT INTO notification_channels(data) VALUES('') RETURNING id").Scan(&c.ID); err != nil {
+			return c, err
+		}
+	}
+	data, err := s.sealJSON(secretDomain("notification_channels", c.ID), c)
+	if err != nil {
+		return c, err
+	}
+	result, err := tx.ExecContext(ctx, s.Q("UPDATE notification_channels SET data=? WHERE id=?"), data, c.ID)
 	if err != nil {
 		return c, err
 	}
@@ -84,7 +94,10 @@ func (s *Store) SaveNotificationChannel(ctx context.Context, c model.Notificatio
 	if err == nil && n == 0 {
 		err = ErrNotFound
 	}
-	return c, err
+	if err != nil {
+		return c, err
+	}
+	return c, tx.Commit()
 }
 
 func (s *Store) DeleteNotificationChannel(ctx context.Context, id int64) error {
@@ -104,15 +117,16 @@ func (s *Store) DeleteNotificationChannel(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	rows, err := tx.QueryContext(ctx, "SELECT data FROM monitors")
+	rows, err := tx.QueryContext(ctx, "SELECT id,data FROM monitors")
 	if err != nil {
 		return err
 	}
 	for rows.Next() {
 		var data string
 		var m model.Monitor
-		if err = rows.Scan(&data); err == nil {
-			err = json.Unmarshal([]byte(data), &m)
+		var monitorID int64
+		if err = rows.Scan(&monitorID, &data); err == nil {
+			err = s.openJSON(secretDomain("monitors", monitorID), data, &m)
 		}
 		if err != nil {
 			rows.Close()
@@ -203,7 +217,7 @@ func (s *Store) readAlertState(ctx context.Context, tx *sql.Tx, id int64, kind s
 		return state, nil
 	}
 	if err == nil {
-		err = json.Unmarshal([]byte(data), &state)
+		err = s.openJSON(secretDomain("alert_states", id)+"/"+kind, data, &state)
 	}
 	return state, err
 }
@@ -336,7 +350,11 @@ func (s *Store) evaluateAlertRules(ctx context.Context, tx *sql.Tx, m model.Moni
 		if state == previous {
 			continue
 		}
-		if _, err = tx.ExecContext(ctx, s.Q("INSERT INTO alert_states(monitor_id,kind,data) VALUES(?,?,?) ON CONFLICT(monitor_id,kind) DO UPDATE SET data=excluded.data"), m.ID, kind, encode(state)); err != nil {
+		data, err := s.sealJSON(secretDomain("alert_states", m.ID)+"/"+kind, state)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.ExecContext(ctx, s.Q("INSERT INTO alert_states(monitor_id,kind,data) VALUES(?,?,?) ON CONFLICT(monitor_id,kind) DO UPDATE SET data=excluded.data"), m.ID, kind, data); err != nil {
 			return err
 		}
 	}
@@ -378,7 +396,7 @@ func (s *Store) evaluateAlertTimer(ctx context.Context, m model.Monitor) error {
 		return err
 	}
 	var current model.Monitor
-	if err = json.Unmarshal([]byte(data), &current); err != nil {
+	if err = s.openJSON(secretDomain("monitors", m.ID), data, &current); err != nil {
 		return err
 	}
 	current.ID = m.ID

@@ -61,6 +61,23 @@ function defaults(): Monitor {
   }
 }
 const form = reactive<Monitor>(defaults())
+const configured = ref<string[]>([])
+const clearSecrets = ref<string[]>([])
+const retainedSecrets = computed(() => configured.value.filter((field) => !clearSecrets.value.includes(field)))
+function toggleSecret(field: string) {
+  clearSecrets.value = clearSecrets.value.includes(field)
+    ? clearSecrets.value.filter((value) => value !== field)
+    : [...clearSecrets.value, field]
+}
+const secretLabels: Record<string, string> = {
+  'http.auth.password': 'http.password',
+  'http.auth.clientSecret': 'http.clientSecret',
+  'http.auth.clientKey': 'http.clientKey',
+  'http.headers': 'http.headers',
+  'http.body': 'http.body',
+  'websocket.headers': 'http.headers',
+  'grpc.metadata': 'grpc.metadata',
+}
 const certificateAvailable = computed(() => (form.type === 'http' && form.target.startsWith('https://')) || (form.type === 'websocket' && form.target.startsWith('wss://')) || (form.type === 'grpc' && (form.grpc?.security ?? 'tls') === 'tls'))
 const certExpiryWarningDays = computed({
   get: () => form.certExpiryWarningDays ?? '',
@@ -112,6 +129,8 @@ watch(open, (value) => {
   if (!value) return
   tab.value = 'basics'
   const next = props.monitor || defaults()
+  configured.value = [...(next.configured || [])]
+  clearSecrets.value = []
   // 逐字段复制，避免把列表接口的 summary 等只读数据发送到配置接口。
   for (const key of Object.keys(defaults()) as (keyof Monitor)[]) {
     if (key === 'http' || key === 'websocket' || key === 'grpc' || key === 'alerts') continue
@@ -166,6 +185,8 @@ async function submit(event: Event) {
   await run(async () => {
     const payload = {
       ...form,
+      clearSecrets: clearSecrets.value,
+      copyFrom: props.duplicate ? props.monitor?.id : undefined,
       port: Number(form.port),
       groupId: Number(form.groupId),
       interval: Number(form.interval),
@@ -339,7 +360,7 @@ async function submit(event: Event) {
             v-show="tab === 'http'"
             data-editor-panel="http"
           >
-            <HTTPOptionsEditor v-model="form.http" :busy="busy" />
+            <HTTPOptionsEditor v-model="form.http" :busy="busy" :configured="retainedSecrets" />
           </TabsContent>
           <TabsContent value="probe" force-mount v-show="tab === 'probe'" data-editor-panel="probe">
             <fieldset :disabled="busy" class="form-section">
@@ -420,10 +441,10 @@ async function submit(event: Event) {
             </fieldset>
           </TabsContent>
           <TabsContent v-if="form.type === 'websocket' && form.websocket" value="websocket" force-mount v-show="tab === 'websocket'" data-editor-panel="websocket">
-            <WebSocketOptionsEditor v-model="form.websocket" :busy="busy" />
+            <WebSocketOptionsEditor v-model="form.websocket" :busy="busy" :configured="retainedSecrets" />
           </TabsContent>
           <TabsContent v-if="form.type === 'grpc' && form.grpc" value="grpc" force-mount v-show="tab === 'grpc'" data-editor-panel="grpc">
-            <GRPCOptionsEditor v-model="form.grpc" :busy="busy" />
+            <GRPCOptionsEditor v-model="form.grpc" :busy="busy" :configured="retainedSecrets" />
           </TabsContent>
           <TabsContent
             v-if="form.type === 'http' && form.http"
@@ -432,10 +453,27 @@ async function submit(event: Event) {
             v-show="tab === 'auth'"
             data-editor-panel="auth"
           >
-            <HTTPAuthenticationEditor v-model="form.http" :busy="busy" />
+            <HTTPAuthenticationEditor v-model="form.http" :busy="busy" :configured="retainedSecrets" />
           </TabsContent>
         </div>
       </TabsRoot>
+      <fieldset v-if="configured.length" class="form-section" :disabled="busy">
+        <legend>{{ t('monitorSecrets.title') }}</legend>
+        <p class="field-hint">{{ t('monitorSecrets.hint') }}</p>
+        <div class="flex flex-wrap gap-2">
+          <Button
+            v-for="field in configured"
+            :key="field"
+            type="button"
+            size="sm"
+            variant="outline"
+            :aria-pressed="clearSecrets.includes(field)"
+            @click="toggleSecret(field)"
+          >
+            {{ t(clearSecrets.includes(field) ? 'monitorSecrets.undoClear' : 'monitorSecrets.clear', { field: t(secretLabels[field] || field) }) }}
+          </Button>
+        </div>
+      </fieldset>
       <div class="form-actions">
         <Button type="button" variant="outline" :disabled="busy" @click="open = false">
           {{ t('common.cancel') }}

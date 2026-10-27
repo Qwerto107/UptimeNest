@@ -22,7 +22,7 @@ func (a *Server) monitors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, m := range items {
-		views = append(views, model.MonitorView{Monitor: m, Summary: summaries[m.ID]})
+		views = append(views, model.MonitorView{Monitor: monitorDisplay(m), Summary: summaries[m.ID]})
 	}
 	writeJSON(w, 200, views)
 }
@@ -42,14 +42,15 @@ func (a *Server) monitor(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, 200, model.MonitorView{Monitor: m, Summary: summary})
+	writeJSON(w, 200, model.MonitorView{Monitor: monitorDisplay(m), Summary: summary})
 }
 
 func (a *Server) saveMonitor(w http.ResponseWriter, r *http.Request) {
-	var m model.Monitor
-	if !decode(w, r, &m) {
+	var body monitorInput
+	if !decode(w, r, &body) {
 		return
 	}
+	m := body.Monitor
 	m.ID = 0
 	if r.Method == http.MethodPut {
 		id, ok := pathID(w, r)
@@ -58,11 +59,19 @@ func (a *Server) saveMonitor(w http.ResponseWriter, r *http.Request) {
 		}
 		m.ID = id
 	}
+	previous, ok := a.mergeMonitorSecrets(w, r, &m, body)
+	if !ok {
+		return
+	}
 	if err := validateMonitor(&m); err != nil {
 		writeError(w, 400, err.Error())
 		return
 	}
-	m, err := a.store.SaveMonitor(r.Context(), m)
+	var snapshots []model.Monitor
+	if previous != nil {
+		snapshots = []model.Monitor{*previous}
+	}
+	m, err := a.store.SaveMonitor(r.Context(), m, snapshots...)
 	if err != nil {
 		fail(w, err)
 		return
@@ -75,7 +84,7 @@ func (a *Server) saveMonitor(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		status = 201
 	}
-	writeJSON(w, status, m)
+	writeJSON(w, status, redactMonitor(m))
 }
 
 func (a *Server) setEnabled(w http.ResponseWriter, r *http.Request) {
@@ -98,8 +107,9 @@ func (a *Server) setEnabled(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	previous := m
 	m.Enabled = *body.Enabled
-	if _, err = a.store.SaveMonitor(r.Context(), m); err != nil {
+	if _, err = a.store.SaveMonitor(r.Context(), m, previous); err != nil {
 		fail(w, err)
 		return
 	}

@@ -32,7 +32,7 @@ func (s *Store) Append(ctx context.Context, snapshot model.Monitor, h model.Hear
 		return "", err
 	}
 	var current model.Monitor
-	if err = json.Unmarshal([]byte(data), &current); err != nil {
+	if err = s.openJSON(secretDomain("monitors", snapshot.ID), data, &current); err != nil {
 		return "", err
 	}
 	current.ID = snapshot.ID

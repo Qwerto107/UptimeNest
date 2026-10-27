@@ -12,6 +12,7 @@ services:
       UPTIMENEST_DB_TYPE: ${UPTIMENEST_DB_TYPE:-sqlite}
       UPTIMENEST_DB_DSN: ${UPTIMENEST_DB_DSN:-/app/data/uptimenest.db}
       UPTIMENEST_COOKIE_SECURE: "${UPTIMENEST_COOKIE_SECURE:-false}"
+      UPTIMENEST_SECRET_KEY_FILE: ${UPTIMENEST_SECRET_KEY_FILE:-/app/data/secret.key}
     volumes:
       - ./data:/app/data
     read_only: true

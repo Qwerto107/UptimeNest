@@ -1,9 +1,11 @@
 import notificationErrors from './notification-errors'
 // 保持现有接口错误格式兼容，仅翻译已知提示；未知诊断详情保留原文。
 const englishErrors: Record<string, string> = {
-  '初始化令牌不正确，请查看本次启动日志': 'Incorrect setup token. Check the current startup log.',
   '请求过于频繁，请稍后重试': 'Too many requests. Please try again shortly.',
   '登录验证繁忙，请稍后重试': 'Login verification is busy. Please try again shortly.',
+  '复制来源仅可用于创建监控': 'A copy source can only be used when creating a monitor.',
+  '监控配置已更新，请重新打开编辑窗口': 'The monitor configuration has changed. Reopen the editor and try again.',
+  '初始化令牌不正确，请查看本次启动日志': 'Incorrect setup token. Check the current startup log.',
   '状态页默认视图应为 detailed、compact 或 cards': 'The default status page view must be detailed, compact or cards.',
   'gRPC 目标应为主机名或 IP，端口应为 1 至 65535': 'The gRPC target must be a hostname or IP, with a port between 1 and 65535.',
   '请选择有效的 gRPC 连接安全模式': 'Select a valid gRPC connection security mode.',

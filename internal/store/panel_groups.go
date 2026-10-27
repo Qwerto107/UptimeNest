@@ -50,7 +50,7 @@ func normalizePanelGroups(p *model.Panel) error {
 }
 
 // legacyGroupData 只用于旧面板首次转为独立分组，后续不再跟随后台分组变化。
-func legacyGroupData(ctx context.Context, tx *sql.Tx) (map[int64]int64, map[int64]string, error) {
+func (s *Store) legacyGroupData(ctx context.Context, tx *sql.Tx) (map[int64]int64, map[int64]string, error) {
 	monitors := map[int64]int64{}
 	rows, err := tx.QueryContext(ctx, "SELECT id,data FROM monitors")
 	if err != nil {
@@ -64,7 +64,13 @@ func legacyGroupData(ctx context.Context, tx *sql.Tx) (map[int64]int64, map[int6
 			return nil, nil, err
 		}
 		var m model.Monitor
-		if err = json.Unmarshal([]byte(data), &m); err != nil {
+		// 旧结构迁移早于加密初始化；运行时只接受已经加密的配置。
+		if s.secrets == nil {
+			err = json.Unmarshal([]byte(data), &m)
+		} else {
+			err = s.openJSON(secretDomain("monitors", id), data, &m)
+		}
+		if err != nil {
 			rows.Close()
 			return nil, nil, err
 		}
@@ -121,7 +127,7 @@ func legacyPanelGroups(ids []int64, monitors map[int64]int64, names map[int64]st
 
 // migratePanelGroups 在同一迁移事务中保存旧分组快照，不改变监控或其心跳历史。
 func (s *Store) migratePanelGroups(ctx context.Context, tx *sql.Tx) error {
-	monitors, names, err := legacyGroupData(ctx, tx)
+	monitors, names, err := s.legacyGroupData(ctx, tx)
 	if err != nil {
 		return err
 	}

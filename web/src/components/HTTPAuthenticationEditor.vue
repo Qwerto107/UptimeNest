@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 
 const model = defineModel<HTTPOptions>({ required: true })
-defineProps<{ busy: boolean }>()
+withDefaults(defineProps<{ busy: boolean; configured?: string[] }>(), { configured: () => [] })
 const { t } = useI18n()
 </script>
 
@@ -31,6 +31,7 @@ const { t } = useI18n()
           <Input
             id="http-password"
             v-model="model.auth.password"
+            :placeholder="configured.includes('http.auth.password') ? t('monitorSecrets.placeholder') : undefined"
             type="password"
             autocomplete="new-password"
           />
@@ -44,12 +45,13 @@ const { t } = useI18n()
         <Field id="oauth-client-id" :label="t('http.clientID')" required>
           <Input id="oauth-client-id" v-model="model.auth.clientID" required autocomplete="off" />
         </Field>
-        <Field id="oauth-client-secret" :label="t('http.clientSecret')" required>
+        <Field id="oauth-client-secret" :label="t('http.clientSecret')" :required="!configured.includes('http.auth.clientSecret')">
           <Input
             id="oauth-client-secret"
             v-model="model.auth.clientSecret"
+            :placeholder="configured.includes('http.auth.clientSecret') ? t('monitorSecrets.placeholder') : undefined"
             type="password"
-            required
+            :required="!configured.includes('http.auth.clientSecret')"
             autocomplete="new-password"
           />
         </Field>
@@ -87,15 +89,16 @@ const { t } = useI18n()
           :label="t('http.clientKey')"
           :hint="t('http.clientKeyHint')"
           class="col-span-full"
-          required
+          :required="!configured.includes('http.auth.clientKey')"
         >
           <Textarea
             id="mtls-key"
             v-model="model.auth.clientKey"
+            :placeholder="configured.includes('http.auth.clientKey') ? t('monitorSecrets.placeholder') : undefined"
             :rows="4"
             :maxlength="65536"
             spellcheck="false"
-            required
+            :required="!configured.includes('http.auth.clientKey')"
           />
         </Field>
         <Field

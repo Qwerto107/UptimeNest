@@ -41,7 +41,7 @@ func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	openCtx, openCancel := context.WithTimeout(ctx, 30*time.Second)
-	s, err := store.Open(openCtx, cfg.DBType, cfg.DSN)
+	s, err := store.Open(openCtx, cfg.DBType, cfg.DSN, cfg.SecretKeyFile)
 	openCancel()
 	if err != nil {
 		return err

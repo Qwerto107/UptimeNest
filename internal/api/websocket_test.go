@@ -50,6 +50,7 @@ func TestWebSocketMonitorSaveAndPrivacy(t *testing.T) {
 	if w := call("POST", "/api/admin/monitors", m, false); w.Code != 401 {
 		t.Fatalf("unauthenticated save status %d", w.Code)
 	}
+	secretHeaders := m.WebSocket.Headers
 	w := call("POST", "/api/admin/monitors", m, true)
 	if w.Code != 201 {
 		t.Fatalf("save status %d: %s", w.Code, w.Body.String())
@@ -61,8 +62,12 @@ func TestWebSocketMonitorSaveAndPrivacy(t *testing.T) {
 	if m.WebSocket == nil || m.WebSocket.Mode != "handshake" || m.WebSocket.ConnectIP != "127.0.0.1" || m.HTTP != nil {
 		t.Fatalf("bad normalized config: %+v", m)
 	}
+	// 创建响应按脱敏规则返回，不含凭据明文，并通过 configured 标明已配置。
+	if strings.Contains(w.Body.String(), "private-header") || !strings.Contains(w.Body.String(), "websocket.headers") {
+		t.Fatalf("create response not redacted: %s", w.Body.String())
+	}
 	stored, err := s.Monitor(ctx, m.ID)
-	if err != nil || stored.WebSocket == nil || stored.WebSocket.Headers != m.WebSocket.Headers || stored.WebSocket.Subprotocols[0] != "private-protocol" {
+	if err != nil || stored.WebSocket == nil || stored.WebSocket.Headers != secretHeaders || stored.WebSocket.Subprotocols[0] != "private-protocol" {
 		t.Fatalf("config not persisted: %+v, %v", stored, err)
 	}
 	if _, err := s.SavePanel(ctx, model.Panel{Name: "public", Slug: "ws", MonitorIDs: []int64{m.ID}}); err != nil {

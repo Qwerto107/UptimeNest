@@ -86,6 +86,7 @@ export interface Monitor {
   websocket?: WebSocketOptions
   grpc?: GRPCOptions
   alerts?: AlertOptions
+  configured?: string[]
 }
 
 export interface AlertRule {

@@ -1,6 +1,13 @@
 import notification from './notifications.zh-CN'
 export default {
   notification,
+  monitorSecrets: {
+    title: '已保存的敏感配置',
+    hint: '敏感内容不再回显。留空保留，填写新值替换；需要删除时标记清除，保存后生效。复制监控时由后端继承。',
+    placeholder: '已配置，留空保留',
+    clear: '清除{field}',
+    undoClear: '取消清除{field}',
+  },
   common: {
     brand: 'UptimeNest',
     save: '保存',

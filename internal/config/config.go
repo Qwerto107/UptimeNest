@@ -8,17 +8,19 @@ import (
 )
 
 type Config struct {
-	Address      string
-	DBType       string
-	DSN          string
-	WebDir       string
-	CookieSecure bool
-	Workers      int
-	SetupToken   string
+	Address       string
+	DBType        string
+	DSN           string
+	WebDir        string
+	CookieSecure  bool
+	Workers       int
+	SetupToken    string
+	SecretKeyFile string
 }
 
 func Load() (Config, error) {
 	c := Config{Address: value("UPTIMENEST_ADDRESS", "127.0.0.1:8090"), DBType: value("UPTIMENEST_DB_TYPE", "sqlite"), DSN: os.Getenv("UPTIMENEST_DB_DSN"), WebDir: os.Getenv("UPTIMENEST_WEB_DIR"), Workers: 32}
+	c.SecretKeyFile = value("UPTIMENEST_SECRET_KEY_FILE", "data/secret.key")
 	if c.DBType != "sqlite" && c.DBType != "postgres" {
 		return c, fmt.Errorf("UPTIMENEST_DB_TYPE 仅支持 sqlite 或 postgres")
 	}

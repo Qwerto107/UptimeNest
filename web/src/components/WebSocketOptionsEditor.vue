@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 
 const model = defineModel<WebSocketOptions>({ required: true })
-defineProps<{ busy: boolean }>()
+withDefaults(defineProps<{ busy: boolean; configured?: string[] }>(), { configured: () => [] })
 const { t } = useI18n()
 const protocols = ref('')
 watch(() => model.value, (value) => { protocols.value = value.subprotocols.join(', ') }, { immediate: true })
@@ -33,7 +33,7 @@ watch(protocols, (value) => { model.value.subprotocols = value.split(',').map((i
         <Input id="websocket-connect-ip" v-model="model.connectIP" :placeholder="t('http.connectIPExample')" maxlength="45" spellcheck="false" />
       </Field>
       <Field id="websocket-headers" :label="t('http.headers')" :hint="t('websocket.headersHint')" class="col-span-full">
-        <Textarea id="websocket-headers" v-model="model.headers" :placeholder="t('http.headersExample')" maxlength="65536" rows="5" spellcheck="false" />
+        <Textarea id="websocket-headers" v-model="model.headers" :placeholder="configured.includes('websocket.headers') ? t('monitorSecrets.placeholder') : t('http.headersExample')" maxlength="65536" rows="5" spellcheck="false" />
       </Field>
     </div>
     <p class="field-hint">{{ t('websocket.tlsHint') }}</p>

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ArrowLeft, Pencil, Copy, Pause, Play, Trash2 } from 'lucide-vue-next'
-import type { MonitorView, Group, Heartbeat, MonitorLog, Settings, LatencyHistory } from '@/types'
+import type { Monitor, MonitorView, Group, Heartbeat, MonitorLog, Settings, LatencyHistory } from '@/types'
 import { request, send } from '@/lib/api'
 import { useResource } from '@/composables/useResource'
 import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
@@ -25,6 +25,7 @@ const route = useRoute()
 const id = Number(route.params.id)
 const tab = ref<'heartbeats' | 'logs'>('heartbeats')
 const editorOpen = ref(false)
+const editorMonitor = ref<Monitor>()
 const duplicating = ref(false)
 const clearOpen = ref(false)
 const { busy, run } = useAction()
@@ -100,9 +101,12 @@ async function loadMore() {
     }
   })
 }
-function edit(duplicate = false) {
-  duplicating.value = duplicate
-  editorOpen.value = true
+async function edit(duplicate = false) {
+  await run(async () => {
+    editorMonitor.value = await request<Monitor>(`/admin/monitors/${id}/config`)
+    duplicating.value = duplicate
+    editorOpen.value = true
+  })
 }
 async function toggle() {
   if (!data.value?.monitor) return
@@ -282,7 +286,7 @@ async function clearHistory() {
     </section>
     <MonitorEditor
       v-model:open="editorOpen"
-      :monitor="data.monitor"
+      :monitor="editorMonitor"
       :duplicate="duplicating"
       :groups="data.groups"
       @saved="refresh"
