@@ -15,11 +15,6 @@ import (
 const cookieName = "uptimenest_session"
 const sessionAge = 7 * 24 * time.Hour
 
-type attempt struct {
-	Count int
-	Until time.Time
-}
-
 func tokenHash(token string) string {
 	hash := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(hash[:])
@@ -30,37 +25,6 @@ func newToken() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(data), nil
-}
-
-// allowed 限制密码尝试次数，并及时移除过期记录，防止内存无限增长。
-func (a *Server) allowed(r *http.Request) (bool, error) {
-	settings, err := a.store.Settings(r.Context())
-	if err != nil {
-		return false, err
-	}
-	trusted, err := trustedProxyPrefixes(settings.TrustedProxies)
-	if err != nil {
-		return false, err
-	}
-	ip := clientIP(r, trusted)
-	a.limitMu.Lock()
-	defer a.limitMu.Unlock()
-	now := time.Now()
-	for key, v := range a.attempts {
-		if now.After(v.Until) {
-			delete(a.attempts, key)
-		}
-	}
-	v := a.attempts[ip]
-	if v.Count >= 10 || (v.Count == 0 && len(a.attempts) >= 10000) {
-		return false, nil
-	}
-	if v.Count == 0 {
-		v.Until = now.Add(15 * time.Minute)
-	}
-	v.Count++
-	a.attempts[ip] = v
-	return true, nil
 }
 
 func (a *Server) authenticated(r *http.Request) (bool, error) {
@@ -124,13 +88,8 @@ func (a *Server) setup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 409, "管理员已设置，请直接登录")
 		return
 	}
-	allowed, err := a.allowed(r)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	if !allowed {
-		writeError(w, 429, "尝试次数过多，请 15 分钟后重试")
+	key, ok := a.passwordAttempt(w, r)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -142,6 +101,10 @@ func (a *Server) setup(w http.ResponseWriter, r *http.Request) {
 	if !validPassword(w, body.Password) {
 		return
 	}
+	if !a.bcryptSlot(w) {
+		return
+	}
+	defer func() { <-a.bcryptSlots }()
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 12)
 	if err != nil {
 		fail(w, err)
@@ -158,6 +121,7 @@ func (a *Server) setup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 409, "管理员已设置，请直接登录")
 		return
 	}
+	a.authFailures.reset(key)
 	if err = a.issueSession(w, r); err != nil {
 		fail(w, err)
 		return
@@ -174,13 +138,8 @@ func validPassword(w http.ResponseWriter, password string) bool {
 }
 
 func (a *Server) login(w http.ResponseWriter, r *http.Request) {
-	allowed, err := a.allowed(r)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	if !allowed {
-		writeError(w, 429, "尝试次数过多，请 15 分钟后重试")
+	key, ok := a.passwordAttempt(w, r)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -193,7 +152,7 @@ func (a *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var hash string
-	err = a.store.ReadDB().QueryRowContext(r.Context(), "SELECT password_hash FROM account WHERE id=1").Scan(&hash)
+	err := a.store.ReadDB().QueryRowContext(r.Context(), "SELECT password_hash FROM account WHERE id=1").Scan(&hash)
 	if errors.Is(err, sql.ErrNoRows) {
 		writeError(w, 409, "请先设置管理员密码")
 		return
@@ -202,10 +161,16 @@ func (a *Server) login(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	if !a.bcryptSlot(w) {
+		return
+	}
+	defer func() { <-a.bcryptSlots }()
 	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(body.Password)) != nil {
+		a.authFailures.failed(key)
 		writeError(w, 401, "密码不正确")
 		return
 	}
+	a.authFailures.reset(key)
 	if err = a.issueSession(w, r); err != nil {
 		fail(w, err)
 		return
@@ -242,13 +207,8 @@ func (a *Server) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Server) password(w http.ResponseWriter, r *http.Request) {
-	allowed, err := a.allowed(r)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	if !allowed {
-		writeError(w, 429, "尝试次数过多，请 15 分钟后重试")
+	key, ok := a.passwordAttempt(w, r)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -266,10 +226,16 @@ func (a *Server) password(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	if !a.bcryptSlot(w) {
+		return
+	}
+	defer func() { <-a.bcryptSlots }()
 	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(body.Current)) != nil {
+		a.authFailures.failed(key)
 		writeError(w, 400, "当前密码不正确")
 		return
 	}
+	a.authFailures.reset(key)
 	newHash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 12)
 	if err != nil {
 		fail(w, err)
