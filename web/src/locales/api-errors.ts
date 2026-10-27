@@ -1,5 +1,17 @@
 // 保持现有接口错误格式兼容，仅翻译已知提示；未知诊断详情保留原文。
 const englishErrors: Record<string, string> = {
+  'gRPC 目标应为主机名或 IP，端口应为 1 至 65535': 'The gRPC target must be a hostname or IP, with a port between 1 and 65535.',
+  '请选择有效的 gRPC 连接安全模式': 'Select a valid gRPC connection security mode.',
+  'gRPC 服务名称最多 1000 字节，且不能包含换行或空字符': 'The gRPC service name must not exceed 1000 bytes or contain line breaks or null characters.',
+  'gRPC Metadata 和 CA 证书各最多 64 KiB': 'gRPC Metadata and the CA certificate must each be at most 64 KiB.',
+  'gRPC Metadata 应为 JSON 对象，名称和值均为字符串': 'gRPC Metadata must be a JSON object with string names and values.',
+  'gRPC Metadata 最多 64 项': 'gRPC Metadata supports up to 64 entries.',
+  'gRPC Metadata 名称无效，不支持 grpc- 保留前缀或 -bin 二进制字段': 'Invalid gRPC Metadata name. The grpc- prefix is reserved and -bin fields are not supported.',
+  'gRPC 协议请求头由系统自动管理': 'gRPC protocol headers are managed automatically.',
+  'gRPC Metadata 值只能包含可打印 ASCII 字符': 'gRPC Metadata values must contain only printable ASCII characters.',
+  'gRPC Metadata 名称不能重复，忽略大小写': 'gRPC Metadata names must be unique, ignoring case.',
+  'gRPC CA 证书不是有效 PEM': 'The gRPC CA certificate is not valid PEM.',
+  '请选择 HTTP、WebSocket、gRPC、TCP、Ping 或 DNS 类型': 'Choose HTTP, WebSocket, gRPC, TCP, Ping or DNS.',
   'TLS 握手延迟提醒阈值应为 0 至 120000 毫秒，0 表示关闭': 'The TLS handshake warning threshold must be between 0 and 120000 ms; 0 disables it.',
   '请输入有效的 WS/WSS 地址，不允许携带账户密码或片段': 'Enter a valid WS/WSS URL without embedded credentials or a fragment.',
   'WebSocket 端口应为 1 至 65535': 'The WebSocket port must be between 1 and 65535.',

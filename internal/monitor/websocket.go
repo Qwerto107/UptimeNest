@@ -75,6 +75,7 @@ func probeWebSocket(ctx context.Context, m model.Monitor, ua string, h *model.He
 		defer resp.Body.Close()
 	}
 	if err != nil {
+		readFailedCertificate(err, h)
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}

@@ -184,6 +184,15 @@ export default {
     showDetails: '查看 {name} 的连接详情',
     panel: '切换状态面板',
   },
+  grpc: {
+    options: 'gRPC 设置', security: '连接安全', plaintext: '明文（不加密）',
+    securityHint: '默认使用 TLS，并校验证书链及目标主机名。明文模式不加密连接。',
+    healthHint: '调用标准 grpc.health.v1.Health/Check，只有 SERVING 判为正常。目标服务须启用健康检查接口。',
+    serviceName: '服务名称（可选）', serviceHint: '填写需要检查的服务名称，留空检查整个实例。',
+    metadata: '请求 Metadata（JSON，可选）', metadataHint: '名称和值均为字符串，最多 64 项。名称忽略大小写，值仅支持可打印 ASCII；可填写 authorization，不支持 -bin 字段。仅管理员可见。',
+    caCert: '附加 CA 证书（PEM，可选）', caHint: '用于私有或自签名证书，与系统信任库合并，保留主机名和有效期校验。',
+    latencyHint: '响应延迟包含连接、TLS 握手和健康检查。每次检测重新连接，受整体超时限制；TLS 模式记录证书信息并支持证书告警。',
+  },
   websocket: {
     connectIPHint: '可选，填写单个 IPv4 或 IPv6，不含端口。直连此 IP，保留 Host、WSS 的 SNI 和证书域名校验；留空使用 DNS。',
     options: 'WebSocket 设置',
@@ -284,6 +293,7 @@ export default {
     host: '主机名或 IP 地址',
     http: 'HTTP / HTTPS',
     websocket: 'WebSocket（WS / WSS）',
+    grpc: 'gRPC',
     tcp: 'TCP 端口',
     ping: 'Ping',
     dns: 'DNS',

@@ -79,7 +79,9 @@ func publicFailure(beat model.Heartbeat) (string, int) {
 			return "refused", 0
 		}
 	}
-	if message == "反转模式：服务可访问" || message == "DNS 返回结果与期望值不一致" || message == "DNS 未返回匹配记录" {
+	switch message {
+	case "反转模式：服务可访问", "DNS 返回结果与期望值不一致", "DNS 未返回匹配记录",
+		"gRPC 健康状态：NOT_SERVING", "gRPC 健康状态：UNKNOWN", "gRPC 健康状态：SERVICE_UNKNOWN":
 		return "response", 0
 	}
 	return "", 0
@@ -194,8 +196,11 @@ func publicEndpoint(m model.Monitor) (address, protocol string) {
 			address = u.Host
 			protocol = strings.ToUpper(u.Scheme)
 		}
-	case "tcp":
+	case "tcp", "grpc":
 		address = net.JoinHostPort(m.Target, strconv.Itoa(m.Port))
+		if m.Type == "grpc" {
+			protocol = "gRPC"
+		}
 	default:
 		address = m.Target
 	}

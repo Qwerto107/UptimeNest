@@ -143,6 +143,7 @@ func probeHTTP(ctx context.Context, m model.Monitor, ua string, h *model.Heartbe
 	}
 	resp, err := client.Do(req)
 	if err != nil {
+		readFailedCertificate(err, h)
 		return err
 	}
 	defer resp.Body.Close()

@@ -313,7 +313,7 @@ async function toggle(monitor: MonitorView) {
               </div>
               <p class="monitor-target">
                 {{ monitor.target }}
-                <template v-if="monitor.type === 'tcp'">:{{ monitor.port }}</template>
+                <template v-if="monitor.type === 'tcp' || monitor.type === 'grpc'">:{{ monitor.port }}</template>
               </p>
               <div v-if="monitor.tags.length" class="mt-1 flex flex-wrap gap-1">
                 <Badge v-for="tag in monitor.tags" :key="tag">{{ tag }}</Badge>

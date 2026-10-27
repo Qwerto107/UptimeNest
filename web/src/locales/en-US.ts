@@ -187,6 +187,15 @@ const enUS: typeof zhCN = {
     showDetails: 'View connection details for {name}',
     panel: 'Switch status page',
   },
+  grpc: {
+    options: 'gRPC settings', security: 'Connection security', plaintext: 'Plaintext (unencrypted)',
+    securityHint: 'TLS is the default and verifies the certificate chain and target hostname. Plaintext connections are not encrypted.',
+    healthHint: 'Calls the standard grpc.health.v1.Health/Check endpoint. Only SERVING is healthy. The target must implement the health service.',
+    serviceName: 'Service name (optional)', serviceHint: 'Specify the service to check, or leave empty to check the whole instance.',
+    metadata: 'Request Metadata (JSON, optional)', metadataHint: 'A JSON object of string values, up to 64 entries. Names are case-insensitive; values must be printable ASCII. Supports authorization, excludes -bin fields. Visible only to administrators.',
+    caCert: 'Additional CA certificate (PEM, optional)', caHint: 'Trust a private or self-signed certificate alongside system roots while retaining hostname and validity checks.',
+    latencyHint: 'Response latency includes connection, TLS handshake and the health check. Each attempt uses a new connection with one overall timeout. TLS mode records certificates and supports expiry alerts.',
+  },
   websocket: {
     connectIPHint: 'Optional single IPv4 or IPv6 address without a port. Connect directly while preserving Host, WSS SNI, and certificate hostname verification. Leave empty to use DNS.',
     options: 'WebSocket settings',
@@ -286,6 +295,7 @@ const enUS: typeof zhCN = {
     host: 'Hostname or IP address',
     http: 'HTTP / HTTPS',
     websocket: 'WebSocket (WS / WSS)',
+    grpc: 'gRPC',
     tcp: 'TCP port',
     ping: 'Ping',
     dns: 'DNS',

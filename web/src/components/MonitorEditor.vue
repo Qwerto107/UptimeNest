@@ -2,13 +2,14 @@
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { TabsRoot, TabsList, TabsTrigger, TabsContent } from 'reka-ui'
-import type { Monitor, Group, WebSocketOptions } from '@/types'
+import type { Monitor, Group, WebSocketOptions, GRPCOptions } from '@/types'
 import { send } from '@/lib/api'
 import { defaultHTTPOptions } from '@/lib/http'
 import { groupChoices } from '@/lib/groups'
 import HTTPOptionsEditor from '@/components/HTTPOptionsEditor.vue'
 import HTTPAuthenticationEditor from '@/components/HTTPAuthenticationEditor.vue'
 import WebSocketOptionsEditor from '@/components/WebSocketOptionsEditor.vue'
+import GRPCOptionsEditor from '@/components/GRPCOptionsEditor.vue'
 import { useAction, notify } from '@/composables/useFeedback'
 import { useMotion } from '@/composables/useMotion'
 import Modal from '@/components/Modal.vue'
@@ -26,6 +27,9 @@ const groupOptions = computed(() => groupChoices(props.groups))
 const { busy, run } = useAction()
 function defaultWebSocketOptions(): WebSocketOptions {
   return { mode: 'handshake', connectIP: '', origin: '', subprotocols: [], headers: '' }
+}
+function defaultGRPCOptions(): GRPCOptions {
+  return { security: 'tls', serviceName: '', metadata: '', caCert: '' }
 }
 function defaults(): Monitor {
   return {
@@ -49,6 +53,7 @@ function defaults(): Monitor {
     enabled: true,
     http: defaultHTTPOptions(),
     websocket: defaultWebSocketOptions(),
+    grpc: defaultGRPCOptions(),
   }
 }
 const form = reactive<Monitor>(defaults())
@@ -90,6 +95,7 @@ watch(
   (type) => {
     if (type !== 'http' && (tab.value === 'http' || tab.value === 'auth')) tab.value = 'basics'
     if (type !== 'websocket' && tab.value === 'websocket') tab.value = 'basics'
+    if (type !== 'grpc' && tab.value === 'grpc') tab.value = 'basics'
   },
 )
 watch(open, (value) => {
@@ -98,7 +104,7 @@ watch(open, (value) => {
   const next = props.monitor || defaults()
   // 逐字段复制，避免把列表接口的 summary 等只读数据发送到配置接口。
   for (const key of Object.keys(defaults()) as (keyof Monitor)[]) {
-    if (key === 'http' || key === 'websocket') continue
+    if (key === 'http' || key === 'websocket' || key === 'grpc') continue
     const value = next[key]
     if (Array.isArray(value)) Object.assign(form, { [key]: [...value] })
     else Object.assign(form, { [key]: value })
@@ -115,6 +121,7 @@ watch(open, (value) => {
     ...next.websocket,
     subprotocols: [...(next.websocket?.subprotocols || [])],
   }
+  form.grpc = { ...defaultGRPCOptions(), ...next.grpc }
   if (props.duplicate && props.monitor) {
     // 副本使用新增接口；按后端的 200 字节上限预留名称后缀，避免截断 Unicode 字符。
     form.id = 0
@@ -162,6 +169,7 @@ async function submit(event: Event) {
       payload.http = { ...payload.http, maxRedirects: Number(payload.http.maxRedirects) }
     if (form.type !== 'http') delete payload.http
     if (form.type !== 'websocket') delete payload.websocket
+    if (form.type !== 'grpc') delete payload.grpc
     const path = '/admin/monitors' + (form.id ? `/${form.id}` : '')
     await send(path, form.id ? 'PUT' : 'POST', payload)
     notify(t('common.saved'))
@@ -186,6 +194,7 @@ async function submit(event: Event) {
             {{ t('http.options') }}
           </TabsTrigger>
           <TabsTrigger v-if="form.type === 'websocket'" value="websocket" class="editor-tab">{{ t('websocket.options') }}</TabsTrigger>
+          <TabsTrigger v-if="form.type === 'grpc'" value="grpc" class="editor-tab">{{ t('grpc.options') }}</TabsTrigger>
           <TabsTrigger value="probe" class="editor-tab">{{ t('monitor.advanced') }}</TabsTrigger>
           <TabsTrigger v-if="form.type === 'http'" value="auth" class="editor-tab">
             {{ t('http.authentication') }}
@@ -215,7 +224,7 @@ async function submit(event: Event) {
                     id="monitor-type"
                     v-model="form.type"
                     :disabled="busy"
-                    :options="(['http', 'websocket', 'tcp', 'ping', 'dns'] as const).map((kind) => ({ value: kind, label: t(`monitor.${kind}`) }))"
+                    :options="(['http', 'websocket', 'grpc', 'tcp', 'ping', 'dns'] as const).map((kind) => ({ value: kind, label: t(`monitor.${kind}`) }))"
                   />
                 </Field>
                 <Field
@@ -243,7 +252,7 @@ async function submit(event: Event) {
                   <Switch id="monitor-hide-address" v-model="form.hideAddress" />
                 </div>
                 <Field
-                  v-if="form.type === 'tcp'"
+                  v-if="form.type === 'tcp' || form.type === 'grpc'"
                   id="monitor-port"
                   :label="t('monitor.port')"
                   required
@@ -393,6 +402,9 @@ async function submit(event: Event) {
           </TabsContent>
           <TabsContent v-if="form.type === 'websocket' && form.websocket" value="websocket" force-mount v-show="tab === 'websocket'" data-editor-panel="websocket">
             <WebSocketOptionsEditor v-model="form.websocket" :busy="busy" />
+          </TabsContent>
+          <TabsContent v-if="form.type === 'grpc' && form.grpc" value="grpc" force-mount v-show="tab === 'grpc'" data-editor-panel="grpc">
+            <GRPCOptionsEditor v-model="form.grpc" :busy="busy" />
           </TabsContent>
           <TabsContent
             v-if="form.type === 'http' && form.http"

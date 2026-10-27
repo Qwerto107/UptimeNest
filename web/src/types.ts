@@ -1,5 +1,5 @@
 export type MonitorStatus = 'up' | 'down' | 'unknown' | 'paused'
-export type MonitorType = 'http' | 'websocket' | 'tcp' | 'ping' | 'dns'
+export type MonitorType = 'http' | 'websocket' | 'grpc' | 'tcp' | 'ping' | 'dns'
 
 export interface Heartbeat {
   id: number
@@ -82,6 +82,14 @@ export interface Monitor {
   enabled: boolean
   http?: HTTPOptions
   websocket?: WebSocketOptions
+  grpc?: GRPCOptions
+}
+
+export interface GRPCOptions {
+  security: 'tls' | 'none'
+  serviceName: string
+  metadata: string
+  caCert: string
 }
 
 export interface WebSocketOptions {

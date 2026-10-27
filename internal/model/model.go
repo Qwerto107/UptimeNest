@@ -27,6 +27,27 @@ type Monitor struct {
 	Enabled       bool              `json:"enabled"`
 	HTTP          *HTTPOptions      `json:"http,omitempty"`
 	WebSocket     *WebSocketOptions `json:"websocket,omitempty"`
+	GRPC          *GRPCOptions      `json:"grpc,omitempty"`
+}
+
+// GRPCOptions 的 Metadata 和服务名称仅供后台使用，不进入公开状态页。
+type GRPCOptions struct {
+	Security    string `json:"security"`
+	ServiceName string `json:"serviceName"`
+	Metadata    string `json:"metadata"`
+	CACert      string `json:"caCert"`
+}
+
+// GRPCConfig 为缺省连接选项补齐 TLS，不将省略配置解释为明文。
+func (m Monitor) GRPCConfig() GRPCOptions {
+	v := GRPCOptions{Security: "tls"}
+	if m.GRPC != nil {
+		v = *m.GRPC
+	}
+	if v.Security == "" {
+		v.Security = "tls"
+	}
+	return v
 }
 
 // WebSocketOptions 的请求头和目标路径仅供后台使用，不进入公开状态页。
@@ -223,7 +244,7 @@ type MonitorView struct {
 	Summary Summary `json:"summary"`
 }
 
-// StateChange 将状态事件与检测逻辑解耦，当前版本只提供订阅入口。
+// StateChange 供可选的进程内状态订阅使用，不能代替持久化通知队列。
 type StateChange struct {
 	MonitorID int64
 	Previous  string

@@ -142,7 +142,7 @@ async function clearHistory() {
         </div>
         <p class="break-all">
           {{ data.monitor.target }}
-          <template v-if="data.monitor.type === 'tcp'">:{{ data.monitor.port }}</template>
+          <template v-if="data.monitor.type === 'tcp' || data.monitor.type === 'grpc'">:{{ data.monitor.port }}</template>
         </p>
       </div>
       <div class="flex flex-wrap gap-2">

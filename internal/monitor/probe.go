@@ -4,6 +4,7 @@ package monitor
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"os/exec"
@@ -28,6 +29,8 @@ func Probe(ctx context.Context, m model.Monitor, ua string) model.Heartbeat {
 		err = probeHTTP(ctx, m, ua, &h)
 	case "websocket":
 		err = probeWebSocket(ctx, m, ua, &h)
+	case "grpc":
+		err = probeGRPC(ctx, m, ua, &h)
 	case "tcp":
 		var conn net.Conn
 		conn, err = (&net.Dialer{}).DialContext(ctx, "tcp", net.JoinHostPort(m.Target, strconv.Itoa(m.Port)))
@@ -80,6 +83,16 @@ func readTLS(state tls.ConnectionState, h *model.Heartbeat) {
 		cert := state.PeerCertificates[0]
 		h.CertExpiry = cert.NotAfter.UnixMilli()
 		// O 可以有多个值；缺失时不拿通用名或根证书名称代替。
+		h.CertIssuerOrg = strings.Join(cert.Issuer.Organization, " / ")
+	}
+}
+
+// 校验失败仍可读取对端证书的到期时间；检测继续失败，绝不绕过证书校验。
+func readFailedCertificate(err error, h *model.Heartbeat) {
+	var verification *tls.CertificateVerificationError
+	if errors.As(err, &verification) && len(verification.UnverifiedCertificates) > 0 {
+		cert := verification.UnverifiedCertificates[0]
+		h.CertExpiry = cert.NotAfter.UnixMilli()
 		h.CertIssuerOrg = strings.Join(cert.Issuer.Organization, " / ")
 	}
 }
