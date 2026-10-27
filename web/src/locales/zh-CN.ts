@@ -99,6 +99,8 @@ export default {
     localSetup: '首次部署请在本机完成初始化，再开放外部访问。',
   },
   status: {
+    switchView: '切换视图', viewTemporaryHint: '临时切换视图，刷新页面后恢复管理员设置的默认视图。', latestLatency: '最近一次检测耗时',
+    views: { compact: '紧凑行', detailed: '详细行', cards: '卡片' },
     title: '服务运行状态',
     subtitle: '各项服务的实时状态与可用性',
     allUp: '所有系统运行正常',
@@ -416,6 +418,7 @@ export default {
       '“{name}”的访问路径将失效，监控项及其历史保留。若删除默认面板，将自动选择剩余的第一个面板。',
   },
   settings: {
+    statusPageView: '状态页默认视图', statusPageViewHint: '访客可以临时切换，刷新页面后恢复此默认视图。不会保存访客的视图偏好。',
     displayCode: '01 · DISPLAY',
     monitoringCode: '02 · PROBE',
     historyCode: '03 · DATA',

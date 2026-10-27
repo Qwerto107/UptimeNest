@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { LayoutDashboard } from 'lucide-vue-next'
-import type { PublicPanel, PublicMonitor, MonitorStatus } from '@/types'
+import { ChevronDown, LayoutDashboard, LayoutGrid, List, Rows3 } from 'lucide-vue-next'
+import type { PublicPanel, PublicMonitor, MonitorStatus, StatusPageView } from '@/types'
 import { request } from '@/lib/api'
 import { bootstrap, loadBootstrap, siteName, timezone } from '@/composables/useApp'
 import { useResource } from '@/composables/useResource'
 import { useHeartbeatCount } from '@/composables/useHeartbeatCount'
-import { formatTime, percent } from '@/lib/format'
+import { formatTime, latency, percent } from '@/lib/format'
+import { statusViewItems } from '@/lib/status-views'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { Button } from '@/components/ui/button'
 import LoadState from '@/components/LoadState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import HeartbeatStrip from '@/components/HeartbeatStrip.vue'
-import LatencyHistoryChart from '@/components/LatencyHistoryChart.vue'
-import ConnectionDetails from '@/components/ConnectionDetails.vue'
+import StatusServiceDetails from '@/components/StatusServiceDetails.vue'
 import StatusConnectionMeta from '@/components/StatusConnectionMeta.vue'
 import StatusSignal from '@/components/StatusSignal.vue'
 import FailureHighlight from '@/components/FailureHighlight.vue'
@@ -30,6 +31,16 @@ const { t } = useI18n()
 const route = useRoute()
 const updatedAt = ref<number>()
 const expanded = ref<number[]>([])
+// 访客选择只存在于当前页面内存中，自动刷新数据时保留，重新载入时回到管理员默认值。
+const temporaryView = ref<StatusPageView>()
+const view = computed(() => temporaryView.value ?? bootstrap.value?.statusPageView ?? 'detailed')
+const cardWide = useMediaQuery('(min-width: 1000px)')
+const cardMedium = useMediaQuery('(min-width: 680px)')
+const cardColumns = computed(() => cardWide.value ? 3 : cardMedium.value ? 2 : 1)
+const viewChoices = [{ value: 'compact', icon: List }, { value: 'detailed', icon: Rows3 }, { value: 'cards', icon: LayoutGrid }] as const
+watch(() => route.params.slug, () => { temporaryView.value = undefined })
+// 卡片详情互斥；从其他视图切回来时也只保留最后展开的一项。
+watch(view, (value) => { if (value === 'cards') expanded.value = expanded.value.slice(-1) })
 const pageElement = ref<HTMLElement>()
 const { animate, reducedMotion } = useMotion()
 const { heartbeatCount, resizeHeartbeat } = useHeartbeatCount(90, () => void refresh())
@@ -93,6 +104,7 @@ async function toggle(id: number) {
   const elements = reducedMotion.value === 'reduce' ? [] : [...(pageElement.value?.querySelectorAll<HTMLElement>('.pulse-service, .pulse-group-heading, .pulse-list-surface, .list-pagination, .pulse-footer') || [])]
   const before = elements.map((element) => ({ element, rect: element.getBoundingClientRect() }))
   if (expanded.value.includes(id)) expanded.value = expanded.value.filter((value) => value !== id)
+  else if (view.value === 'cards') expanded.value = [id]
   else expanded.value.push(id)
   await nextTick()
   for (const { element, rect } of before) {
@@ -103,28 +115,6 @@ async function toggle(id: number) {
     if (Math.abs(dy) < .5 && Math.abs(scale - 1) < .001) continue
     animate(element, [{ transform: `translateY(${dy}px) scaleY(${scale})` }, { transform: 'translateY(0) scaleY(1)' }], 260)
   }
-}
-
-function finish(animation: Animation | undefined, done: () => void) {
-  if (animation) void animation.finished.then(done, done)
-  else done()
-}
-function resetDetails(element: Element) {
-  const style = (element as HTMLElement).style
-  for (const property of ['position', 'top', 'left', 'width', 'margin-top', 'pointer-events']) style.removeProperty(property)
-}
-function enterDetails(element: Element, done: () => void) {
-  resetDetails(element)
-  finish(animate(element, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }], 200, 60), done)
-}
-function leaveDetails(element: Element, done: () => void) {
-  const node = element as HTMLElement
-  if (reducedMotion.value === 'reduce' || !node.parentElement) { done(); return }
-  const rect = node.getBoundingClientRect()
-  const parent = node.parentElement.getBoundingClientRect()
-  // 离场内容临时脱离文档流，下方各行通过 FLIP 移回新位置。
-  Object.assign(node.style, { position: 'absolute', top: `${rect.top - parent.top}px`, left: `${rect.left - parent.left}px`, width: `${rect.width}px`, marginTop: '0', pointerEvents: 'none' })
-  finish(animate(node, [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-4px)' }], 180), done)
 }
 
 function statusLabel(status: MonitorStatus) {
@@ -139,7 +129,7 @@ function protocol(monitor: PublicMonitor) {
 </script>
 
 <template>
-  <div ref="pageElement" class="pulse-page">
+  <div ref="pageElement" class="pulse-page" :data-view="view">
     <div class="pulse-container">
       <header class="pulse-header">
         <RouterLink class="pulse-brand" to="/" :aria-label="t('common.home')">
@@ -178,7 +168,7 @@ function protocol(monitor: PublicMonitor) {
         </p>
       </header>
 
-      <LoadState :loading="loading" :error="error" :has-data="!!data" skeleton="status" @retry="refresh" />
+      <LoadState :loading="loading" :error="error" :has-data="!!data" skeleton="status" :status-view="view" :status-columns="cardColumns" @retry="refresh" />
 
       <template v-if="data">
         <section class="pulse-summary" :class="'pulse-summary-' + overall" aria-live="polite">
@@ -222,65 +212,65 @@ function protocol(monitor: PublicMonitor) {
             :title="t('status.emptyTitle')"
             :description="t('status.emptyDescription')"
           />
-          <section v-for="group in groups" :key="group.id" class="pulse-group">
+          <section v-for="(group, groupIndex) in groups" :key="group.id" class="pulse-group">
             <div class="pulse-group-heading">
               <h2>{{ group.name }}</h2>
+              <div v-if="groupIndex === 0" class="pulse-view-switch" role="group" :aria-label="t('status.switchView')" :title="t('status.viewTemporaryHint')" :style="{ '--view-index': viewChoices.findIndex(choice => choice.value === view) }">
+                <span class="pulse-view-indicator" aria-hidden="true" />
+                <button v-for="choice in viewChoices" :key="choice.value" type="button" class="pulse-view-button" :aria-pressed="view === choice.value" :aria-label="t(`status.views.${choice.value}`)" :title="t(`status.views.${choice.value}`)" @click="temporaryView = choice.value"><component :is="choice.icon" aria-hidden="true" /></button>
+              </div>
             </div>
-            <div class="pulse-service-list">
-              <div class="pulse-list-surface" aria-hidden="true" />
-              <article v-for="monitor in group.monitors" :key="monitor.id" class="pulse-service">
-                <FailureHighlight :status="monitor.summary.status" />
-                <div class="pulse-service-heading">
-                  <div class="pulse-service-name-line">
-                    <button
-                      class="pulse-service-name"
-                      :aria-label="t('status.showDetails', { name: monitor.name })"
-                      :aria-expanded="expanded.includes(monitor.id)"
-                      :aria-controls="'connection-' + monitor.id"
-                      @click="toggle(monitor.id)"
-                    >
-                      {{ monitor.name }}
-                    </button>
-                    <span v-if="monitor.address" class="pulse-address pulse-mono">
-                      {{ monitor.address }}
-                    </span>
-                    <span class="pulse-protocol pulse-mono">{{ protocol(monitor) }}</span>
-                  </div>
-                  <div class="pulse-service-result">
-                    <span
-                      class="pulse-uptime"
-                      :title="t('status.uptimeShort')"
-                      :aria-label="t('status.uptimeShort') + ' ' + percent(monitor.summary.uptime)"
-                    >
-                      <AnimatedValue class="pulse-mono" :value="percent(monitor.summary.uptime)" />
-                    </span>
-                    <span class="pulse-state" :class="'pulse-state-' + monitor.summary.status">
-                      <StatusSignal :status="monitor.summary.status" />
-                      {{ statusLabel(monitor.summary.status) }}
-                    </span>
-                  </div>
-                </div>
-                <p v-if="monitor.description" class="pulse-service-description">
-                  {{ monitor.description }}
-                </p>
-                <div v-if="monitor.tags.length" class="pulse-tags">
-                  <span v-for="tag in monitor.tags" :key="tag">{{ tag }}</span>
-                </div>
-                <StatusConnectionMeta :beat="monitor.summary.latest" :tls-latency-warning-ms="bootstrap?.tlsLatencyWarningMs ?? 0" :cert-expiry-warning-days="monitor.certExpiryWarningDays ?? bootstrap?.certExpiryWarningDays ?? 30" />
-                <HeartbeatStrip :beats="monitor.summary.heartbeats" @capacity="resizeHeartbeat" />
-                <Transition :css="false" @enter="enterDetails" @leave="leaveDetails" @leave-cancelled="resetDetails">
-                  <div
-                    v-if="expanded.includes(monitor.id)"
-                    :id="'connection-' + monitor.id"
-                    class="pulse-expanded"
-                  >
-                    <div class="pulse-expanded-content">
-                      <LatencyHistoryChart :beats="monitor.summary.heartbeats" />
-                      <ConnectionDetails :beat="monitor.summary.latest" />
+            <div class="pulse-service-list" :class="{ 'pulse-card-grid': view === 'cards' }" :style="{ '--status-columns': cardColumns }">
+              <div v-if="view !== 'cards'" class="pulse-list-surface" aria-hidden="true" />
+              <template v-for="{ key, monitor, details, column } in statusViewItems(group.monitors, view, cardColumns)" :key="key">
+                <StatusServiceDetails v-if="details" :monitor="monitor" :open="expanded.includes(monitor.id)" :column="column" condensed grid @capacity="resizeHeartbeat" />
+                <article v-else class="pulse-service" :class="`pulse-service-${view}`" :data-expanded="expanded.includes(monitor.id)" @click="view !== 'detailed' && toggle(monitor.id)">
+                  <FailureHighlight :status="monitor.summary.status" />
+                  <div class="pulse-service-heading">
+                    <div class="pulse-service-name-line">
+                      <StatusSignal v-if="view !== 'detailed'" :status="monitor.summary.status" />
+                      <button
+                        class="pulse-service-name"
+                        :title="monitor.name"
+                        :aria-label="t('status.showDetails', { name: monitor.name }) + ' · ' + statusLabel(monitor.summary.status)"
+                        :aria-expanded="expanded.includes(monitor.id)"
+                        :aria-controls="'connection-' + monitor.id"
+                        @click.stop="toggle(monitor.id)"
+                      >
+                        {{ monitor.name }}
+                      </button>
+                      <span v-if="monitor.address" class="pulse-address pulse-mono" :title="monitor.address">
+                        {{ monitor.address }}
+                      </span>
+                      <span v-if="view === 'detailed'" class="pulse-protocol pulse-mono">{{ protocol(monitor) }}</span>
+                    </div>
+                    <div class="pulse-service-result">
+                      <span
+                        class="pulse-uptime"
+                        :title="t('status.uptimeShort')"
+                        :aria-label="t('status.uptimeShort') + ' ' + percent(monitor.summary.uptime)"
+                      >
+                        <AnimatedValue class="pulse-mono" :value="percent(monitor.summary.uptime)" />
+                      </span>
+                      <span v-if="view !== 'detailed'" class="pulse-service-latency pulse-mono" :title="t('status.latestLatency')">{{ monitor.summary.status === 'up' ? latency(monitor.summary.latest?.latency) : '—' }}</span>
+                      <span v-if="view === 'detailed' || monitor.summary.status !== 'up'" class="pulse-state" :class="'pulse-state-' + monitor.summary.status">
+                        <StatusSignal :status="monitor.summary.status" />
+                        {{ statusLabel(monitor.summary.status) }}
+                      </span>
                     </div>
                   </div>
-                </Transition>
-              </article>
+                  <p v-if="view === 'detailed' && monitor.description" class="pulse-service-description">
+                    {{ monitor.description }}
+                  </p>
+                  <div v-if="view === 'detailed' && monitor.tags.length" class="pulse-tags">
+                    <span v-for="tag in monitor.tags" :key="tag">{{ tag }}</span>
+                  </div>
+                  <StatusConnectionMeta v-if="view === 'detailed'" :beat="monitor.summary.latest" :tls-latency-warning-ms="bootstrap?.tlsLatencyWarningMs ?? 0" :cert-expiry-warning-days="monitor.certExpiryWarningDays ?? bootstrap?.certExpiryWarningDays ?? 30" />
+                  <HeartbeatStrip :beats="monitor.summary.heartbeats" @capacity="resizeHeartbeat" />
+                  <button v-if="view === 'compact'" class="pulse-detail-toggle" :aria-label="t('status.showDetails', { name: monitor.name })" :aria-expanded="expanded.includes(monitor.id)" :aria-controls="'connection-' + monitor.id" @click.stop="toggle(monitor.id)"><ChevronDown aria-hidden="true" /></button>
+                  <StatusServiceDetails v-if="view !== 'cards'" :monitor="monitor" :open="expanded.includes(monitor.id)" :condensed="view === 'compact'" @capacity="resizeHeartbeat" />
+                </article>
+              </template>
             </div>
           </section>
 

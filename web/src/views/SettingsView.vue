@@ -24,6 +24,7 @@ const form = reactive<Settings>({
   timezone: 'Asia/Singapore',
   language: 'en-US',
   entryPage: 'status',
+  statusPageView: 'detailed',
   userAgent: '',
   tlsLatencyWarningMs: 0,
   certExpiryWarningDays: 30,
@@ -144,6 +145,9 @@ async function cleanup() {
             />
           </Field>
         </div>
+        <Field id="status-page-view" :label="t('settings.statusPageView')" :hint="t('settings.statusPageViewHint')">
+          <Select id="status-page-view" v-model="form.statusPageView" :disabled="busy" :options="(['compact', 'detailed', 'cards'] as const).map(value => ({ value, label: t(`status.views.${value}`) }))" />
+        </Field>
         <div class="field">
           <span class="field-label">{{ t('settings.theme') }}</span>
           <div class="theme-options" role="group" :aria-label="t('settings.theme')">

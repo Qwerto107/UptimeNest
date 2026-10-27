@@ -167,6 +167,7 @@ type Settings struct {
 	Timezone              string   `json:"timezone"`
 	Language              string   `json:"language"`
 	EntryPage             string   `json:"entryPage"`
+	StatusPageView        string   `json:"statusPageView"`
 	UserAgent             string   `json:"userAgent"`
 	TLSLatencyWarningMS   int      `json:"tlsLatencyWarningMs"`
 	CertExpiryWarningDays int      `json:"certExpiryWarningDays"`
@@ -176,7 +177,7 @@ type Settings struct {
 
 // DefaultSettings 为首次安装及缺少配置字段时提供默认展示设置。
 func DefaultSettings() Settings {
-	return Settings{SiteName: "UptimeNest", Timezone: "Asia/Singapore", Language: "en-US", EntryPage: "status", RetentionDays: 30, CertExpiryWarningDays: 30, TrustedProxies: []string{}}
+	return Settings{SiteName: "UptimeNest", Timezone: "Asia/Singapore", Language: "en-US", EntryPage: "status", StatusPageView: "detailed", RetentionDays: 30, CertExpiryWarningDays: 30, TrustedProxies: []string{}}
 }
 
 // Heartbeat 只记录一次完整检测（含重试）后的最终结果。

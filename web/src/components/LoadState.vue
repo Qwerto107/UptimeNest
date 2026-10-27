@@ -4,8 +4,9 @@ import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
+import type { StatusPageView } from '@/types'
 
-const props = defineProps<{ loading?: boolean; error?: string; hasData?: boolean; skeleton?: 'status' | 'monitors' | 'panels' }>()
+const props = defineProps<{ loading?: boolean; error?: string; hasData?: boolean; skeleton?: 'status' | 'monitors' | 'panels'; statusView?: StatusPageView; statusColumns?: number }>()
 const showSkeleton = ref(false)
 let timer: ReturnType<typeof setTimeout> | undefined
 watch(() => props.loading, (loading) => {
@@ -20,7 +21,7 @@ const { t } = useI18n()
 </script>
 <template>
   <div v-if="loading && (!skeleton || showSkeleton)" :class="{ 'load-state': !skeleton }" role="status" :aria-label="t('common.loading')">
-    <PageSkeleton v-if="skeleton" :layout="skeleton" />
+    <PageSkeleton v-if="skeleton" :layout="skeleton" :status-view="statusView" :status-columns="statusColumns" />
     <template v-else><LoaderCircle class="size-5" />{{ t('common.loading') }}</template>
   </div>
   <div v-else-if="!loading && error" class="error-state" role="alert">

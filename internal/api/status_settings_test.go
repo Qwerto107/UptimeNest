@@ -88,6 +88,66 @@ func TestTLSLatencyWarningSettings(t *testing.T) {
 	}
 }
 
+func TestStatusPageViewSettings(t *testing.T) {
+	ctx := context.Background()
+	s, err := store.Open(ctx, "sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.DB.Close()
+	token := strings.Repeat("v", 64)
+	if _, err := s.DB.Exec("INSERT INTO sessions(token,expires) VALUES(?,?)", tokenHash(token), time.Now().Add(time.Hour).UnixMilli()); err != nil {
+		t.Fatal(err)
+	}
+	handler := New(s, nil, config.Config{})
+	for _, view := range []string{"compact", "cards", "detailed", "", "unknown"} {
+		settings := model.DefaultSettings()
+		settings.StatusPageView = view
+		settings.UserAgent = "private-user-agent"
+		body, _ := json.Marshal(settings)
+		r := httptest.NewRequest("PUT", "/api/admin/settings", bytes.NewReader(body))
+		r.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		if w.Code != 401 {
+			t.Fatalf("anonymous default view change: %d", w.Code)
+		}
+		r = httptest.NewRequest("PUT", "/api/admin/settings", bytes.NewReader(body))
+		r.Header.Set("Content-Type", "application/json")
+		r.AddCookie(&http.Cookie{Name: cookieName, Value: token})
+		w = httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		if view == "" || view == "unknown" {
+			if w.Code != 400 {
+				t.Fatalf("invalid view accepted: %q %d", view, w.Code)
+			}
+			continue
+		}
+		stored, err := s.Settings(ctx)
+		if w.Code != 200 || err != nil || stored.StatusPageView != view {
+			t.Fatalf("view not persisted: %s %v", w.Body.String(), err)
+		}
+		w = httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest("GET", "/api/public/bootstrap", nil))
+		var public struct {
+			View string `json:"statusPageView"`
+		}
+		if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &public) != nil || public.View != view || strings.Contains(w.Body.String(), settings.UserAgent) {
+			t.Fatalf("incorrect public default: %s", w.Body.String())
+		}
+	}
+	// 旧设置缺少该字段时保留原详细行布局，不需要迁移或改写已保存配置。
+	legacy, _ := json.Marshal(model.DefaultSettings())
+	legacy = bytes.Replace(legacy, []byte(`"statusPageView":"detailed",`), nil, 1)
+	if _, err := s.DB.Exec("UPDATE settings SET value=? WHERE key='system'", string(legacy)); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := s.Settings(ctx)
+	if err != nil || stored.StatusPageView != "detailed" {
+		t.Fatalf("legacy default changed: %+v %v", stored, err)
+	}
+}
+
 func TestCertificateHighlightSettings(t *testing.T) {
 	ctx := context.Background()
 	s, err := store.Open(ctx, "sqlite", ":memory:")

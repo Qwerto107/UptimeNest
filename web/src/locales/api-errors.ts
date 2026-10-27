@@ -1,6 +1,7 @@
 import notificationErrors from './notification-errors'
 // 保持现有接口错误格式兼容，仅翻译已知提示；未知诊断详情保留原文。
 const englishErrors: Record<string, string> = {
+  '状态页默认视图应为 detailed、compact 或 cards': 'The default status page view must be detailed, compact or cards.',
   'gRPC 目标应为主机名或 IP，端口应为 1 至 65535': 'The gRPC target must be a hostname or IP, with a port between 1 and 65535.',
   '请选择有效的 gRPC 连接安全模式': 'Select a valid gRPC connection security mode.',
   'gRPC 服务名称最多 1000 字节，且不能包含换行或空字符': 'The gRPC service name must not exceed 1000 bytes or contain line breaks or null characters.',

@@ -102,6 +102,8 @@ const enUS: typeof zhCN = {
     localSetup: 'Complete initial setup locally before allowing external access.',
   },
   status: {
+    switchView: 'Switch view', viewTemporaryHint: 'Switch temporarily. Reloading restores the default view set by the administrator.', latestLatency: 'Latest check duration',
+    views: { compact: 'Compact rows', detailed: 'Detailed rows', cards: 'Cards' },
     title: 'Service status',
     subtitle: 'Live service status and availability',
     allUp: 'All systems operational',
@@ -414,6 +416,7 @@ const enUS: typeof zhCN = {
     deleteDescription: 'The URL for “{name}” will stop working. Monitors and their history are kept. If this is the default page, the first remaining page becomes the default.',
   },
   settings: {
+    statusPageView: 'Default status page view', statusPageViewHint: 'Visitors can switch temporarily. Reloading restores this default. Visitor view preferences are not saved.',
     displayCode: '01 · DISPLAY',
     monitoringCode: '02 · PROBE',
     historyCode: '03 · DATA',

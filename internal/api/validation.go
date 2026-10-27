@@ -140,6 +140,9 @@ func validateSettings(v model.Settings) error {
 	if v.EntryPage != "status" && v.EntryPage != "admin" {
 		return fmt.Errorf("入口页面无效")
 	}
+	if v.StatusPageView != "detailed" && v.StatusPageView != "compact" && v.StatusPageView != "cards" {
+		return fmt.Errorf("状态页默认视图应为 detailed、compact 或 cards")
+	}
 	if len(v.UserAgent) > 500 || strings.ContainsAny(v.UserAgent, "\r\n") {
 		return fmt.Errorf("User-Agent 过长或包含非法换行")
 	}

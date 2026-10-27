@@ -1,4 +1,5 @@
 export type MonitorStatus = 'up' | 'down' | 'unknown' | 'paused'
+export type StatusPageView = 'detailed' | 'compact' | 'cards'
 export type MonitorType = 'http' | 'websocket' | 'grpc' | 'tcp' | 'ping' | 'dns'
 
 export interface Heartbeat {
@@ -186,6 +187,7 @@ export interface Panel {
   isDefault: boolean
 }
 export interface Settings {
+  statusPageView: StatusPageView
   tlsLatencyWarningMs: number
   certExpiryWarningDays: number
   siteName: string
@@ -197,6 +199,7 @@ export interface Settings {
   trustedProxies: string[]
 }
 export interface Bootstrap {
+  statusPageView: StatusPageView
   tlsLatencyWarningMs: number
   certExpiryWarningDays: number
   siteName: string

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-defineProps<{ layout: 'status' | 'monitors' | 'panels' }>()
+import type { StatusPageView } from '@/types'
+withDefaults(defineProps<{ layout: 'status' | 'monitors' | 'panels'; statusView?: StatusPageView; statusColumns?: number }>(), { statusView: 'detailed', statusColumns: 3 })
 </script>
 
 <template>
@@ -11,16 +12,16 @@ defineProps<{ layout: 'status' | 'monitors' | 'panels' }>()
         <span class="skeleton-line skeleton-refresh" />
       </div>
       <div class="pulse-group">
-        <div class="pulse-group-heading"><span class="skeleton-line skeleton-group-name" /></div>
-        <div class="pulse-service-list">
-          <div class="pulse-list-surface" />
-          <div v-for="row in 3" :key="row" class="pulse-service">
+        <div class="pulse-group-heading"><span class="skeleton-line skeleton-group-name" /><span class="skeleton-line skeleton-view-switch" /></div>
+        <div class="pulse-service-list" :class="{ 'pulse-card-grid': statusView === 'cards' }" :style="{ '--status-columns': statusColumns }">
+          <div v-if="statusView !== 'cards'" class="pulse-list-surface" />
+          <div v-for="row in 3" :key="row" class="pulse-service" :class="`pulse-service-${statusView}`">
             <div class="pulse-service-heading">
-              <div class="pulse-service-name-line"><span class="skeleton-line skeleton-name" /><span class="skeleton-line skeleton-address" /><span class="skeleton-line skeleton-pill" /></div>
-              <div class="pulse-service-result"><span class="skeleton-line skeleton-uptime" /><span class="skeleton-line skeleton-state" /></div>
+              <div class="pulse-service-name-line"><span class="skeleton-line skeleton-name pulse-service-name" /><span class="skeleton-line skeleton-address pulse-address" /><span v-if="statusView === 'detailed'" class="skeleton-line skeleton-pill" /></div>
+              <div class="pulse-service-result"><span class="skeleton-line skeleton-uptime pulse-uptime" /><span v-if="statusView === 'detailed'" class="skeleton-line skeleton-state" /><span v-else class="skeleton-line skeleton-latency pulse-service-latency" /></div>
             </div>
-            <div class="pulse-connection-meta skeleton-meta"><span v-for="pill in 4" :key="pill" class="skeleton-line skeleton-pill" /></div>
-            <div class="skeleton-ticks" />
+            <div v-if="statusView === 'detailed'" class="pulse-connection-meta skeleton-meta"><span v-for="pill in 4" :key="pill" class="skeleton-line skeleton-pill" /></div>
+            <div class="skeleton-ticks" :class="{ 'heartbeat-strip': statusView !== 'detailed' }" />
           </div>
         </div>
       </div>
@@ -64,6 +65,8 @@ defineProps<{ layout: 'status' | 'monitors' | 'panels' }>()
 .skeleton-date { width: 200px; height: 10px; }
 .skeleton-refresh { width: 36px; height: 14px; flex: none; }
 .skeleton-group-name { width: 80px; }
+.skeleton-view-switch { width: 120px; height: 40px; border-radius: 10px; }
+.skeleton-latency { width: 40px; height: 11px; justify-self: end; }
 .skeleton-name { width: 100px; height: 14px; }
 .skeleton-address { width: 120px; height: 10px; }
 .skeleton-pill { width: 44px; height: 18px; border-radius: 999px; }
