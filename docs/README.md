@@ -6,6 +6,7 @@
 
 | 要做的事 | 文档 |
 | --- | --- |
+| 查看状态页和管理后台的实际界面 | [界面截图](screenshots.md) |
 | 创建监控、检查连接信息和历史记录 | [使用指南](usage.md#监控管理) |
 | 配置 HTTP 协议、指定 IP 或 WebSocket 检测 | [HTTP 配置](usage.md#http-请求与验证) · [WebSocket 检测](usage.md#websocket-检测) |
 | 配置 gRPC 健康检查 | [gRPC 检测](usage.md#grpc-检测) |
@@ -41,4 +42,4 @@
 | 发行程序 | <http://127.0.0.1:8090> | 解压后的程序目录 |
 | 本地前端开发 | <http://127.0.0.1:5173> | 源码仓库，前后端分别启动 |
 
-容器和发行程序均包含前端。首次访问 `/admin` 时，填写启动日志中的 `setup_token` 并设置密码；访客面板路径为 `/status/<面板路径>`。平台以对应 Release 附件为准，界面预览见 [项目首页](../README.md#界面一览)。
+容器和发行程序均包含前端。首次访问 `/admin` 时，填写启动日志中的 `setup_token` 并设置密码；访客面板路径为 `/status/<面板路径>`。平台以对应 Release 附件为准，实际界面见 [界面截图](screenshots.md)。

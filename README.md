@@ -20,40 +20,11 @@
 
 状态页支持紧凑行、详细行和卡片，展示近期心跳、可用率与连接信息。后台支持时间范围延迟图表，兼容桌面与手机，提供浅色和深色主题。
 
-![UptimeNest：状态页、响应延迟图表与移动端展示](docs/assets/product-showcase.png)
+![UptimeNest 真实界面：状态页、响应延迟图表与手机视图](docs/assets/product-showcase-real.png)
 
-*UptimeNest 产品展示图，根据独立演示界面生成。实际布局与配置以下方截图为准。*
+*由独立演示环境的真实截图排版合成，界面内容未经重绘。*
 
-<details>
-<summary><strong>查看实际截图：状态页、监控详情、协议配置、分组与系统设置</strong></summary>
-
-![UptimeNest 浅色状态页：服务分组、近期心跳与连接信息](docs/assets/status-light.jpg)
-
-<table>
-  <tr><th width="75%">深色状态页</th><th width="25%">移动端状态页</th></tr>
-  <tr>
-    <td valign="top"><img src="docs/assets/status-dark.jpg" alt="UptimeNest 深色状态页"></td>
-    <td valign="top"><img src="docs/assets/status-mobile.jpg" alt="UptimeNest 移动端状态页"></td>
-  </tr>
-</table>
-
-![监控管理：监控与分组统一管理、子树状态与单项操作](docs/assets/monitors.jpg)
-
-![监控详情：可用率、响应时间与七档时间范围的延迟图表](docs/assets/monitor-detail.jpg)
-
-![HTTP 配置：协议模式、指定连接 IP 与成功状态码](docs/assets/http-options.jpg)
-
-![WebSocket 配置：握手与 Ping/Pong、Origin、子协议和指定连接 IP](docs/assets/websocket-options.jpg)
-
-![监控列表内编辑分组名称和父级](docs/assets/groups.jpg)
-
-![状态面板：独立展示分组、监控顺序与跨组移动](docs/assets/panels.jpg)
-
-![系统设置：语言、主题、TLS 握手提醒阈值、历史保留与可信代理](docs/assets/settings.jpg)
-
-截图展示基础界面，使用独立演示数据，域名、地址和统计仅作展示，不包含真实凭据。v0.6.0 新增功能及实际布局以 [使用指南](docs/usage.md) 和对应 [更新记录](docs/changelog.md) 为准。
-
-</details>
+[查看实际界面截图](docs/screenshots.md)：状态页、监控管理、协议配置、分组、面板和系统设置。
 
 ## 功能
 
