@@ -14,6 +14,7 @@ type Config struct {
 	WebDir       string
 	CookieSecure bool
 	Workers      int
+	SetupToken   string
 }
 
 func Load() (Config, error) {

@@ -1,6 +1,7 @@
 import notificationErrors from './notification-errors'
 // 保持现有接口错误格式兼容，仅翻译已知提示；未知诊断详情保留原文。
 const englishErrors: Record<string, string> = {
+  '初始化令牌不正确，请查看本次启动日志': 'Incorrect setup token. Check the current startup log.',
   '请求过于频繁，请稍后重试': 'Too many requests. Please try again shortly.',
   '登录验证繁忙，请稍后重试': 'Login verification is busy. Please try again shortly.',
   '状态页默认视图应为 detailed、compact 或 cards': 'The default status page view must be detailed, compact or cards.',

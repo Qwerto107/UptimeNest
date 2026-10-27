@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 const { t } = useI18n()
 const router = useRouter()
 const password = ref('')
+const setupToken = ref('')
 const confirmation = ref('')
 const showPassword = ref(false)
 const { data, loading, error, refresh } = useResource((signal) =>
@@ -31,7 +32,11 @@ async function submit() {
   }
   await run(async () => {
     const path = '/admin/' + (data.value?.initialized ? 'session' : 'setup')
-    await send(path, 'POST', { password: password.value })
+    const body = data.value?.initialized
+      ? { password: password.value }
+      : { password: password.value, token: setupToken.value.trim() }
+    await send(path, 'POST', body)
+    setupToken.value = ''
     await loadBootstrap()
     await router.replace('/admin')
   })
@@ -50,6 +55,24 @@ async function submit() {
         <p class="login-description">
           {{ data.initialized ? t('auth.loginDescription') : t('auth.setupDescription') }}
         </p>
+        <Field
+          v-if="!data.initialized"
+          id="setup-token"
+          :label="t('auth.setupToken')"
+          :hint="t('auth.setupTokenHint')"
+          required
+        >
+          <Input
+            id="setup-token"
+            v-model="setupToken"
+            type="password"
+            required
+            autocomplete="off"
+            autofocus
+            :spellcheck="false"
+            :disabled="busy"
+          />
+        </Field>
         <Field id="login-password" :label="t('auth.password')" required>
           <div class="password-control">
             <LockKeyhole :size="14" aria-hidden="true" />
@@ -60,7 +83,7 @@ async function submit() {
               :placeholder="t('auth.passwordPlaceholder')"
               required
               :autocomplete="data.initialized ? 'current-password' : 'new-password'"
-              autofocus
+              :autofocus="data.initialized"
               :disabled="busy"
             />
             <Button

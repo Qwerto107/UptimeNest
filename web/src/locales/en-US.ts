@@ -88,6 +88,8 @@ const enUS: typeof zhCN = {
     loginDescription: 'Log in to manage your monitors and status pages.',
     setup: 'Get started with {name}',
     setupDescription: 'Set an admin password to start monitoring your services.',
+    setupToken: 'Setup token',
+    setupTokenHint: 'Copy setup_token from the current startup log. Restarting generates a new token.',
     password: 'Password',
     passwordPlaceholder: 'Enter your admin password',
     showPassword: 'Show password',

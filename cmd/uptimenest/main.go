@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"log/slog"
 	"net/http"
 	"os"
@@ -46,6 +47,15 @@ func run() error {
 		return err
 	}
 	defer s.Close()
+	var initialized bool
+	if err = s.ReadDB().QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM account)").Scan(&initialized); err != nil {
+		return err
+	}
+	if !initialized {
+		// 令牌仅在未初始化时输出到本地启动日志，重启后自动轮换。
+		cfg.SetupToken = rand.Text()
+		slog.Info("首次初始化需要令牌，请在管理页面输入", "setup_token", cfg.SetupToken)
+	}
 	engine := monitor.New(ctx, s, cfg.Workers)
 	notificationsDone := make(chan struct{})
 	go func() { defer close(notificationsDone); notify.Run(ctx, s) }()

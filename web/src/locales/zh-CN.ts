@@ -85,6 +85,8 @@ export default {
     loginDescription: '登录以管理监控项与状态面板。',
     setup: '开始使用 {name}',
     setupDescription: '设置管理员密码，开始监控你的服务。',
+    setupToken: '初始化令牌',
+    setupTokenHint: '从本次启动日志的 setup_token 字段复制；重启后令牌会更新。',
     password: '密码',
     passwordPlaceholder: '输入管理密码',
     showPassword: '显示密码',

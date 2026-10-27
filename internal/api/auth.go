@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/hex"
 	"errors"
@@ -94,8 +95,15 @@ func (a *Server) setup(w http.ResponseWriter, r *http.Request) {
 	}
 	var body struct {
 		Password string `json:"password"`
+		Token    string `json:"token"`
 	}
 	if !decode(w, r, &body) {
+		return
+	}
+	// 比较固定长度摘要，令牌缺失时始终拒绝初始化。
+	if a.config.SetupToken == "" || subtle.ConstantTimeCompare([]byte(tokenHash(body.Token)), []byte(tokenHash(a.config.SetupToken))) != 1 {
+		a.authFailures.failed(key)
+		writeError(w, 403, "初始化令牌不正确，请查看本次启动日志")
 		return
 	}
 	if !validPassword(w, body.Password) {
@@ -121,6 +129,7 @@ func (a *Server) setup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 409, "管理员已设置，请直接登录")
 		return
 	}
+	a.config.SetupToken = ""
 	a.authFailures.reset(key)
 	if err = a.issueSession(w, r); err != nil {
 		fail(w, err)
