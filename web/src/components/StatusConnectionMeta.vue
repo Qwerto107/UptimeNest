@@ -6,7 +6,7 @@ import type { Heartbeat } from '@/types'
 import { certificate, formatTime, latency } from '@/lib/format'
 import AnimatedValue from '@/components/AnimatedValue.vue'
 
-const props = withDefaults(defineProps<{ beat: Heartbeat | null; tlsLatencyWarningMs?: number }>(), { tlsLatencyWarningMs: 0 })
+const props = withDefaults(defineProps<{ beat: Heartbeat | null; tlsLatencyWarningMs?: number; certExpiryWarningDays?: number }>(), { tlsLatencyWarningMs: 0, certExpiryWarningDays: 30 })
 const { t } = useI18n()
 const hasMeta = computed(
   () =>
@@ -19,7 +19,7 @@ const certificateState = computed(() => {
   if (!props.beat?.certExpiry) return 'normal'
   const remaining = props.beat.certExpiry - Date.now()
   if (remaining <= 0) return 'expired'
-  return remaining < 30 * 86400000 ? 'soon' : 'normal'
+  return props.certExpiryWarningDays > 0 && remaining <= props.certExpiryWarningDays * 86400000 ? 'soon' : 'normal'
 })
 const latencyWarning = computed(() => props.tlsLatencyWarningMs > 0 && Number.isFinite(props.beat?.tlsLatency) && (props.beat?.tlsLatency ?? 0) > props.tlsLatencyWarningMs)
 const handshakeTitle = computed(() => latencyWarning.value

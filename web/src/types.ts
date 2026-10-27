@@ -80,6 +80,7 @@ export interface Monitor {
   tags: string[]
   groupId: number
   enabled: boolean
+  certExpiryWarningDays?: number | null
   http?: HTTPOptions
   websocket?: WebSocketOptions
   grpc?: GRPCOptions
@@ -186,6 +187,7 @@ export interface Panel {
 }
 export interface Settings {
   tlsLatencyWarningMs: number
+  certExpiryWarningDays: number
   siteName: string
   timezone: string
   language: string
@@ -196,6 +198,7 @@ export interface Settings {
 }
 export interface Bootstrap {
   tlsLatencyWarningMs: number
+  certExpiryWarningDays: number
   siteName: string
   timezone: string
   language: string
@@ -216,7 +219,7 @@ export interface MonitorLog {
 }
 export type PublicMonitor = Pick<
   MonitorView,
-  'id' | 'name' | 'type' | 'description' | 'tags'
+  'id' | 'name' | 'type' | 'description' | 'tags' | 'certExpiryWarningDays'
 > & { address?: string; protocol: string; summary: PublicSummary }
 export interface PublicPanel {
   panel: Pick<Panel, 'name' | 'slug' | 'description' | 'pageTitle'>

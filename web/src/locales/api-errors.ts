@@ -14,6 +14,7 @@ const englishErrors: Record<string, string> = {
   'gRPC CA 证书不是有效 PEM': 'The gRPC CA certificate is not valid PEM.',
   '请选择 HTTP、WebSocket、gRPC、TCP、Ping 或 DNS 类型': 'Choose HTTP, WebSocket, gRPC, TCP, Ping or DNS.',
   '证书告警仅支持 HTTPS/WSS 或启用 TLS 的 gRPC 监控': 'Certificate alerts require HTTPS, WSS or gRPC with TLS.',
+  '证书临期高亮天数应为 0 至 3650 天，0 表示关闭': 'Certificate highlight threshold must be between 0 and 3650 days; 0 disables early highlighting.',
   ...notificationErrors,
   'TLS 握手延迟提醒阈值应为 0 至 120000 毫秒，0 表示关闭': 'The TLS handshake warning threshold must be between 0 and 120000 ms; 0 disables it.',
   '请输入有效的 WS/WSS 地址，不允许携带账户密码或片段': 'Enter a valid WS/WSS URL without embedded credentials or a fragment.',

@@ -53,6 +53,7 @@ function defaults(): Monitor {
     tags: [],
     groupId: props.initialGroupId ?? 0,
     enabled: true,
+    certExpiryWarningDays: null,
     http: defaultHTTPOptions(),
     websocket: defaultWebSocketOptions(),
     grpc: defaultGRPCOptions(),
@@ -61,6 +62,11 @@ function defaults(): Monitor {
 }
 const form = reactive<Monitor>(defaults())
 const certificateAvailable = computed(() => (form.type === 'http' && form.target.startsWith('https://')) || (form.type === 'websocket' && form.target.startsWith('wss://')) || (form.type === 'grpc' && (form.grpc?.security ?? 'tls') === 'tls'))
+const certExpiryWarningDays = computed({
+  get: () => form.certExpiryWarningDays ?? '',
+  // 空输入保留继承语义，不能转换成代表关闭高亮的 0。
+  set: (value: string | number) => { form.certExpiryWarningDays = value === '' ? null : Number(value) },
+})
 const tags = ref('')
 const tab = ref('basics')
 const tabScroll = ref<HTMLElement>()
@@ -392,6 +398,9 @@ async function submit(event: Event) {
                     max="3600"
                     required
                   />
+                </Field>
+                <Field v-if="certificateAvailable" id="monitor-cert-expiry-warning" :label="t('settings.certExpiryWarning')" :hint="t('monitor.certExpiryWarningHint')" class="col-span-full">
+                  <Input id="monitor-cert-expiry-warning" v-model.number="certExpiryWarningDays" type="number" min="0" max="3650" step="1" :placeholder="t('monitor.inheritCertExpiryWarning')" />
                 </Field>
               </div>
               <div class="toggle-row">

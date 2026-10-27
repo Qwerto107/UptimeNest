@@ -87,3 +87,57 @@ func TestTLSLatencyWarningSettings(t *testing.T) {
 		t.Fatalf("legacy settings default: %+v %v", stored, err)
 	}
 }
+
+func TestCertificateHighlightSettings(t *testing.T) {
+	ctx := context.Background()
+	s, err := store.Open(ctx, "sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.DB.Close()
+	token := strings.Repeat("c", 64)
+	if _, err = s.DB.Exec("INSERT INTO sessions(token,expires) VALUES(?,?)", tokenHash(token), time.Now().Add(time.Hour).UnixMilli()); err != nil {
+		t.Fatal(err)
+	}
+	handler := New(s, nil, config.Config{})
+	for _, days := range []int{0, 7, 3650, -1, 3651} {
+		settings := model.DefaultSettings()
+		settings.CertExpiryWarningDays = days
+		body, _ := json.Marshal(settings)
+		r := httptest.NewRequest("PUT", "/api/admin/settings", bytes.NewReader(body))
+		r.Header.Set("Content-Type", "application/json")
+		r.AddCookie(&http.Cookie{Name: cookieName, Value: token})
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		if days < 0 || days > 3650 {
+			if w.Code != 400 {
+				t.Fatalf("invalid threshold accepted: %d %d", days, w.Code)
+			}
+			continue
+		}
+		if w.Code != 200 {
+			t.Fatalf("save: %d %s", w.Code, w.Body.String())
+		}
+		stored, err := s.Settings(ctx)
+		if err != nil || stored.CertExpiryWarningDays != days {
+			t.Fatalf("threshold not persisted: %+v %v", stored, err)
+		}
+		w = httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest("GET", "/api/public/bootstrap", nil))
+		var value struct {
+			Days int `json:"certExpiryWarningDays"`
+		}
+		if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &value) != nil || value.Days != days {
+			t.Fatalf("public setting: %s", w.Body.String())
+		}
+	}
+	legacy, _ := json.Marshal(model.DefaultSettings())
+	legacy = bytes.Replace(legacy, []byte(`"certExpiryWarningDays":30,`), nil, 1)
+	if _, err = s.DB.Exec("UPDATE settings SET value=? WHERE key='system'", string(legacy)); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := s.Settings(ctx)
+	if err != nil || stored.CertExpiryWarningDays != 30 {
+		t.Fatalf("legacy highlight default: %+v %v", stored, err)
+	}
+}

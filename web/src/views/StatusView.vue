@@ -266,7 +266,7 @@ function protocol(monitor: PublicMonitor) {
                 <div v-if="monitor.tags.length" class="pulse-tags">
                   <span v-for="tag in monitor.tags" :key="tag">{{ tag }}</span>
                 </div>
-                <StatusConnectionMeta :beat="monitor.summary.latest" :tls-latency-warning-ms="bootstrap?.tlsLatencyWarningMs ?? 0" />
+                <StatusConnectionMeta :beat="monitor.summary.latest" :tls-latency-warning-ms="bootstrap?.tlsLatencyWarningMs ?? 0" :cert-expiry-warning-days="monitor.certExpiryWarningDays ?? bootstrap?.certExpiryWarningDays ?? 30" />
                 <HeartbeatStrip :beats="monitor.summary.heartbeats" @capacity="resizeHeartbeat" />
                 <Transition :css="false" @enter="enterDetails" @leave="leaveDetails" @leave-cancelled="resetDetails">
                   <div

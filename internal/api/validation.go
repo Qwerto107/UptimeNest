@@ -46,6 +46,9 @@ func validateMonitor(m *model.Monitor) error {
 	if m.GroupID < 0 {
 		return fmt.Errorf("无效的分组")
 	}
+	if m.CertExpiryWarningDays != nil && (*m.CertExpiryWarningDays < 0 || *m.CertExpiryWarningDays > 3650) {
+		return fmt.Errorf("证书临期高亮天数应为 0 至 3650 天，0 表示关闭")
+	}
 	if len(m.Tags) > 20 {
 		return fmt.Errorf("最多设置 20 个标签")
 	}
@@ -145,6 +148,9 @@ func validateSettings(v model.Settings) error {
 	}
 	if v.TLSLatencyWarningMS < 0 || v.TLSLatencyWarningMS > 120000 {
 		return fmt.Errorf("TLS 握手延迟提醒阈值应为 0 至 120000 毫秒，0 表示关闭")
+	}
+	if v.CertExpiryWarningDays < 0 || v.CertExpiryWarningDays > 3650 {
+		return fmt.Errorf("证书临期高亮天数应为 0 至 3650 天，0 表示关闭")
 	}
 	if _, err := trustedProxyPrefixes(v.TrustedProxies); err != nil {
 		return err

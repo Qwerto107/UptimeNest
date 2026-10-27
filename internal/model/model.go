@@ -7,28 +7,30 @@ const DefaultUserAgent = "UptimeNest"
 
 // Monitor 保存检测配置；访客仅能看到未隐藏的主机地址，不返回完整目标配置。
 type Monitor struct {
-	ID            int64             `json:"id"`
-	Name          string            `json:"name"`
-	Type          string            `json:"type"`
-	Target        string            `json:"target"`
-	HideAddress   bool              `json:"hideAddress"`
-	Port          int               `json:"port"`
-	DNSRecord     string            `json:"dnsRecord"`
-	DNSServer     string            `json:"dnsServer"`
-	Expected      string            `json:"expected"`
-	Interval      int               `json:"interval"`
-	Retries       int               `json:"retries"`
-	RetryInterval int               `json:"retryInterval"`
-	Timeout       int               `json:"timeout"`
-	Invert        bool              `json:"invert"`
-	Description   string            `json:"description"`
-	Tags          []string          `json:"tags"`
-	GroupID       int64             `json:"groupId"`
-	Enabled       bool              `json:"enabled"`
-	HTTP          *HTTPOptions      `json:"http,omitempty"`
-	WebSocket     *WebSocketOptions `json:"websocket,omitempty"`
-	GRPC          *GRPCOptions      `json:"grpc,omitempty"`
-	Alerts        *AlertOptions     `json:"alerts,omitempty"`
+	ID            int64    `json:"id"`
+	Name          string   `json:"name"`
+	Type          string   `json:"type"`
+	Target        string   `json:"target"`
+	HideAddress   bool     `json:"hideAddress"`
+	Port          int      `json:"port"`
+	DNSRecord     string   `json:"dnsRecord"`
+	DNSServer     string   `json:"dnsServer"`
+	Expected      string   `json:"expected"`
+	Interval      int      `json:"interval"`
+	Retries       int      `json:"retries"`
+	RetryInterval int      `json:"retryInterval"`
+	Timeout       int      `json:"timeout"`
+	Invert        bool     `json:"invert"`
+	Description   string   `json:"description"`
+	Tags          []string `json:"tags"`
+	GroupID       int64    `json:"groupId"`
+	Enabled       bool     `json:"enabled"`
+	// nil 继承系统高亮天数，0 仅关闭提前高亮，过期仍显示红色。
+	CertExpiryWarningDays *int              `json:"certExpiryWarningDays,omitempty"`
+	HTTP                  *HTTPOptions      `json:"http,omitempty"`
+	WebSocket             *WebSocketOptions `json:"websocket,omitempty"`
+	GRPC                  *GRPCOptions      `json:"grpc,omitempty"`
+	Alerts                *AlertOptions     `json:"alerts,omitempty"`
 }
 
 // GRPCOptions 的 Metadata 和服务名称仅供后台使用，不进入公开状态页。
@@ -161,19 +163,20 @@ type Panel struct {
 }
 
 type Settings struct {
-	SiteName            string   `json:"siteName"`
-	Timezone            string   `json:"timezone"`
-	Language            string   `json:"language"`
-	EntryPage           string   `json:"entryPage"`
-	UserAgent           string   `json:"userAgent"`
-	TLSLatencyWarningMS int      `json:"tlsLatencyWarningMs"`
-	RetentionDays       int      `json:"retentionDays"`
-	TrustedProxies      []string `json:"trustedProxies"`
+	SiteName              string   `json:"siteName"`
+	Timezone              string   `json:"timezone"`
+	Language              string   `json:"language"`
+	EntryPage             string   `json:"entryPage"`
+	UserAgent             string   `json:"userAgent"`
+	TLSLatencyWarningMS   int      `json:"tlsLatencyWarningMs"`
+	CertExpiryWarningDays int      `json:"certExpiryWarningDays"`
+	RetentionDays         int      `json:"retentionDays"`
+	TrustedProxies        []string `json:"trustedProxies"`
 }
 
 // DefaultSettings 为首次安装及缺少配置字段时提供默认展示设置。
 func DefaultSettings() Settings {
-	return Settings{SiteName: "UptimeNest", Timezone: "Asia/Singapore", Language: "en-US", EntryPage: "status", RetentionDays: 30, TrustedProxies: []string{}}
+	return Settings{SiteName: "UptimeNest", Timezone: "Asia/Singapore", Language: "en-US", EntryPage: "status", RetentionDays: 30, CertExpiryWarningDays: 30, TrustedProxies: []string{}}
 }
 
 // Heartbeat 只记录一次完整检测（含重试）后的最终结果。

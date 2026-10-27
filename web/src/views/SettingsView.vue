@@ -26,6 +26,7 @@ const form = reactive<Settings>({
   entryPage: 'status',
   userAgent: '',
   tlsLatencyWarningMs: 0,
+  certExpiryWarningDays: 30,
   retentionDays: 30,
   trustedProxies: [],
 })
@@ -82,6 +83,7 @@ async function save() {
       ...form,
       retentionDays: Number(form.retentionDays),
       tlsLatencyWarningMs: Number(form.tlsLatencyWarningMs),
+      certExpiryWarningDays: Number(form.certExpiryWarningDays),
       trustedProxies: trustedProxies.value.split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
     })
     savedDays.value = Number(form.retentionDays)
@@ -184,6 +186,9 @@ async function cleanup() {
         </Field>
         <Field id="tls-latency-warning" :label="t('settings.tlsLatencyWarning')" :hint="t('settings.tlsLatencyWarningHint')">
           <Input id="tls-latency-warning" v-model.number="form.tlsLatencyWarningMs" type="number" min="0" max="120000" step="1" required />
+        </Field>
+        <Field id="cert-expiry-warning" :label="t('settings.certExpiryWarning')" :hint="t('settings.certExpiryWarningHint')">
+          <Input id="cert-expiry-warning" v-model.number="form.certExpiryWarningDays" type="number" min="0" max="3650" step="1" required />
         </Field>
       </fieldset>
     </section>

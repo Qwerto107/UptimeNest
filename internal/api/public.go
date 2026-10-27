@@ -38,7 +38,7 @@ func (a *Server) bootstrap(w http.ResponseWriter, r *http.Request) {
 			defaultSlug = p.Slug
 		}
 	}
-	writeJSON(w, 200, map[string]any{"siteName": v.SiteName, "timezone": v.Timezone, "language": v.Language, "entryPage": v.EntryPage, "defaultPanel": defaultSlug, "panels": items, "tlsLatencyWarningMs": v.TLSLatencyWarningMS})
+	writeJSON(w, 200, map[string]any{"siteName": v.SiteName, "timezone": v.Timezone, "language": v.Language, "entryPage": v.EntryPage, "defaultPanel": defaultSlug, "panels": items, "tlsLatencyWarningMs": v.TLSLatencyWarningMS, "certExpiryWarningDays": v.CertExpiryWarningDays})
 }
 
 // publicHeartbeatPoint 保留曲线所需的轻量数据，仅为可识别的故障补充脱敏分类。
@@ -96,14 +96,15 @@ type publicSummary struct {
 }
 
 type publicMonitor struct {
-	ID          int64         `json:"id"`
-	Name        string        `json:"name"`
-	Type        string        `json:"type"`
-	Address     string        `json:"address,omitempty"`
-	Protocol    string        `json:"protocol"`
-	Description string        `json:"description"`
-	Tags        []string      `json:"tags"`
-	Summary     publicSummary `json:"summary"`
+	ID                    int64         `json:"id"`
+	Name                  string        `json:"name"`
+	Type                  string        `json:"type"`
+	Address               string        `json:"address,omitempty"`
+	Protocol              string        `json:"protocol"`
+	Description           string        `json:"description"`
+	Tags                  []string      `json:"tags"`
+	CertExpiryWarningDays *int          `json:"certExpiryWarningDays,omitempty"`
+	Summary               publicSummary `json:"summary"`
 }
 
 // publicPanel 使用白名单结构，仅公开允许展示的主机地址，不返回完整目标及内部错误消息。
@@ -176,7 +177,8 @@ func (a *Server) publicPanelData(ctx context.Context, slug string, count int) (a
 		address, protocol := publicEndpoint(m)
 		views = append(views, publicMonitor{
 			ID: m.ID, Name: m.Name, Type: m.Type, Address: address, Protocol: protocol, Description: m.Description, Tags: m.Tags,
-			Summary: publicSummary{Status: summary.Status, Uptime: summary.Uptime, Average: summary.Average, Latest: summary.Latest, Heartbeats: points},
+			CertExpiryWarningDays: m.CertExpiryWarningDays,
+			Summary:               publicSummary{Status: summary.Status, Uptime: summary.Uptime, Average: summary.Average, Latest: summary.Latest, Heartbeats: points},
 		})
 	}
 	settings, err := a.store.Settings(ctx)
