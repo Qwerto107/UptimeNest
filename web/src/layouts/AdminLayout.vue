@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useEventListener, useMediaQuery } from '@vueuse/core'
+import { version } from '../../package.json'
 import {
   Activity,
   Bell,
@@ -103,7 +104,7 @@ async function logout() {
           <LogOut />
           {{ t('nav.logout') }}
         </Button>
-        <span>v0.5.0</span>
+        <span>v{{ version }}</span>
       </div>
     </aside>
     <button
