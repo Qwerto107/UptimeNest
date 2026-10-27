@@ -144,24 +144,47 @@ func (a *Server) static(w http.ResponseWriter, r *http.Request) {
 	}
 	name := strings.TrimPrefix(path.Clean("/"+r.URL.Path), "/")
 	info, err := fs.Stat(files, name)
-	if err == nil && !info.IsDir() {
-		http.FileServer(http.FS(files)).ServeHTTP(w, r)
+	if err != nil || info.IsDir() {
+		if strings.HasPrefix(r.URL.Path, "/assets/") || path.Ext(r.URL.Path) != "" {
+			http.NotFound(w, r)
+			return
+		}
+		// 页面路由统一回退到首页，不对访客开放目录列表。
+		name = "index.html"
+		info, err = fs.Stat(files, name)
+		if err != nil {
+			http.Error(w, "前端尚未构建，请先在 web 目录执行 npm run build", 503)
+			return
+		}
+	}
+	file, err := files.Open(name)
+	if err != nil {
+		http.Error(w, "静态资源暂不可用", 503)
 		return
 	}
-	if strings.HasPrefix(r.URL.Path, "/assets/") || path.Ext(r.URL.Path) != "" {
-		http.NotFound(w, r)
+	defer file.Close()
+	content, ok := file.(io.ReadSeeker)
+	if !ok {
+		http.Error(w, "静态资源暂不可用", 503)
 		return
 	}
-	if _, err := fs.Stat(files, "index.html"); err != nil {
-		http.Error(w, "前端尚未构建，请先在 web 目录执行 npm run build", 503)
-		return
+	etag := responseETag([]byte(name))
+	if hashedAsset.MatchString(name) {
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	} else {
+		w.Header().Set("Cache-Control", "no-cache")
+		etag, err = contentETag(content)
+		if err == nil {
+			_, err = content.Seek(0, io.SeekStart)
+		}
+		if err != nil {
+			http.Error(w, "静态资源暂不可用", 503)
+			return
+		}
 	}
-	// 页面路由统一回退到首页，不对访客开放目录列表。
-	w.Header().Set("Cache-Control", "no-cache")
-	page := r.Clone(r.Context())
-	page.URL.Path = "/"
-	page.URL.RawPath = ""
-	http.FileServer(http.FS(files)).ServeHTTP(w, page)
+	// 保留流式传输，避免缓存头改动导致大文件整份读入内存。
+	w.Header().Set("ETag", etag)
+	http.ServeContent(w, r, path.Base(name), info.ModTime(), content)
 }
 
 func decode(w http.ResponseWriter, r *http.Request, value any) bool {
