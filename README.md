@@ -97,11 +97,16 @@ curl -fL https://raw.githubusercontent.com/Qwerto107/UptimeNest/main/docker-comp
 docker compose up -d --pull always
 ```
 
-1. 打开 <http://127.0.0.1:8090/admin>，首次访问时设置管理员密码。
-2. 创建监控项，按需设置后台分组。
-3. 创建状态面板，添加展示分组和监控项，并将需要的面板设为默认。
+1. 运行 `docker compose logs uptimenest`，复制本次启动日志中的 `setup_token`。
+2. 打开 <http://127.0.0.1:8090/admin>，填写初始化令牌并设置管理员密码。
+3. 创建监控项，按需设置后台分组。
+4. 创建状态面板，添加展示分组和监控项，并将需要的面板设为默认。
 
 没有通用初始密码，无须通过环境变量设置密码。数据保存在 `./data`，端口默认仅本机可访问。镜像版本和端口直接在 `docker-compose.yml` 中修改。
+
+初始化令牌仅在尚未创建管理员时输出，重启后更新，创建管理员后失效。已有账户升级后照常登录。
+
+程序自动生成 `data/secret.key` 加密配置，SQLite 和 PostgreSQL 部署都需要持久化该文件。恢复数据库时必须使用原密钥，备份说明见 [部署指南](docs/deployment.md#配置加密与密钥)。
 
 Windows、外部数据库、HTTPS 和升级步骤见 [部署指南](docs/deployment.md)。直接运行程序见 [二进制部署](docs/binary.md)，安装包从 [Releases](https://github.com/Qwerto107/UptimeNest/releases) 下载。
 
@@ -110,8 +115,8 @@ Windows、外部数据库、HTTPS 和升级步骤见 [部署指南](docs/deploym
 - 前后台心跳条按容器宽度显示最近的检测记录。汇总可用率与平均响应时间按近 24 小时计算；后台延迟图表按所选时间范围统计，受历史保留设置限制。
 - HTTP/3 需要 HTTPS 及 UDP 连通；自动模式仅在 QUIC 连接建立失败时回退，不重发已经发出的请求。
 - WebSocket 握手与 Ping/Pong 用于检查协议连接，响应延迟包含连接及所选检测步骤；WSS 始终校验证书。
-- Ping 使用系统命令。容器已提供 Ping，直接运行程序时需要系统安装 `ping` 并允许 ICMP。
-- 面板为公开展示页面；地址可逐项隐藏，完整请求配置和验证凭据仅管理员可见。
+- Ping 使用原生 ICMP，支持 IPv4 和 IPv6，不依赖系统 `ping`。Linux 需允许应用所属组创建 ICMP datagram socket，Compose 已配置。
+- 面板为公开展示页面；地址可逐项隐藏。完整请求配置由管理员按需读取，保存的凭据不回显，支持替换和清除。
 - 当前按单应用实例运行，SQLite 使用本机磁盘。界面支持英语与简体中文，新安装默认英语，支持手动切换浅色／深色主题。
 - 告警默认关闭，先配置通知渠道，再在每个监控的“告警”页签中关联。通知行为及模板变量见 [告警通知](docs/usage.md#告警通知)。
 

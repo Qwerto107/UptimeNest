@@ -2,7 +2,7 @@
 
 [文档中心](https://github.com/Qwerto107/UptimeNest/blob/main/docs/README.md) · [部署指南](https://github.com/Qwerto107/UptimeNest/blob/main/docs/deployment.md)
 
-UptimeNest 发行程序内嵌前端，解压即可提供页面与 API，无需安装 Go 或 Node.js。Ping 监控需要操作系统提供 `ping` 命令并允许 ICMP。本说明随每个安装包提供。
+UptimeNest 发行程序内嵌前端，解压即可提供页面与 API，无需安装 Go 或 Node.js。Ping 使用原生 ICMP，不依赖系统 `ping` 命令；网络策略需允许 ICMP。本说明随每个安装包提供。
 
 [下载](#下载与校验) · [Linux](#linux) · [Windows](#windows) · [macOS](#macos) · [配置](#配置与数据) · [升级](#升级)
 
@@ -35,6 +35,8 @@ cd uptimenest-linux-amd64
 
 其他 Linux 平台替换包名。
 
+Linux Ping 使用无特权 ICMP datagram socket。若提示权限不足，由管理员将 `net.ipv4.ping_group_range` 设为包含运行账号 GID 的范围。只授权单个组时，两个值均填写该 GID；无需为程序添加 SUID 或 `CAP_NET_RAW`。
+
 ## Windows
 
 在 PowerShell 中执行：
@@ -61,9 +63,11 @@ cd uptimenest-darwin-arm64
 
 ## 配置与数据
 
-默认地址为 `http://127.0.0.1:8090`。首次访问 `/admin` 设置管理员密码，没有通用初始密码。初始化完成后再通过反向代理开放访问。
+默认地址为 `http://127.0.0.1:8090`。首次访问 `/admin` 时，填写启动日志中的 `setup_token` 并设置管理员密码，没有通用初始密码。未初始化时重启会生成新令牌，创建管理员后令牌失效。初始化完成后再通过反向代理开放访问。
 
 程序通过环境变量配置，不自动读取 `.env`。默认 SQLite 路径为 `data/uptimenest.db`，相对进程工作目录；运行账号须有写入权限，长期运行请固定工作目录或使用绝对路径。PostgreSQL 可通过 `UPTIMENEST_DB_TYPE=postgres` 与 `UPTIMENEST_DB_DSN` 配置。
+
+配置加密密钥默认自动生成到 `data/secret.key`，可用 `UPTIMENEST_SECRET_KEY_FILE` 指定其他持久化路径。SQLite 与 PostgreSQL 都依赖此文件。备份数据库时同时保留原密钥，并将两份备份分开保管；密钥丢失后无法恢复已加密配置。
 
 `UPTIMENEST_WEB_DIR` 留空使用内嵌页面，设置目录后使用该目录覆盖内嵌页面。数据库和启动参数见 [启动参数](https://github.com/Qwerto107/UptimeNest/blob/main/docs/deployment.md#启动参数)；界面设置见 [后台运行设置](https://github.com/Qwerto107/UptimeNest/blob/main/docs/deployment.md#后台运行设置)。
 

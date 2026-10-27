@@ -19,11 +19,11 @@
 | --- | --- |
 | 400 | 参数错误、JSON 请求无效或超出上限、当前密码不正确 |
 | 401 | 管理接口未登录 |
-| 403 | 跨源写入被拒绝 |
+| 403 | 跨源写入被拒绝或初始化令牌不正确 |
 | 404 | 记录或接口不存在 |
-| 409 | 名称、路径或初始化冲突 |
+| 409 | 名称、路径、初始化或配置并发冲突 |
 | 415 | 请求体类型不是 JSON |
-| 429 | 密码尝试限流 |
+| 429 | 请求频率、密码失败次数或 bcrypt 并发超限 |
 | 500／503 | 服务处理失败或数据库暂不可用 |
 
 ## 访客接口
@@ -38,25 +38,33 @@
 
 `summary` 包含 `status`、`uptime`、`average`、`latest` 和按时间升序排列的 `heartbeats`。公开面板与后台监控列表支持查询参数 `heartbeatCount`（1～1000），供界面按容器容量补取最近记录；未传或无效时，公开接口默认 90 条、后台默认 60 条，超出上限时截取为 1000。两者的 `uptime` 和 `average` 仍按近 24 小时计算，无数据时为 `null`。状态为 `up`、`down`、`unknown` 或 `paused`。
 
-公开面板的 `summary.heartbeats` 正常记录仅包含 `time`、`status`、`latency`，供心跳条与图表使用。可明确识别的故障记录额外包含 `failure`（`timeout`、`refused` 或 `response`）；HTTP 异常响应可附带 `statusCode`。这些值从既有标准诊断映射为白名单，未知原因不填，不返回原始错误内容。历史点不重复携带 ID 或连接详情。`summary.latest` 保留最新检测的 TLS、HTTP、QUIC 和证书等展示字段，内部消息仍清空。后台监控与历史接口继续返回完整心跳记录。
+公开面板的 `summary.heartbeats` 正常记录仅包含 `time`、`status`、`latency`，供心跳条与图表使用。可明确识别的故障记录额外包含 `failure`（`timeout`、`refused` 或 `response`）；HTTP 异常响应可附带 `statusCode`。这些值从既有标准诊断映射为白名单，未知原因不填，不返回原始错误内容。历史点不重复携带 ID 或连接详情。`summary.latest` 保留最新检测的 TLS、HTTP、QUIC 和证书等展示字段，内部消息仍清空。
+
+后台监控汇总的 `summary.heartbeats` 也采用精简读取，保留 ID、监控 ID、时间、状态和延迟；最新及故障记录保留完整附加字段。`summary.latest` 与独立心跳历史接口继续返回完整记录。
+
+公开面板内部将 `heartbeatCount` 向上归入 30、60、90、180、360、720、1000 档位，共享同档查询结果；响应仍裁剪至请求条数。bootstrap 和面板返回基于实际响应内容的 `ETag`，支持 `If-None-Match` 和 304。公开接口限流及缓存响应头见 [反向代理说明](deployment.md#https-与反向代理)。
 
 ## 管理员账户
 
 | 方法 | 路径 | 请求体 |
 | --- | --- | --- |
 | GET | `/api/admin/session` | 无；返回初始化与登录状态 |
-| POST | `/api/admin/setup` | `{ "password": "..." }`，仅首次设置可用 |
+| POST | `/api/admin/setup` | `{ "password": "...", "token": "启动日志中的 setup_token" }`，仅首次设置可用 |
 | POST | `/api/admin/session` | `{ "password": "..." }` |
 | DELETE | `/api/admin/session` | 无；退出当前会话 |
 | PUT | `/api/admin/password` | `{ "current": "...", "password": "..." }` |
 
-登录与首次设置成功后写入 HttpOnly、SameSite=Strict Cookie。后续管理接口需要该 Cookie。密码尝试按可信代理规则识别出的客户端 IP 限流，每 15 分钟最多 10 次；未配置可信代理时使用连接地址。
+登录与首次设置成功后写入 HttpOnly、SameSite=Strict Cookie。后续管理接口需要该 Cookie。按可信代理规则识别来源，IPv4 按单个 IP、IPv6 按 `/64` 累计失败次数，15 分钟内达到 10 次失败后暂时拒绝，验证成功清零。请求频率另有限制；未配置可信代理时使用连接地址。没有按账户的全局锁定。
+
+初始化令牌仅在数据库尚无管理员时输出到启动日志。重启前的令牌失效，创建管理员后接口返回 409；未提供正确令牌返回 403，且不创建账户或会话。
 
 ## 监控管理
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/admin/monitors` | 监控配置与实时统计 |
+| GET | `/api/admin/monitors` | 监控展示字段与实时统计，不包含协议和告警配置 |
+| GET | `/api/admin/monitors/:id` | 单项展示字段与实时统计 |
+| GET | `/api/admin/monitors/:id/config` | 按需读取完整配置结构，敏感字段脱敏 |
 | POST | `/api/admin/monitors` | 创建监控，返回 201 |
 | PUT | `/api/admin/monitors/:id` | 替换监控配置 |
 | DELETE | `/api/admin/monitors/:id` | 删除监控及其心跳、日志和面板引用 |
@@ -66,6 +74,12 @@
 | DELETE | `/api/admin/monitors/:id/heartbeats` | 清空该项心跳，返回删除数量 |
 | GET | `/api/admin/monitors/:id/logs` | 查询日志，最新优先 |
 | DELETE | `/api/admin/monitors/:id/logs` | 清空该项日志，返回删除数量 |
+
+配置读取及创建、更新响应中的敏感字段均为空字符串，通过只读 `configured` 数组标记已配置项：`http.auth.password`、`http.auth.clientSecret`、`http.auth.clientKey`、`http.headers`、`http.body`、`websocket.headers`、`grpc.metadata`。
+
+更新时对应字段留空保留原值，非空替换；需要删除时将字段路径加入 `clearSecrets` 数组，清除标记优先于新值。切换协议或认证方式时不继承不匹配的凭据。必需凭据清除后仍须满足当前认证方式的校验规则。后端合并凭据后会在保存事务中核对配置快照，发生并发更新时返回 409。
+
+创建副本可传入 `copyFrom: 原监控ID`，由后端继承相同协议与认证方式下的敏感字段。仍需提交新监控的其他配置；不继承历史或面板关联。`copyFrom` 不能用于更新已有监控。
 
 监控配置示例：
 

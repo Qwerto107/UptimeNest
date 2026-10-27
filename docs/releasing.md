@@ -46,7 +46,7 @@ Actions 产物 `uptimenest-binaries-{平台}` 保留 30 天，前端产物 `upti
 | 预发布 v1.2.3-rc.1 | 1.2.3-rc.1、sha-完整提交号 |
 | 手动启用镜像发布 | sha-完整提交号 |
 
-main 提交不自动发布 dev 镜像。Ping 依赖系统命令，运行层采用 Alpine，包含 CA 证书、时区、非 root 用户及专用 Ping 入口；健康检查执行 `/app/uptimenest healthcheck`。
+main 提交不自动发布 dev 镜像。运行层采用 Alpine，包含 CA 证书、时区和非 root 用户。Ping 使用原生 ICMP，不额外安装 SUID Ping；Compose 通过组范围允许无特权 ICMP。健康检查执行 `/app/uptimenest healthcheck`。
 
 Alpine 官方镜像不覆盖 ARMv5 和 LoongArch64，这两个平台提供独立程序。Dockerfile 默认 `standalone` 从源码构建，`release` 复用已打包程序；发布不需要增加目标架构模拟步骤。部署配置见 [部署指南](deployment.md#单容器部署)。
 
