@@ -2,7 +2,7 @@
 
 [文档中心](README.md) · [下载版本](https://github.com/Qwerto107/UptimeNest/releases) · [发布流程](releasing.md)
 
-## 未发布
+## v0.6.1 · 2026-10-27
 
 - Ping 改为原生 IPv4/IPv6 ICMP，Linux/macOS 使用无特权套接字，Windows 使用系统 ICMP API；移除外部命令与 SUID BusyBox 入口。Compose 限制权限并配置 Ping 组范围。
 - 首次初始化要求填写启动日志中的随机令牌。未初始化时重启会更新令牌，创建管理员后失效；已有账户登录不变。
