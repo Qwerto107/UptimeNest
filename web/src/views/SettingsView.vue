@@ -89,7 +89,7 @@ async function save() {
     })
     savedDays.value = Number(form.retentionDays)
     await refresh()
-    await loadBootstrap()
+    await loadBootstrap(0)
     notify(t('common.saved'))
   })
 }

@@ -38,7 +38,7 @@ func (a *Server) bootstrap(w http.ResponseWriter, r *http.Request) {
 			defaultSlug = p.Slug
 		}
 	}
-	writeJSON(w, 200, map[string]any{"siteName": v.SiteName, "timezone": v.Timezone, "language": v.Language, "entryPage": v.EntryPage, "statusPageView": v.StatusPageView, "defaultPanel": defaultSlug, "panels": items, "tlsLatencyWarningMs": v.TLSLatencyWarningMS, "certExpiryWarningDays": v.CertExpiryWarningDays})
+	writePublicJSON(w, r, map[string]any{"siteName": v.SiteName, "timezone": v.Timezone, "language": v.Language, "entryPage": v.EntryPage, "statusPageView": v.StatusPageView, "defaultPanel": defaultSlug, "panels": items, "tlsLatencyWarningMs": v.TLSLatencyWarningMS, "certExpiryWarningDays": v.CertExpiryWarningDays})
 }
 
 // publicHeartbeatPoint 保留曲线所需的轻量数据，仅为可识别的故障补充脱敏分类。
@@ -143,10 +143,7 @@ func (a *Server) publicPanel(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if r.Method != http.MethodHead {
-		w.Write(body)
-	}
+	writePublicResponse(w, r, body)
 }
 
 type publicPanelInfo struct {

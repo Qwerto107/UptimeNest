@@ -68,7 +68,7 @@ function askDelete(panel: Panel) {
 }
 async function updated() {
   await refresh()
-  await loadBootstrap()
+  await loadBootstrap(0)
 }
 async function save() {
   await run(async () => {

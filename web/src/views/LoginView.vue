@@ -37,7 +37,7 @@ async function submit() {
       : { password: password.value, token: setupToken.value.trim() }
     await send(path, 'POST', body)
     setupToken.value = ''
-    await loadBootstrap()
+    await loadBootstrap(0)
     await router.replace('/admin')
   })
 }

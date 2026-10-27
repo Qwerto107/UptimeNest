@@ -53,9 +53,10 @@ const { data, loading, error, refresh, refreshing, secondsUntilRefresh } = useRe
         `?heartbeatCount=${heartbeatCount.value}`,
       {
         signal,
+        revalidate: true,
       },
     ),
-    loadBootstrap(),
+    loadBootstrap(60000),
   ])
   timezone.value = value.timezone
   updatedAt.value = Date.now()
