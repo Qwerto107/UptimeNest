@@ -149,7 +149,7 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err = tx.QueryRowContext(ctx, "SELECT COALESCE(MAX(version), 0) FROM schema_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 3 {
+	if version > 4 {
 		return errors.New("数据库版本高于当前程序支持的版本")
 	}
 	if version == 0 {
@@ -194,6 +194,14 @@ func (s *Store) migrate(ctx context.Context) error {
 	}
 	if version < 3 {
 		if err = s.migrateNotifications(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if version < 4 {
+		if _, err = tx.ExecContext(ctx, "CREATE INDEX heartbeats_summary ON heartbeats(monitor_id,time,status,latency)"); err != nil {
+			return err
+		}
+		if _, err = tx.ExecContext(ctx, "INSERT INTO schema_version(version) VALUES(4)"); err != nil {
 			return err
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -159,6 +160,54 @@ func TestSettingsCacheIsolationAndConcurrentSaves(t *testing.T) {
 	got, err = s.Settings(ctx)
 	if err != nil || !reflect.DeepEqual(got, persisted) {
 		t.Fatalf("cache depends on database reads or publishes failed saves: %+v %v", got, err)
+	}
+}
+
+func TestSummaryKeepsLatestAndFailureDetails(t *testing.T) {
+	s := fileStore(t)
+	ctx := context.Background()
+	m, err := s.SaveMonitor(ctx, model.Monitor{Name: "summary", Enabled: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UnixMilli()
+	for i, status := range []string{"up", "down", "up", "up"} {
+		h := model.Heartbeat{MonitorID: m.ID, Time: now, Status: status, Latency: float64(i), Message: "HTTP 状态码 503", TLSVersion: "TLS 1.3", CertExpiry: now + 86400000}
+		if _, err = s.Append(ctx, m, h); err != nil {
+			t.Fatal(err)
+		}
+	}
+	summary, err := s.Summary(ctx, m, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Uptime == nil || *summary.Uptime != 75 || summary.Average == nil || *summary.Average != 5.0/3 {
+		t.Fatalf("statistics changed: %+v", summary)
+	}
+	beats := summary.Heartbeats
+	if len(beats) != 3 || beats[0].Status != "down" || beats[0].Message != "HTTP 状态码 503" || beats[1].TLSVersion != "" || beats[2].TLSVersion != "TLS 1.3" || summary.Latest.ID != beats[2].ID {
+		t.Fatalf("latest, failure, or ordering lost: %+v", summary)
+	}
+	history, err := s.Heartbeats(ctx, m.ID, 0, 4)
+	if err != nil || len(history) != 4 || history[2].TLSVersion != "TLS 1.3" {
+		t.Fatalf("full history lost metadata: %+v %v", history, err)
+	}
+	rows, err := s.ReadDB().QueryContext(ctx, "EXPLAIN QUERY PLAN SELECT COUNT(*),AVG(latency) FROM heartbeats WHERE monitor_id=? AND time>=?", m.ID, now-1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var plan strings.Builder
+	for rows.Next() {
+		var id, parent, unused int
+		var detail string
+		if err := rows.Scan(&id, &parent, &unused, &detail); err != nil {
+			t.Fatal(err)
+		}
+		plan.WriteString(detail)
+	}
+	if err := rows.Err(); err != nil || !strings.Contains(plan.String(), "COVERING INDEX heartbeats_summary") {
+		t.Fatalf("summary not covered by index: %s %v", plan.String(), err)
 	}
 }
 

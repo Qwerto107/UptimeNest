@@ -116,7 +116,7 @@ func (s *Store) Summaries(ctx context.Context, monitors []model.Monitor, heartbe
 			stats[id] = v
 		}
 		err = rows.Err()
-		// SQLite 仅有一个连接，必须先归还统计查询的连接，再读取近期心跳。
+		// 及时归还连接，避免近期心跳查询占满读池。
 		rows.Close()
 		if err != nil {
 			return nil, err
@@ -163,10 +163,10 @@ func (s *Store) recentHeartbeats(ctx context.Context, monitors []model.Monitor, 
 	parts := make([]string, 0, len(monitors))
 	args := []any{}
 	for _, m := range monitors {
-		parts = append(parts, "SELECT id,monitor_id,time,data FROM (SELECT id,monitor_id,time,data FROM heartbeats WHERE monitor_id=? ORDER BY time DESC,id DESC LIMIT ?)")
-		args = append(args, m.ID, limit)
+		parts = append(parts, "SELECT * FROM (SELECT id,monitor_id,time,status,latency,CASE WHEN status='down' OR id=(SELECT id FROM heartbeats WHERE monitor_id=? ORDER BY time DESC,id DESC LIMIT 1) THEN data ELSE '' END AS data FROM heartbeats WHERE monitor_id=? ORDER BY time DESC,id DESC LIMIT ?)")
+		args = append(args, m.ID, m.ID, limit)
 	}
-	query := "SELECT id,monitor_id,data FROM (" + strings.Join(parts, " UNION ALL ") + ") ORDER BY monitor_id,time DESC,id DESC"
+	query := "SELECT id,monitor_id,time,status,latency,data FROM (" + strings.Join(parts, " UNION ALL ") + ") ORDER BY monitor_id,time DESC,id DESC"
 	if s.dialect == "postgres" {
 		values := strings.TrimSuffix(strings.Repeat("(CAST(? AS BIGINT)),", len(monitors)), ",")
 		args = []any{}
@@ -174,7 +174,7 @@ func (s *Store) recentHeartbeats(ctx context.Context, monitors []model.Monitor, 
 			args = append(args, m.ID)
 		}
 		args = append(args, limit)
-		query = "SELECT h.id,h.monitor_id,h.data FROM (VALUES " + values + ") AS selected(id) CROSS JOIN LATERAL (SELECT id,monitor_id,time,data FROM heartbeats WHERE monitor_id=selected.id ORDER BY time DESC,id DESC LIMIT ?) AS h ORDER BY h.monitor_id,h.time DESC,h.id DESC"
+		query = "SELECT h.id,h.monitor_id,h.time,h.status,h.latency,h.data FROM (VALUES " + values + ") AS selected(id) CROSS JOIN LATERAL (SELECT id,monitor_id,time,status,latency,CASE WHEN status='down' OR id=(SELECT id FROM heartbeats WHERE monitor_id=selected.id ORDER BY time DESC,id DESC LIMIT 1) THEN data ELSE '' END AS data FROM heartbeats WHERE monitor_id=selected.id ORDER BY time DESC,id DESC LIMIT ?) AS h ORDER BY h.monitor_id,h.time DESC,h.id DESC"
 	}
 	rows, err := s.readDB.QueryContext(ctx, s.Q(query), args...)
 	if err != nil {
@@ -182,17 +182,21 @@ func (s *Store) recentHeartbeats(ctx context.Context, monitors []model.Monitor, 
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var id, monitorID int64
-		var data string
-		if err = rows.Scan(&id, &monitorID, &data); err != nil {
-			return nil, err
-		}
 		var h model.Heartbeat
-		if err = json.Unmarshal([]byte(data), &h); err != nil {
+		var data string
+		if err = rows.Scan(&h.ID, &h.MonitorID, &h.Time, &h.Status, &h.Latency, &data); err != nil {
 			return nil, err
 		}
-		h.ID = id
-		result[monitorID] = append(result[monitorID], h)
+		// 心跳条仅读取标量；最新记录保留连接详情，故障记录保留诊断分类来源。
+		if data != "" {
+			full := h
+			if err = json.Unmarshal([]byte(data), &full); err != nil {
+				return nil, err
+			}
+			full.ID, full.MonitorID, full.Time, full.Status, full.Latency = h.ID, h.MonitorID, h.Time, h.Status, h.Latency
+			h = full
+		}
+		result[h.MonitorID] = append(result[h.MonitorID], h)
 	}
 	return result, rows.Err()
 }

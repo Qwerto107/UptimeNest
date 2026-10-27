@@ -21,7 +21,8 @@ func (s *Store) LatencyHistory(ctx context.Context, id, start, end, availableSta
 	buckets := make([]model.LatencyBucket, bucketCount)
 	sums := make([]float64, bucketCount)
 	values := []float64{}
-	rows, err := s.readDB.QueryContext(ctx, s.Q("SELECT time,status,latency FROM heartbeats WHERE monitor_id=? AND time>=? AND time<=? ORDER BY time,id"), id, result.AvailableStart, end)
+	// 同毫秒的记录进入相同时间段，无需按 ID 排序，可直接使用统计覆盖索引。
+	rows, err := s.readDB.QueryContext(ctx, s.Q("SELECT time,status,latency FROM heartbeats WHERE monitor_id=? AND time>=? AND time<=? ORDER BY time"), id, result.AvailableStart, end)
 	if err != nil {
 		return result, err
 	}
@@ -64,7 +65,7 @@ func (s *Store) LatencyHistory(ctx context.Context, id, start, end, availableSta
 	if err := rows.Err(); err != nil {
 		return result, err
 	}
-	// 先归还 SQLite 的单连接，再排序计算原始分布的 P95；不使用时间段平均值估算。
+	// 先归还读连接，再排序计算原始分布的 P95；不使用时间段平均值估算。
 	if err := rows.Close(); err != nil {
 		return result, err
 	}

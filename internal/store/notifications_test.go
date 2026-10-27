@@ -224,7 +224,7 @@ func TestNotificationMigrationPreservesVersionTwoData(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 模拟版本 2 的库，保留旧监控与系统设置再执行新增迁移。
-	for _, q := range []string{"DROP TABLE alert_states", "DROP TABLE notification_deliveries", "DROP TABLE notification_channels", "DELETE FROM schema_version WHERE version=3"} {
+	for _, q := range []string{"DROP TABLE alert_states", "DROP TABLE notification_deliveries", "DROP TABLE notification_channels", "DROP INDEX heartbeats_summary", "DELETE FROM schema_version WHERE version>=3"} {
 		if _, err = s.DB.Exec(q); err != nil {
 			t.Fatal(err)
 		}
