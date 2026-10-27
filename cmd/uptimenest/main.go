@@ -45,7 +45,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer s.DB.Close()
+	defer s.Close()
 	engine := monitor.New(ctx, s, cfg.Workers)
 	notificationsDone := make(chan struct{})
 	go func() { defer close(notificationsDone); notify.Run(ctx, s) }()

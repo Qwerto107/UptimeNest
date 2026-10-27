@@ -72,7 +72,7 @@ func (a *Server) authenticated(r *http.Request) (bool, error) {
 		return false, nil
 	}
 	var expires int64
-	err = a.store.DB.QueryRowContext(r.Context(), a.store.Q("SELECT expires FROM sessions WHERE token=?"), tokenHash(cookie.Value)).Scan(&expires)
+	err = a.store.ReadDB().QueryRowContext(r.Context(), a.store.Q("SELECT expires FROM sessions WHERE token=?"), tokenHash(cookie.Value)).Scan(&expires)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
@@ -99,7 +99,7 @@ func (a *Server) auth(next http.HandlerFunc) http.Handler {
 
 func (a *Server) session(w http.ResponseWriter, r *http.Request) {
 	var count int
-	if err := a.store.DB.QueryRowContext(r.Context(), "SELECT COUNT(*) FROM account").Scan(&count); err != nil {
+	if err := a.store.ReadDB().QueryRowContext(r.Context(), "SELECT COUNT(*) FROM account").Scan(&count); err != nil {
 		fail(w, err)
 		return
 	}
@@ -116,7 +116,7 @@ func (a *Server) setup(w http.ResponseWriter, r *http.Request) {
 	defer a.setupMu.Unlock()
 	// 初始化完成后不再消耗登录额度，也不重复计算密码哈希。
 	var count int
-	if err := a.store.DB.QueryRowContext(r.Context(), "SELECT COUNT(*) FROM account").Scan(&count); err != nil {
+	if err := a.store.ReadDB().QueryRowContext(r.Context(), "SELECT COUNT(*) FROM account").Scan(&count); err != nil {
 		fail(w, err)
 		return
 	}
@@ -193,7 +193,7 @@ func (a *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var hash string
-	err = a.store.DB.QueryRowContext(r.Context(), "SELECT password_hash FROM account WHERE id=1").Scan(&hash)
+	err = a.store.ReadDB().QueryRowContext(r.Context(), "SELECT password_hash FROM account WHERE id=1").Scan(&hash)
 	if errors.Is(err, sql.ErrNoRows) {
 		writeError(w, 409, "请先设置管理员密码")
 		return
@@ -262,7 +262,7 @@ func (a *Server) password(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var hash string
-	if err := a.store.DB.QueryRowContext(r.Context(), "SELECT password_hash FROM account WHERE id=1").Scan(&hash); err != nil {
+	if err := a.store.ReadDB().QueryRowContext(r.Context(), "SELECT password_hash FROM account WHERE id=1").Scan(&hash); err != nil {
 		fail(w, err)
 		return
 	}

@@ -28,6 +28,7 @@ const sqlBatchSize = 500
 
 type Store struct {
 	DB            *sql.DB
+	readDB        *sql.DB
 	dialect       string
 	publicVersion atomic.Uint64
 }
@@ -42,15 +43,21 @@ func (s *Store) commitChange(tx *sql.Tx) error {
 	return err
 }
 
-// Open 初始化连接与版本化表结构；SQLite 使用单连接避免并发写锁冲突。
+// Open 初始化表结构；SQLite 文件库使用单写连接和独立读池。
 func Open(ctx context.Context, dialect, dsn string) (*Store, error) {
 	driver := "pgx"
 	if dialect == "sqlite" {
 		driver = "sqlite"
-		if !strings.HasPrefix(dsn, "file:") && dsn != ":memory:" {
-			if err := os.MkdirAll(filepath.Dir(dsn), 0700); err != nil {
+		name, _, _ := strings.Cut(dsn, "?")
+		if !strings.HasPrefix(name, "file:") && name != ":memory:" {
+			if err := os.MkdirAll(filepath.Dir(name), 0700); err != nil {
 				return nil, err
 			}
+		}
+		var err error
+		dsn, err = sqliteDSN(dsn, false)
+		if err != nil {
+			return nil, err
 		}
 	}
 	db, err := sql.Open(driver, dsn)
@@ -62,7 +69,7 @@ func Open(ctx context.Context, dialect, dsn string) (*Store, error) {
 	} else {
 		db.SetMaxOpenConns(12)
 	}
-	s := &Store{DB: db, dialect: dialect}
+	s := &Store{DB: db, readDB: db, dialect: dialect}
 	if err = db.PingContext(ctx); err == nil {
 		err = s.migrate(ctx)
 	}
@@ -70,7 +77,35 @@ func Open(ctx context.Context, dialect, dsn string) (*Store, error) {
 		db.Close()
 		return nil, err
 	}
+	// 内存库保留原连接，避免独立连接读到不同数据库或共享缓存锁冲突。
+	if dialect == "sqlite" && !sqliteMemory(dsn) {
+		var readerDSN string
+		readerDSN, err = sqliteDSN(dsn, true)
+		if err == nil {
+			s.readDB, err = sql.Open(driver, readerDSN)
+		}
+		if err == nil {
+			s.readDB.SetMaxOpenConns(4)
+			s.readDB.SetMaxIdleConns(4)
+			err = s.readDB.PingContext(ctx)
+		}
+		if err != nil {
+			s.Close()
+			return nil, err
+		}
+	}
 	return s, nil
+}
+
+// ReadDB 只供无事务的只读查询使用；写入及事务始终使用 DB。
+func (s *Store) ReadDB() *sql.DB { return s.readDB }
+
+func (s *Store) Close() error {
+	var err error
+	if s.readDB != nil && s.readDB != s.DB {
+		err = s.readDB.Close()
+	}
+	return errors.Join(err, s.DB.Close())
 }
 
 // Q 只转换内部固定 SQL 的占位符，用户输入始终通过参数传递。
@@ -92,13 +127,6 @@ func (s *Store) Q(query string) string {
 }
 
 func (s *Store) migrate(ctx context.Context) error {
-	if s.dialect == "sqlite" {
-		for _, q := range []string{"PRAGMA foreign_keys=ON", "PRAGMA journal_mode=WAL", "PRAGMA busy_timeout=5000"} {
-			if _, err := s.DB.ExecContext(ctx, q); err != nil {
-				return err
-			}
-		}
-	}
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -194,7 +222,7 @@ func (s *Store) MonitorsByIDs(ctx context.Context, ids []int64) ([]model.Monitor
 }
 
 func (s *Store) monitors(ctx context.Context, query string, args ...any) ([]model.Monitor, error) {
-	rows, err := s.DB.QueryContext(ctx, s.Q(query), args...)
+	rows, err := s.readDB.QueryContext(ctx, s.Q(query), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +247,7 @@ func (s *Store) monitors(ctx context.Context, query string, args ...any) ([]mode
 func (s *Store) Monitor(ctx context.Context, id int64) (model.Monitor, error) {
 	var m model.Monitor
 	var data string
-	err := s.DB.QueryRowContext(ctx, s.Q("SELECT data FROM monitors WHERE id=?"), id).Scan(&data)
+	err := s.readDB.QueryRowContext(ctx, s.Q("SELECT data FROM monitors WHERE id=?"), id).Scan(&data)
 	if errors.Is(err, sql.ErrNoRows) {
 		return m, ErrNotFound
 	}
@@ -346,7 +374,7 @@ func (s *Store) DeleteMonitor(ctx context.Context, id int64) error {
 }
 
 func (s *Store) Groups(ctx context.Context) ([]model.Group, error) {
-	rows, err := s.DB.QueryContext(ctx, "SELECT id, name, parent_id FROM monitor_groups ORDER BY id")
+	rows, err := s.readDB.QueryContext(ctx, "SELECT id, name, parent_id FROM monitor_groups ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -462,7 +490,7 @@ func (s *Store) DeleteGroup(ctx context.Context, id int64) error {
 }
 
 func (s *Store) Panels(ctx context.Context) ([]model.Panel, error) {
-	rows, err := s.DB.QueryContext(ctx, "SELECT id, slug, is_default, data FROM panels ORDER BY id")
+	rows, err := s.readDB.QueryContext(ctx, "SELECT id, slug, is_default, data FROM panels ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -492,7 +520,7 @@ func (s *Store) PanelBySlug(ctx context.Context, slug string) (model.Panel, erro
 	var data string
 	var id int64
 	var isDefault int
-	err := s.DB.QueryRowContext(ctx, s.Q("SELECT id, is_default, data FROM panels WHERE slug=?"), slug).Scan(&id, &isDefault, &data)
+	err := s.readDB.QueryRowContext(ctx, s.Q("SELECT id, is_default, data FROM panels WHERE slug=?"), slug).Scan(&id, &isDefault, &data)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -614,7 +642,7 @@ func (s *Store) DeletePanel(ctx context.Context, id int64) error {
 func (s *Store) Settings(ctx context.Context) (model.Settings, error) {
 	v := model.DefaultSettings()
 	var data string
-	err := s.DB.QueryRowContext(ctx, "SELECT value FROM settings WHERE key='system'").Scan(&data)
+	err := s.readDB.QueryRowContext(ctx, "SELECT value FROM settings WHERE key='system'").Scan(&data)
 	if errors.Is(err, sql.ErrNoRows) {
 		return v, nil
 	}
@@ -683,7 +711,7 @@ func (s *Store) Cleanup(ctx context.Context, days int) (map[string]int64, error)
 				// 并发清理可能已经删掉本批选中的行；确认没有剩余过期数据再结束。
 				var remaining bool
 				query = "SELECT EXISTS(SELECT 1 FROM " + item.table + " WHERE " + item.time + "<?)"
-				if err = s.DB.QueryRowContext(ctx, s.Q(query), before).Scan(&remaining); err != nil {
+				if err = s.readDB.QueryRowContext(ctx, s.Q(query), before).Scan(&remaining); err != nil {
 					return counts, err
 				}
 				if !remaining {

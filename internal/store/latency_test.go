@@ -17,7 +17,7 @@ func latencyStore(t *testing.T) (*Store, int64) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { s.DB.Close() })
+	t.Cleanup(func() { s.Close() })
 	m, err := s.SaveMonitor(context.Background(), model.Monitor{Name: "latency"})
 	if err != nil {
 		t.Fatal(err)

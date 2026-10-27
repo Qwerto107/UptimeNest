@@ -102,7 +102,7 @@ func (s *Store) Summaries(ctx context.Context, monitors []model.Monitor, heartbe
 			values := strings.TrimSuffix(strings.Repeat("(CAST(? AS BIGINT)),", len(batch)), ",")
 			query = "SELECT selected.id, stats.* FROM (VALUES " + values + ") AS selected(id) CROSS JOIN LATERAL (SELECT " + aggregate + " FROM heartbeats WHERE monitor_id=selected.id AND time>=?) AS stats"
 		}
-		rows, err := s.DB.QueryContext(ctx, s.Q(query), args...)
+		rows, err := s.readDB.QueryContext(ctx, s.Q(query), args...)
 		if err != nil {
 			return nil, err
 		}
@@ -176,7 +176,7 @@ func (s *Store) recentHeartbeats(ctx context.Context, monitors []model.Monitor, 
 		args = append(args, limit)
 		query = "SELECT h.id,h.monitor_id,h.data FROM (VALUES " + values + ") AS selected(id) CROSS JOIN LATERAL (SELECT id,monitor_id,time,data FROM heartbeats WHERE monitor_id=selected.id ORDER BY time DESC,id DESC LIMIT ?) AS h ORDER BY h.monitor_id,h.time DESC,h.id DESC"
 	}
-	rows, err := s.DB.QueryContext(ctx, s.Q(query), args...)
+	rows, err := s.readDB.QueryContext(ctx, s.Q(query), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +207,7 @@ func (s *Store) resolveHistoryCursor(ctx context.Context, table string, id int64
 		return cursor, nil
 	}
 	var at int64
-	err := s.DB.QueryRowContext(ctx, s.Q("SELECT time FROM "+table+" WHERE monitor_id=? AND id=?"), id, cursor.ID).Scan(&at)
+	err := s.readDB.QueryRowContext(ctx, s.Q("SELECT time FROM "+table+" WHERE monitor_id=? AND id=?"), id, cursor.ID).Scan(&at)
 	if errors.Is(err, sql.ErrNoRows) {
 		return cursor, fmt.Errorf("%w：分页位置已失效，请刷新后重试", ErrInvalid)
 	}
@@ -232,7 +232,7 @@ func (s *Store) HeartbeatsPage(ctx context.Context, id int64, cursor HistoryCurs
 	}
 	q += " ORDER BY time DESC,id DESC LIMIT ?"
 	args = append(args, limit)
-	rows, err := s.DB.QueryContext(ctx, s.Q(q), args...)
+	rows, err := s.readDB.QueryContext(ctx, s.Q(q), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func (s *Store) LogsPage(ctx context.Context, id int64, cursor HistoryCursor, li
 	}
 	q += " ORDER BY time DESC,id DESC LIMIT ?"
 	args = append(args, limit)
-	rows, err := s.DB.QueryContext(ctx, s.Q(q), args...)
+	rows, err := s.readDB.QueryContext(ctx, s.Q(q), args...)
 	if err != nil {
 		return nil, err
 	}

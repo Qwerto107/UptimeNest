@@ -21,7 +21,7 @@ func (s *Store) LatencyHistory(ctx context.Context, id, start, end, availableSta
 	buckets := make([]model.LatencyBucket, bucketCount)
 	sums := make([]float64, bucketCount)
 	values := []float64{}
-	rows, err := s.DB.QueryContext(ctx, s.Q("SELECT time,status,latency FROM heartbeats WHERE monitor_id=? AND time>=? AND time<=? ORDER BY time,id"), id, result.AvailableStart, end)
+	rows, err := s.readDB.QueryContext(ctx, s.Q("SELECT time,status,latency FROM heartbeats WHERE monitor_id=? AND time>=? AND time<=? ORDER BY time,id"), id, result.AvailableStart, end)
 	if err != nil {
 		return result, err
 	}

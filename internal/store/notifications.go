@@ -34,7 +34,7 @@ func (s *Store) migrateNotifications(ctx context.Context, tx *sql.Tx) error {
 }
 
 func (s *Store) NotificationChannels(ctx context.Context) ([]model.NotificationChannel, error) {
-	rows, err := s.DB.QueryContext(ctx, "SELECT id,data FROM notification_channels ORDER BY id")
+	rows, err := s.readDB.QueryContext(ctx, "SELECT id,data FROM notification_channels ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s *Store) NotificationChannels(ctx context.Context) ([]model.NotificationC
 func (s *Store) NotificationChannel(ctx context.Context, id int64) (model.NotificationChannel, error) {
 	var c model.NotificationChannel
 	var data string
-	err := s.DB.QueryRowContext(ctx, s.Q("SELECT data FROM notification_channels WHERE id=?"), id).Scan(&data)
+	err := s.readDB.QueryRowContext(ctx, s.Q("SELECT data FROM notification_channels WHERE id=?"), id).Scan(&data)
 	if errors.Is(err, sql.ErrNoRows) {
 		return c, ErrNotFound
 	}
@@ -440,7 +440,7 @@ func (s *Store) NotificationRecords(ctx context.Context, before int64) ([]model.
 		query += " WHERE id<?"
 		args = append(args, before)
 	}
-	rows, err := s.DB.QueryContext(ctx, s.Q(query+" ORDER BY id DESC LIMIT 50"), args...)
+	rows, err := s.readDB.QueryContext(ctx, s.Q(query+" ORDER BY id DESC LIMIT 50"), args...)
 	if err != nil {
 		return nil, err
 	}

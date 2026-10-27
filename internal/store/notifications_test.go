@@ -16,7 +16,7 @@ func alertFixture(t *testing.T, dsn string) (*Store, model.Monitor) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { s.DB.Close() })
+	t.Cleanup(func() { s.Close() })
 	c, err := s.SaveNotificationChannel(context.Background(), model.NotificationChannel{Name: "hook", Type: "webhook", Enabled: true})
 	if err != nil {
 		t.Fatal(err)
@@ -78,14 +78,14 @@ func TestAlertsPersistRestartDeduplicateAndRecover(t *testing.T) {
 	appendAlert(t, s, m, now, "up", 0)
 	appendAlert(t, s, m, now+1, "down", 0)
 	appendAlert(t, s, m, now+2, "down", 0)
-	if err := s.DB.Close(); err != nil {
+	if err := s.Close(); err != nil {
 		t.Fatal(err)
 	}
 	reopened, err := Open(ctx, "sqlite", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer reopened.DB.Close()
+	defer reopened.Close()
 	appendAlert(t, reopened, m, now+3, "down", 0)
 	appendAlert(t, reopened, m, now+4, "up", 0)
 	records, err := reopened.NotificationRecords(ctx, 0)
@@ -229,12 +229,12 @@ func TestNotificationMigrationPreservesVersionTwoData(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	s.DB.Close()
+	s.Close()
 	s, err = Open(ctx, "sqlite", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.DB.Close()
+	defer s.Close()
 	legacy, err := s.Monitor(ctx, m.ID)
 	if err != nil || legacy.Name != "legacy" || legacy.Alerts != nil {
 		t.Fatalf("legacy config changed: %+v %v", legacy, err)
@@ -263,12 +263,12 @@ func TestServiceAlertIndependentThresholdPersistsAndResets(t *testing.T) {
 	if records, err := s.NotificationRecords(ctx, 0); err != nil || len(records) != 0 {
 		t.Fatalf("timer counted a failure: %+v %v", records, err)
 	}
-	s.DB.Close()
+	s.Close()
 	s, err = Open(ctx, "sqlite", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.DB.Close()
+	defer s.Close()
 	appendAlert(t, s, m, now+1, "down", 0)
 	if records, err := s.NotificationRecords(ctx, 0); err != nil || len(records) != 0 {
 		t.Fatalf("alert before threshold: %+v %v", records, err)
