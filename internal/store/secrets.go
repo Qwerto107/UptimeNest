@@ -158,7 +158,7 @@ func (s *Store) initEncryption(ctx context.Context, path string) error {
 		if _, err = s.DB.ExecContext(ctx, "INSERT INTO schema_version(version) VALUES(5) ON CONFLICT(version) DO NOTHING"); err != nil {
 			return err
 		}
-		return s.checkpointEncryption(ctx)
+		return s.encryptDeliveries(ctx)
 	}
 	if s.dialect == "sqlite" {
 		// 迁移前清零被替换的单元内容，提交后截断旧 WAL，减少明文残留。
@@ -171,7 +171,7 @@ func (s *Store) initEncryption(ctx context.Context, path string) error {
 		return err
 	}
 	defer tx.Rollback()
-	for _, table := range []string{"monitors", "notification_channels", "alert_states"} {
+	for _, table := range []string{"monitors", "notification_channels", "alert_states", "notification_deliveries"} {
 		if err = s.encryptLegacyRows(ctx, tx, table); err != nil {
 			return err
 		}
@@ -183,7 +183,38 @@ func (s *Store) initEncryption(ctx context.Context, path string) error {
 	if _, err = tx.ExecContext(ctx, s.Q("INSERT INTO settings(key,value) VALUES('encryption_check',?)"), check); err != nil {
 		return err
 	}
-	if _, err = tx.ExecContext(ctx, "INSERT INTO schema_version(version) VALUES(5) ON CONFLICT(version) DO NOTHING"); err != nil {
+	if _, err = tx.ExecContext(ctx, "INSERT INTO schema_version(version) VALUES(5),(6) ON CONFLICT(version) DO NOTHING"); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return s.checkpointEncryption(ctx)
+}
+
+// encryptDeliveries 为已升级到版本 5 的库补充加密通知事件；已加密的行只校验不重写。
+func (s *Store) encryptDeliveries(ctx context.Context) error {
+	var version int
+	if err := s.DB.QueryRowContext(ctx, "SELECT COALESCE(MAX(version),0) FROM schema_version").Scan(&version); err != nil {
+		return err
+	}
+	if version >= 6 {
+		return s.checkpointEncryption(ctx)
+	}
+	if s.dialect == "sqlite" {
+		if _, err := s.DB.ExecContext(ctx, "PRAGMA secure_delete=ON"); err != nil {
+			return err
+		}
+	}
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err = s.encryptLegacyRows(ctx, tx, "notification_deliveries"); err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, "INSERT INTO schema_version(version) VALUES(6) ON CONFLICT(version) DO NOTHING"); err != nil {
 		return err
 	}
 	if err = tx.Commit(); err != nil {

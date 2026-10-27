@@ -338,7 +338,7 @@ func (s *Store) evaluateAlertRules(ctx context.Context, tx *sql.Tx, m model.Moni
 						continue
 					}
 				}
-				if _, err = tx.ExecContext(ctx, s.Q("INSERT INTO notification_deliveries(monitor_id,channel_id,kind,event,status,next_attempt,created) VALUES(?,?,?,?,'pending',?,?)"), m.ID, channelID, kind, encode(event), h.Time, h.Time); err != nil {
+				if err = s.queueDelivery(ctx, tx, m.ID, channelID, kind, event, h.Time, h.Time); err != nil {
 					return err
 				}
 			}
@@ -441,7 +441,7 @@ func (s *Store) ClaimNotification(ctx context.Context, now int64) (*model.Notifi
 	if err != nil {
 		return nil, err
 	}
-	if err = json.Unmarshal([]byte(event), &d.Event); err != nil {
+	if err = s.openJSON(secretDomain("notification_deliveries", d.ID), event, &d.Event); err != nil {
 		return nil, err
 	}
 	d.Attempts++
@@ -449,6 +449,20 @@ func (s *Store) ClaimNotification(ctx context.Context, now int64) (*model.Notifi
 		return nil, err
 	}
 	return &d, tx.Commit()
+}
+
+// queueDelivery 先取得记录编号，再把事件密文绑定到该编号；占位值不会在事务外可见。
+func (s *Store) queueDelivery(ctx context.Context, tx *sql.Tx, monitorID, channelID int64, kind string, event model.NotificationEvent, next, created int64) error {
+	var id int64
+	if err := tx.QueryRowContext(ctx, s.Q("INSERT INTO notification_deliveries(monitor_id,channel_id,kind,event,status,next_attempt,created) VALUES(?,?,?,'','pending',?,?) RETURNING id"), monitorID, channelID, kind, next, created).Scan(&id); err != nil {
+		return err
+	}
+	data, err := s.sealJSON(secretDomain("notification_deliveries", id), event)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, s.Q("UPDATE notification_deliveries SET event=? WHERE id=?"), data, id)
+	return err
 }
 
 func (s *Store) FinishNotification(ctx context.Context, d model.NotificationDelivery, status, message string, next int64) error {
@@ -475,7 +489,7 @@ func (s *Store) NotificationRecords(ctx context.Context, before int64) ([]model.
 		if err = rows.Scan(&d.ID, &d.MonitorID, &d.ChannelID, &d.Kind, &data, &d.Status, &d.Attempts, &d.NextAttempt, &d.Error); err != nil {
 			return nil, err
 		}
-		if err = json.Unmarshal([]byte(data), &d.Event); err != nil {
+		if err = s.openJSON(secretDomain("notification_deliveries", d.ID), data, &d.Event); err != nil {
 			return nil, err
 		}
 		items = append(items, d)
@@ -538,7 +552,7 @@ func (s *Store) QueueNotificationTest(ctx context.Context, channelID int64, even
 		return fmt.Errorf("%w：该渠道已有等待中的测试通知", ErrInvalid)
 	}
 	now := time.Now().UnixMilli()
-	if _, err = tx.ExecContext(ctx, s.Q("INSERT INTO notification_deliveries(monitor_id,channel_id,kind,event,status,next_attempt,created) VALUES(0,?,'test',?,'pending',?,?)"), channelID, encode(event), now, now); err != nil {
+	if err = s.queueDelivery(ctx, tx, 0, channelID, "test", event, now, now); err != nil {
 		return err
 	}
 	return tx.Commit()

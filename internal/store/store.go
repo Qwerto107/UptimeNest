@@ -162,7 +162,7 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err = tx.QueryRowContext(ctx, "SELECT COALESCE(MAX(version), 0) FROM schema_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 5 {
+	if version > 6 {
 		return errors.New("数据库版本高于当前程序支持的版本")
 	}
 	if version == 0 {
