@@ -25,21 +25,22 @@ import (
 )
 
 type Server struct {
-	store        *store.Store
-	engine       *monitor.Engine
-	config       config.Config
-	setupMu      sync.Mutex
-	authRequests *ipLimits
-	authFailures *ipLimits
-	bcryptSlots  chan struct{}
-	publicCache  *panelCache
+	store          *store.Store
+	engine         *monitor.Engine
+	config         config.Config
+	setupMu        sync.Mutex
+	authRequests   *ipLimits
+	authFailures   *ipLimits
+	publicRequests *ipLimits
+	bcryptSlots    chan struct{}
+	publicCache    *panelCache
 }
 
 func New(s *store.Store, engine *monitor.Engine, cfg config.Config) http.Handler {
-	a := &Server{store: s, engine: engine, config: cfg, authRequests: newIPLimits(), authFailures: newIPLimits(), bcryptSlots: make(chan struct{}, 2), publicCache: newPanelCache()}
+	a := &Server{store: s, engine: engine, config: cfg, authRequests: newIPLimits(), authFailures: newIPLimits(), publicRequests: newIPLimits(), bcryptSlots: make(chan struct{}, 2), publicCache: newPanelCache()}
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/public/bootstrap", a.bootstrap)
-	mux.HandleFunc("GET /api/public/panels/{slug}", a.publicPanel)
+	mux.Handle("GET /api/public/bootstrap", a.public(a.bootstrap))
+	mux.Handle("GET /api/public/panels/{slug}", a.public(a.publicPanel))
 	mux.HandleFunc("GET /api/admin/session", a.session)
 	mux.HandleFunc("POST /api/admin/setup", a.setup)
 	mux.HandleFunc("POST /api/admin/session", a.login)

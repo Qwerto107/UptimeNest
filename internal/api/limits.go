@@ -134,3 +134,19 @@ func (a *Server) bcryptSlot(w http.ResponseWriter) bool {
 		return false
 	}
 }
+
+func (a *Server) public(next http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		key, err := a.limitKey(r)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !a.publicRequests.allow(key, 120, 4) {
+			w.Header().Set("Retry-After", "1")
+			writeError(w, 429, "请求过于频繁，请稍后重试")
+			return
+		}
+		next(w, r)
+	})
+}

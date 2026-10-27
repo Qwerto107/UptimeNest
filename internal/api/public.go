@@ -114,14 +114,15 @@ func (a *Server) publicPanel(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 404, "状态面板不存在")
 		return
 	}
-	key := panelCacheKey{slug: slug, count: heartbeatCount(r, 90), version: a.store.PublicVersion()}
-	body, err := a.publicCache.get(r.Context(), key, func(ctx context.Context) ([]byte, error) {
+	count := heartbeatCount(r, 90)
+	key := panelCacheKey{slug: slug, count: publicHeartbeatBucket(count), version: a.store.PublicVersion()}
+	panel, err := a.publicCache.get(r.Context(), key, func(ctx context.Context) (*cachedPanel, error) {
 		value, err := a.publicPanelData(ctx, slug, key.count)
 		if err != nil {
 			return nil, err
 		}
 		data, err := json.Marshal(value)
-		return append(data, '\n'), err
+		return &cachedPanel{body: append(data, '\n'), value: value}, err
 	})
 	if errors.Is(err, store.ErrNotFound) {
 		writeError(w, 404, "状态面板不存在")
@@ -137,11 +138,54 @@ func (a *Server) publicPanel(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	body, err := panel.response(count, key.count)
+	if err != nil {
+		fail(w, err)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Write(body)
+	if r.Method != http.MethodHead {
+		w.Write(body)
+	}
 }
 
-func (a *Server) publicPanelData(ctx context.Context, slug string, count int) (any, error) {
+type publicPanelInfo struct {
+	Name        string `json:"name"`
+	PageTitle   string `json:"pageTitle"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+}
+
+type publicPanelResponse struct {
+	Panel    publicPanelInfo    `json:"panel"`
+	Monitors []publicMonitor    `json:"monitors"`
+	Groups   []model.PanelGroup `json:"groups"`
+	Timezone string             `json:"timezone"`
+}
+
+type cachedPanel struct {
+	body  []byte
+	value *publicPanelResponse
+}
+
+func (p *cachedPanel) response(count, bucket int) ([]byte, error) {
+	if count == bucket {
+		return p.body, nil
+	}
+	// 复制切片头后裁剪，不修改共享缓存；任意条数只增加序列化成本。
+	value := *p.value
+	value.Monitors = append([]publicMonitor{}, p.value.Monitors...)
+	for i := range value.Monitors {
+		points := value.Monitors[i].Summary.Heartbeats
+		if len(points) > count {
+			value.Monitors[i].Summary.Heartbeats = points[len(points)-count:]
+		}
+	}
+	body, err := json.Marshal(value)
+	return append(body, '\n'), err
+}
+
+func (a *Server) publicPanelData(ctx context.Context, slug string, count int) (*publicPanelResponse, error) {
 	panel, err := a.store.PanelBySlug(ctx, slug)
 	if err != nil {
 		return nil, err
@@ -185,7 +229,7 @@ func (a *Server) publicPanelData(ctx context.Context, slug string, count int) (a
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"panel": map[string]any{"name": panel.Name, "pageTitle": panel.PageTitle, "slug": panel.Slug, "description": panel.Description}, "monitors": views, "groups": panel.Groups, "timezone": settings.Timezone}, nil
+	return &publicPanelResponse{Panel: publicPanelInfo{Name: panel.Name, PageTitle: panel.PageTitle, Slug: panel.Slug, Description: panel.Description}, Monitors: views, Groups: panel.Groups, Timezone: settings.Timezone}, nil
 }
 
 // publicEndpoint 只公开主机和端口，隐藏项不返回地址；URL 路径、查询参数等始终保留在后台。

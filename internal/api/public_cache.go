@@ -17,14 +17,14 @@ type panelCacheKey struct {
 }
 
 type panelCacheEntry struct {
-	body    []byte
+	panel   *cachedPanel
 	expires time.Time
 }
 
 type panelFlight struct {
-	done chan struct{}
-	body []byte
-	err  error
+	done  chan struct{}
+	panel *cachedPanel
+	err   error
 }
 
 type panelCache struct {
@@ -39,17 +39,17 @@ func newPanelCache() *panelCache {
 	return &panelCache{entries: map[panelCacheKey]panelCacheEntry{}, flights: map[panelCacheKey]*panelFlight{}, slots: make(chan struct{}, 2)}
 }
 
-func (c *panelCache) get(ctx context.Context, key panelCacheKey, load func(context.Context) ([]byte, error)) ([]byte, error) {
+func (c *panelCache) get(ctx context.Context, key panelCacheKey, load func(context.Context) (*cachedPanel, error)) (*cachedPanel, error) {
 	c.mu.Lock()
 	for k, entry := range c.entries {
 		if k.version != key.version || time.Now().After(entry.expires) {
 			delete(c.entries, k)
-			c.bytes -= len(entry.body)
+			c.bytes -= len(entry.panel.body)
 		}
 	}
 	if entry, ok := c.entries[key]; ok {
 		c.mu.Unlock()
-		return entry.body, nil
+		return entry.panel, nil
 	}
 	flight, ok := c.flights[key]
 	if !ok {
@@ -67,12 +67,12 @@ func (c *panelCache) get(ctx context.Context, key panelCacheKey, load func(conte
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case <-flight.done:
-		return flight.body, flight.err
+		return flight.panel, flight.err
 	}
 }
 
-func (c *panelCache) build(parent context.Context, key panelCacheKey, flight *panelFlight, load func(context.Context) ([]byte, error)) {
-	var body []byte
+func (c *panelCache) build(parent context.Context, key panelCacheKey, flight *panelFlight, load func(context.Context) (*cachedPanel, error)) {
+	var panel *cachedPanel
 	var err error
 	defer func() {
 		if cause := recover(); cause != nil {
@@ -80,9 +80,9 @@ func (c *panelCache) build(parent context.Context, key panelCacheKey, flight *pa
 		}
 		c.mu.Lock()
 		defer c.mu.Unlock()
-		// 仅缓存已脱敏的序列化响应：最多32项、合计16MiB，单项不超过4MiB。
-		if err == nil && len(body) <= 4<<20 {
-			for len(c.entries) >= 32 || c.bytes+len(body) > 16<<20 {
+		// 仅缓存脱敏数据，按序列化大小限制为32项、合计16MiB、单项4MiB。
+		if err == nil && panel != nil && len(panel.body) <= 4<<20 {
+			for len(c.entries) >= 32 || c.bytes+len(panel.body) > 16<<20 {
 				var oldest panelCacheKey
 				var expiry time.Time
 				for k, entry := range c.entries {
@@ -90,13 +90,13 @@ func (c *panelCache) build(parent context.Context, key panelCacheKey, flight *pa
 						oldest, expiry = k, entry.expires
 					}
 				}
-				c.bytes -= len(c.entries[oldest].body)
+				c.bytes -= len(c.entries[oldest].panel.body)
 				delete(c.entries, oldest)
 			}
-			c.entries[key] = panelCacheEntry{body: body, expires: time.Now().Add(3 * time.Second)}
-			c.bytes += len(body)
+			c.entries[key] = panelCacheEntry{panel: panel, expires: time.Now().Add(3 * time.Second)}
+			c.bytes += len(panel.body)
 		}
-		flight.body, flight.err = body, err
+		flight.panel, flight.err = panel, err
 		delete(c.flights, key)
 		close(flight.done)
 	}()
@@ -105,7 +105,7 @@ func (c *panelCache) build(parent context.Context, key panelCacheKey, flight *pa
 	select {
 	case c.slots <- struct{}{}:
 		defer func() { <-c.slots }()
-		body, err = load(ctx)
+		panel, err = load(ctx)
 	case <-ctx.Done():
 		err = ctx.Err()
 	}
