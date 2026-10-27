@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -79,10 +80,8 @@ func TestTLSLatencyWarningSettings(t *testing.T) {
 	// 旧设置缺少新字段时保持关闭，不需要迁移或重写用户配置。
 	legacy, _ := json.Marshal(model.DefaultSettings())
 	legacy = bytes.Replace(legacy, []byte(`"tlsLatencyWarningMs":0,`), nil, 1)
-	if _, err := s.DB.Exec("UPDATE settings SET value=? WHERE key='system'", string(legacy)); err != nil {
-		t.Fatal(err)
-	}
-	stored, err := s.Settings(ctx)
+	legacyStore := legacySettingsStore(t, legacy)
+	stored, err := legacyStore.Settings(ctx)
 	if err != nil || stored.TLSLatencyWarningMS != 0 {
 		t.Fatalf("legacy settings default: %+v %v", stored, err)
 	}
@@ -139,10 +138,8 @@ func TestStatusPageViewSettings(t *testing.T) {
 	// 旧设置缺少该字段时保留原详细行布局，不需要迁移或改写已保存配置。
 	legacy, _ := json.Marshal(model.DefaultSettings())
 	legacy = bytes.Replace(legacy, []byte(`"statusPageView":"detailed",`), nil, 1)
-	if _, err := s.DB.Exec("UPDATE settings SET value=? WHERE key='system'", string(legacy)); err != nil {
-		t.Fatal(err)
-	}
-	stored, err := s.Settings(ctx)
+	legacyStore := legacySettingsStore(t, legacy)
+	stored, err := legacyStore.Settings(ctx)
 	if err != nil || stored.StatusPageView != "detailed" {
 		t.Fatalf("legacy default changed: %+v %v", stored, err)
 	}
@@ -193,11 +190,33 @@ func TestCertificateHighlightSettings(t *testing.T) {
 	}
 	legacy, _ := json.Marshal(model.DefaultSettings())
 	legacy = bytes.Replace(legacy, []byte(`"certExpiryWarningDays":30,`), nil, 1)
-	if _, err = s.DB.Exec("UPDATE settings SET value=? WHERE key='system'", string(legacy)); err != nil {
-		t.Fatal(err)
-	}
-	stored, err := s.Settings(ctx)
+	legacyStore := legacySettingsStore(t, legacy)
+	stored, err := legacyStore.Settings(ctx)
 	if err != nil || stored.CertExpiryWarningDays != 30 {
 		t.Fatalf("legacy highlight default: %+v %v", stored, err)
 	}
+}
+
+// 用重启前的数据库内容验证旧设置，运行时写入统一经过 SaveSettings 更新缓存。
+func legacySettingsStore(t *testing.T, data []byte) *store.Store {
+	t.Helper()
+	ctx := context.Background()
+	dsn := filepath.Join(t.TempDir(), "legacy.db")
+	s, err := store.Open(ctx, "sqlite", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.DB.Exec("INSERT INTO settings(key,value) VALUES('system',?)", string(data)); err != nil {
+		s.Close()
+		t.Fatal(err)
+	}
+	if err = s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	s, err = store.Open(ctx, "sqlite", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	return s
 }

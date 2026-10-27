@@ -256,6 +256,7 @@ func (s *Store) evaluateAlertRules(ctx context.Context, tx *sql.Tx, m model.Moni
 		if timerOnly && state.Config != stamp {
 			continue
 		}
+		previous := state
 		if state.Config != stamp {
 			state = alertState{Config: stamp}
 		}
@@ -331,6 +332,10 @@ func (s *Store) evaluateAlertRules(ctx context.Context, tx *sql.Tx, m model.Moni
 		}
 		state.Active = active
 		state.Expired = kind == "certificate" && active && state.CertExpiry <= h.Time
+		// 保留事务内的持久化状态，仅跳过内容未变化的重复写入。
+		if state == previous {
+			continue
+		}
 		if _, err = tx.ExecContext(ctx, s.Q("INSERT INTO alert_states(monitor_id,kind,data) VALUES(?,?,?) ON CONFLICT(monitor_id,kind) DO UPDATE SET data=excluded.data"), m.ID, kind, encode(state)); err != nil {
 			return err
 		}

@@ -3,7 +3,11 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"path/filepath"
+	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -99,5 +103,74 @@ func checkSQLitePragmas(t *testing.T, conn *sql.Conn, queryOnly int) {
 		if err := conn.QueryRowContext(context.Background(), "PRAGMA "+name).Scan(&got); err != nil || got != want {
 			t.Fatalf("%s = %d, want %d: %v", name, got, want, err)
 		}
+	}
+}
+
+func TestSettingsCacheIsolationAndConcurrentSaves(t *testing.T) {
+	s := fileStore(t)
+	ctx := context.Background()
+	settings := model.DefaultSettings()
+	settings.TrustedProxies = []string{"127.0.0.1"}
+	if err := s.SaveSettings(ctx, settings); err != nil {
+		t.Fatal(err)
+	}
+	settings.TrustedProxies[0] = "changed-by-caller"
+	got, err := s.Settings(ctx)
+	if err != nil || got.TrustedProxies[0] != "127.0.0.1" {
+		t.Fatalf("save aliases caller memory: %+v %v", got, err)
+	}
+	got.TrustedProxies[0] = "changed-by-reader"
+	got, err = s.Settings(ctx)
+	if err != nil || got.TrustedProxies[0] != "127.0.0.1" {
+		t.Fatalf("read aliases cache memory: %+v %v", got, err)
+	}
+	var wg sync.WaitGroup
+	for i := range 12 {
+		wg.Go(func() {
+			value := model.DefaultSettings()
+			value.SiteName = fmt.Sprintf("site-%d", i)
+			if err := s.SaveSettings(ctx, value); err != nil {
+				t.Error(err)
+			}
+			if _, err := s.Settings(ctx); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+	wg.Wait()
+	var data string
+	if err := s.ReadDB().QueryRowContext(ctx, "SELECT value FROM settings WHERE key='system'").Scan(&data); err != nil {
+		t.Fatal(err)
+	}
+	var persisted model.Settings
+	if err := json.Unmarshal([]byte(data), &persisted); err != nil {
+		t.Fatal(err)
+	}
+	got, err = s.Settings(ctx)
+	if err != nil || !reflect.DeepEqual(got, persisted) {
+		t.Fatalf("cache differs from last committed settings: %+v %+v %v", got, persisted, err)
+	}
+	if _, err := s.DB.Exec("DROP TABLE settings"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SaveSettings(ctx, model.DefaultSettings()); err == nil {
+		t.Fatal("save unexpectedly succeeded")
+	}
+	got, err = s.Settings(ctx)
+	if err != nil || !reflect.DeepEqual(got, persisted) {
+		t.Fatalf("cache depends on database reads or publishes failed saves: %+v %v", got, err)
+	}
+}
+
+func TestUnchangedAlertsDoNotWriteState(t *testing.T) {
+	s, m := alertFixture(t, ":memory:")
+	now := time.Now().UnixMilli()
+	appendAlert(t, s, m, now, "up", now+30*86400000)
+	if _, err := s.DB.Exec("CREATE TRIGGER unchanged_alert BEFORE UPDATE ON alert_states BEGIN SELECT RAISE(ABORT,'unexpected alert state update'); END"); err != nil {
+		t.Fatal(err)
+	}
+	appendAlert(t, s, m, now+1, "up", now+30*86400000)
+	if err := s.EvaluateAlertTimers(context.Background()); err != nil {
+		t.Fatalf("timer rewrote unchanged alert: %v", err)
 	}
 }

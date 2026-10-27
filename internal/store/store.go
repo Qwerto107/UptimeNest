@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -31,6 +33,8 @@ type Store struct {
 	readDB        *sql.DB
 	dialect       string
 	publicVersion atomic.Uint64
+	settingsMu    sync.Mutex
+	settings      atomic.Pointer[model.Settings]
 }
 
 func (s *Store) PublicVersion() uint64 { return s.publicVersion.Load() }
@@ -640,21 +644,38 @@ func (s *Store) DeletePanel(ctx context.Context, id int64) error {
 }
 
 func (s *Store) Settings(ctx context.Context) (model.Settings, error) {
+	if cached := s.settings.Load(); cached != nil {
+		return cloneSettings(*cached), nil
+	}
+	s.settingsMu.Lock()
+	defer s.settingsMu.Unlock()
+	if cached := s.settings.Load(); cached != nil {
+		return cloneSettings(*cached), nil
+	}
 	v := model.DefaultSettings()
 	var data string
 	err := s.readDB.QueryRowContext(ctx, "SELECT value FROM settings WHERE key='system'").Scan(&data)
 	if errors.Is(err, sql.ErrNoRows) {
-		return v, nil
+		err = nil
+	} else if err == nil {
+		err = json.Unmarshal([]byte(data), &v)
 	}
 	if err != nil {
 		return v, err
 	}
-	err = json.Unmarshal([]byte(data), &v)
-	return v, err
+	s.settings.Store(&v)
+	return cloneSettings(v), nil
 }
 
 func (s *Store) SaveSettings(ctx context.Context, v model.Settings) error {
+	// 串行提交和发布缓存，避免并发保存把旧设置覆盖到新缓存。
+	s.settingsMu.Lock()
+	defer s.settingsMu.Unlock()
+	v = cloneSettings(v)
 	_, err := s.DB.ExecContext(ctx, s.Q("INSERT INTO settings(key,value) VALUES('system',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"), encode(v))
+	if err == nil {
+		s.settings.Store(&v)
+	}
 	s.publicVersion.Add(1)
 	return err
 }
@@ -729,4 +750,9 @@ func (s *Store) Cleanup(ctx context.Context, days int) (map[string]int64, error)
 		return counts, err
 	}
 	return counts, nil
+}
+
+func cloneSettings(v model.Settings) model.Settings {
+	v.TrustedProxies = slices.Clone(v.TrustedProxies)
+	return v
 }
