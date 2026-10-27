@@ -31,8 +31,12 @@ func validateMonitor(m *model.Monitor) error {
 	if len(m.Description) > 4000 || len(m.Target) > 2048 {
 		return fmt.Errorf("目标地址或描述过长")
 	}
-	if m.Interval < 5 || m.Interval > 86400 {
-		return fmt.Errorf("心跳间隔应为 5 至 86400 秒")
+	minimumInterval := 5
+	if m.Type == "ping" {
+		minimumInterval = 1
+	}
+	if m.Interval < minimumInterval || m.Interval > 86400 {
+		return fmt.Errorf("心跳间隔应为 %d 至 86400 秒", minimumInterval)
 	}
 	if m.Timeout < 1 || m.Timeout > 120 {
 		return fmt.Errorf("检测超时应为 1 至 120 秒")

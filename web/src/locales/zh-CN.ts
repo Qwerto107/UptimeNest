@@ -306,7 +306,7 @@ export default {
     retries: '重试次数',
     retryInterval: '心跳重试间隔',
     timeout: '检测超时',
-    intervalHint: '5–86400 秒；上次完整检测结束后开始计时。',
+    intervalHint: '{min}–86400 秒；上次完整检测结束后开始计时。',
     retriesHint: '失败后最多重试 0–10 次，重试耗尽才记录故障。',
     group: '所属分组',
     tags: '标签',

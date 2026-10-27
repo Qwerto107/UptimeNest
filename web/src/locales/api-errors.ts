@@ -63,6 +63,7 @@ const englishErrors: Record<string, string> = {
   '显示名称不能为空，且不能超过 200 字节': 'The display name must be nonempty and at most 200 bytes.',
   '目标地址或描述过长': 'The target address or description is too long.',
   '心跳间隔应为 5 至 86400 秒': 'The check interval must be between 5 and 86400 seconds.',
+  '心跳间隔应为 1 至 86400 秒': 'The check interval must be between 1 and 86400 seconds.',
   '检测超时应为 1 至 120 秒': 'The check timeout must be between 1 and 120 seconds.',
   '重试次数应为 0 至 10 次': 'The number of retries must be between 0 and 10.',
   '重试间隔应为 1 至 3600 秒': 'The retry interval must be between 1 and 3600 seconds.',

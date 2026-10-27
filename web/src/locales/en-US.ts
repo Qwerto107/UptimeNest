@@ -308,7 +308,7 @@ const enUS: typeof zhCN = {
     retries: 'Retries',
     retryInterval: 'Retry interval',
     timeout: 'Check timeout',
-    intervalHint: '5–86400 seconds, measured from the end of the previous complete check.',
+    intervalHint: '{min}–86400 seconds, measured from the end of the previous complete check.',
     retriesHint: 'Retry 0–10 times after a failure. Mark the service down only after all retries fail.',
     group: 'Group',
     tags: 'Tags',

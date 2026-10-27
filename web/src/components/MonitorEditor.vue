@@ -348,13 +348,13 @@ async function submit(event: Event) {
                 <Field
                   id="monitor-interval"
                   :label="`${t('monitor.interval')} (${t('common.seconds')})`"
-                  :hint="t('monitor.intervalHint')"
+                  :hint="t('monitor.intervalHint', { min: form.type === 'ping' ? 1 : 5 })"
                 >
                   <Input
                     id="monitor-interval"
                     v-model.number="form.interval"
                     type="number"
-                    min="5"
+                    :min="form.type === 'ping' ? 1 : 5"
                     max="86400"
                     required
                   />
