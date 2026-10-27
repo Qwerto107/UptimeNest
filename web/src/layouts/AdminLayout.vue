@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useEventListener, useMediaQuery } from '@vueuse/core'
 import {
   Activity,
+  Bell,
   PanelsTopLeft,
   Settings2,
   UserRound,
@@ -32,6 +33,7 @@ const { busy, run } = useAction()
 const links = [
   { path: '/admin/monitors', label: 'nav.monitors', icon: Activity },
   { path: '/admin/panels', label: 'nav.panels', icon: PanelsTopLeft },
+  { path: '/admin/notifications', label: 'notification.title', icon: Bell },
   { path: '/admin/settings', label: 'nav.settings', icon: Settings2 },
   { path: '/admin/account', label: 'nav.account', icon: UserRound },
 ]

@@ -1,7 +1,9 @@
 import type zhCN from './zh-CN'
+import notification from './notifications.en-US'
 
 // 与中文文案保持相同键名，缺漏或拼写错误由类型检查发现。
 const enUS: typeof zhCN = {
+  notification,
   common: {
     brand: 'UptimeNest',
     save: 'Save',

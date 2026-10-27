@@ -28,6 +28,7 @@ type Monitor struct {
 	HTTP          *HTTPOptions      `json:"http,omitempty"`
 	WebSocket     *WebSocketOptions `json:"websocket,omitempty"`
 	GRPC          *GRPCOptions      `json:"grpc,omitempty"`
+	Alerts        *AlertOptions     `json:"alerts,omitempty"`
 }
 
 // GRPCOptions 的 Metadata 和服务名称仅供后台使用，不进入公开状态页。

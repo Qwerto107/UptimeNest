@@ -17,7 +17,7 @@ type worker struct {
 	cancel context.CancelFunc
 }
 
-// StateHandler 是未来通知模块的唯一接入点，当前版本没有通知实现。
+// StateHandler 为可选进程内订阅；通知队列在心跳事务内写入，保证事件持久化。
 type StateHandler func(context.Context, model.StateChange)
 
 type Engine struct {

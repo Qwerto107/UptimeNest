@@ -53,6 +53,10 @@ func (s *Store) Append(ctx context.Context, snapshot model.Monitor, h model.Hear
 			return "", err
 		}
 	}
+	// 告警状态、待发送通知和最终心跳一起提交，避免进程退出时丢失事件。
+	if err = s.evaluateAlerts(ctx, tx, current, h); err != nil {
+		return "", err
+	}
 	err = tx.Commit()
 	if previous != h.Status {
 		s.publicVersion.Add(1)

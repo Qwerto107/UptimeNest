@@ -1,3 +1,4 @@
+import notificationErrors from './notification-errors'
 // 保持现有接口错误格式兼容，仅翻译已知提示；未知诊断详情保留原文。
 const englishErrors: Record<string, string> = {
   'gRPC 目标应为主机名或 IP，端口应为 1 至 65535': 'The gRPC target must be a hostname or IP, with a port between 1 and 65535.',
@@ -12,6 +13,8 @@ const englishErrors: Record<string, string> = {
   'gRPC Metadata 名称不能重复，忽略大小写': 'gRPC Metadata names must be unique, ignoring case.',
   'gRPC CA 证书不是有效 PEM': 'The gRPC CA certificate is not valid PEM.',
   '请选择 HTTP、WebSocket、gRPC、TCP、Ping 或 DNS 类型': 'Choose HTTP, WebSocket, gRPC, TCP, Ping or DNS.',
+  '证书告警仅支持 HTTPS/WSS 或启用 TLS 的 gRPC 监控': 'Certificate alerts require HTTPS, WSS or gRPC with TLS.',
+  ...notificationErrors,
   'TLS 握手延迟提醒阈值应为 0 至 120000 毫秒，0 表示关闭': 'The TLS handshake warning threshold must be between 0 and 120000 ms; 0 disables it.',
   '请输入有效的 WS/WSS 地址，不允许携带账户密码或片段': 'Enter a valid WS/WSS URL without embedded credentials or a fragment.',
   'WebSocket 端口应为 1 至 65535': 'The WebSocket port must be between 1 and 65535.',
@@ -114,6 +117,8 @@ const englishErrors: Record<string, string> = {
 }
 
 const patterns: [RegExp, (match: RegExpExecArray) => string][] = [
+  [/^未知模板变量: (.+)$/, (match) => `Unknown template variable: ${match[1]}.`],
+  [/^通知服务返回 HTTP (\d+)$/, (match) => `Notification service returned HTTP ${match[1]}.`],
   [/^第 (\d+) 项可信代理应为有效的 IP 或 CIDR$/, (match) => `Trusted proxy entry ${match[1]} must be a valid IP address or CIDR.`],
   [/^(.+) 由系统自动管理$/, (match) => `${match[1]} is managed automatically.`],
   [/^请求头名称重复：(.+)$/, (match) => `Duplicate header name: ${match[1]}.`],

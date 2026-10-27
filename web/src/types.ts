@@ -83,6 +83,40 @@ export interface Monitor {
   http?: HTTPOptions
   websocket?: WebSocketOptions
   grpc?: GRPCOptions
+  alerts?: AlertOptions
+}
+
+export interface AlertRule {
+  enabled: boolean
+  channelIds: number[]
+  recovery: boolean
+  repeatMinutes: number
+  days: number
+  failureThreshold: number
+}
+export interface AlertOptions { service: AlertRule; certificate: AlertRule }
+export type ChannelType = 'email' | 'webhook' | 'feishu' | 'dingtalk' | 'telegram'
+export interface NotificationTemplate { subject: string; body: string }
+export interface NotificationChannel {
+  id: number
+  name: string
+  type: ChannelType
+  enabled: boolean
+  subject: string
+  body: string
+  certificateTemplate?: NotificationTemplate
+  configured: string[]
+  config: {
+    url: string; secret: string; headers: Record<string, string>
+    host: string; port: number; security: string; username: string; password: string
+    from: string; to: string[]; token: string; chatId: string; threadId: number; proxyURL: string
+  }
+}
+export interface NotificationRecord {
+  id: number; monitorId: number; channelId: number; channelName: string; kind: string
+  status: 'pending' | 'sending' | 'sent' | 'failed' | 'cancelled'
+  attempts: number; nextAttempt: number; error: string
+  event: { alertType: string; monitorName: string; time: number }
 }
 
 export interface GRPCOptions {

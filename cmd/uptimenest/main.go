@@ -14,6 +14,7 @@ import (
 	"github.com/Qwerto107/UptimeNest/internal/api"
 	"github.com/Qwerto107/UptimeNest/internal/config"
 	"github.com/Qwerto107/UptimeNest/internal/monitor"
+	"github.com/Qwerto107/UptimeNest/internal/notify"
 	"github.com/Qwerto107/UptimeNest/internal/store"
 )
 
@@ -46,6 +47,9 @@ func run() error {
 	}
 	defer s.DB.Close()
 	engine := monitor.New(ctx, s, cfg.Workers)
+	notificationsDone := make(chan struct{})
+	go func() { defer close(notificationsDone); notify.Run(ctx, s) }()
+	defer func() { cancel(); <-notificationsDone }()
 	if err = engine.Reload(ctx); err != nil {
 		return err
 	}

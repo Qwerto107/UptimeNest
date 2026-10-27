@@ -28,6 +28,7 @@ export const router = createRouter({
         },
         { path: 'groups', redirect: '/admin/monitors' },
         { path: 'panels', component: () => import('@/views/PanelsView.vue') },
+        { path: 'notifications', component: () => import('@/views/NotificationsView.vue') },
         {
           path: 'settings',
           component: () => import('@/views/SettingsView.vue'),

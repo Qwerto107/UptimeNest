@@ -1,4 +1,6 @@
+import notification from './notifications.zh-CN'
 export default {
+  notification,
   common: {
     brand: 'UptimeNest',
     save: '保存',

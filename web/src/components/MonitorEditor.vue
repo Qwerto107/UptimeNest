@@ -10,6 +10,8 @@ import HTTPOptionsEditor from '@/components/HTTPOptionsEditor.vue'
 import HTTPAuthenticationEditor from '@/components/HTTPAuthenticationEditor.vue'
 import WebSocketOptionsEditor from '@/components/WebSocketOptionsEditor.vue'
 import GRPCOptionsEditor from '@/components/GRPCOptionsEditor.vue'
+import MonitorAlertsEditor from '@/components/MonitorAlertsEditor.vue'
+import { defaultAlerts } from '@/lib/notifications'
 import { useAction, notify } from '@/composables/useFeedback'
 import { useMotion } from '@/composables/useMotion'
 import Modal from '@/components/Modal.vue'
@@ -54,9 +56,11 @@ function defaults(): Monitor {
     http: defaultHTTPOptions(),
     websocket: defaultWebSocketOptions(),
     grpc: defaultGRPCOptions(),
+    alerts: defaultAlerts(),
   }
 }
 const form = reactive<Monitor>(defaults())
+const certificateAvailable = computed(() => (form.type === 'http' && form.target.startsWith('https://')) || (form.type === 'websocket' && form.target.startsWith('wss://')) || (form.type === 'grpc' && (form.grpc?.security ?? 'tls') === 'tls'))
 const tags = ref('')
 const tab = ref('basics')
 const tabScroll = ref<HTMLElement>()
@@ -104,7 +108,7 @@ watch(open, (value) => {
   const next = props.monitor || defaults()
   // 逐字段复制，避免把列表接口的 summary 等只读数据发送到配置接口。
   for (const key of Object.keys(defaults()) as (keyof Monitor)[]) {
-    if (key === 'http' || key === 'websocket' || key === 'grpc') continue
+    if (key === 'http' || key === 'websocket' || key === 'grpc' || key === 'alerts') continue
     const value = next[key]
     if (Array.isArray(value)) Object.assign(form, { [key]: [...value] })
     else Object.assign(form, { [key]: value })
@@ -121,7 +125,9 @@ watch(open, (value) => {
     ...next.websocket,
     subprotocols: [...(next.websocket?.subprotocols || [])],
   }
+  form.alerts = JSON.parse(JSON.stringify(next.alerts || defaultAlerts()))
   form.grpc = { ...defaultGRPCOptions(), ...next.grpc }
+  if (form.alerts) form.alerts.service.failureThreshold ||= 1
   if (props.duplicate && props.monitor) {
     // 副本使用新增接口；按后端的 200 字节上限预留名称后缀，避免截断 Unicode 字符。
     form.id = 0
@@ -199,8 +205,12 @@ async function submit(event: Event) {
           <TabsTrigger v-if="form.type === 'http'" value="auth" class="editor-tab">
             {{ t('http.authentication') }}
           </TabsTrigger>
+          <TabsTrigger value="alerts" class="editor-tab">{{ t('notification.alerts') }}</TabsTrigger>
         </TabsList>
         <div ref="tabScroll" class="editor-tab-scroll">
+          <TabsContent value="alerts" force-mount v-show="tab === 'alerts'" data-editor-panel="alerts">
+            <MonitorAlertsEditor :model-value="form.alerts" :active="open" :busy="busy" :certificate-available="certificateAvailable" @update:model-value="form.alerts = $event" />
+          </TabsContent>
           <TabsContent
             value="basics"
             force-mount

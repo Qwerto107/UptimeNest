@@ -78,3 +78,19 @@ func TestGRPCMonitorSaveAndPrivacy(t *testing.T) {
 		t.Fatalf("stale gRPC configuration was retained: %+v %v", m, err)
 	}
 }
+
+func TestGRPCCertificateAlertEligibilityAndPublicFailure(t *testing.T) {
+	m := model.Monitor{Name: "gRPC", Type: "grpc", Target: "::1", Port: 443, Interval: 60, Timeout: 2, RetryInterval: 1, Alerts: &model.AlertOptions{Certificate: model.AlertRule{Enabled: true, ChannelIDs: []int64{1}, Days: 7}}}
+	if err := validateMonitor(&m); err != nil {
+		t.Fatalf("TLS default should allow certificate alerts: %v", err)
+	}
+	m.GRPC.Security = "none"
+	if err := validateMonitor(&m); err == nil {
+		t.Fatal("plaintext accepted certificate alerts")
+	}
+	for _, message := range []string{"gRPC 健康状态：NOT_SERVING", "gRPC 健康状态：UNKNOWN", "gRPC 健康状态：SERVICE_UNKNOWN"} {
+		if failure, code := publicFailure(model.Heartbeat{Status: "down", Message: message}); failure != "response" || code != 0 {
+			t.Fatalf("lost unhealthy response marker: %s", message)
+		}
+	}
+}

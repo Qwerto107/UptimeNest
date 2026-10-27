@@ -10,6 +10,7 @@ import (
 
 	"github.com/Qwerto107/UptimeNest/internal/model"
 	"github.com/Qwerto107/UptimeNest/internal/monitor"
+	"github.com/Qwerto107/UptimeNest/internal/notify"
 )
 
 var slugPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,63}$`)
@@ -21,6 +22,9 @@ func validHost(host string) bool { return net.ParseIP(host) != nil || hostPatter
 func validateMonitor(m *model.Monitor) error {
 	m.Name = strings.TrimSpace(m.Name)
 	m.Target = strings.TrimSpace(m.Target)
+	if err := notify.ValidateAlerts(m); err != nil {
+		return err
+	}
 	if m.Name == "" || len(m.Name) > 200 {
 		return fmt.Errorf("显示名称不能为空，且不能超过 200 字节")
 	}

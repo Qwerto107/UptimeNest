@@ -117,7 +117,7 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err = tx.QueryRowContext(ctx, "SELECT COALESCE(MAX(version), 0) FROM schema_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 2 {
+	if version > 3 {
 		return errors.New("数据库版本高于当前程序支持的版本")
 	}
 	if version == 0 {
@@ -157,6 +157,11 @@ func (s *Store) migrate(ctx context.Context) error {
 			return err
 		}
 		if _, err = tx.ExecContext(ctx, "INSERT INTO schema_version(version) VALUES(2)"); err != nil {
+			return err
+		}
+	}
+	if version < 3 {
+		if err = s.migrateNotifications(ctx, tx); err != nil {
 			return err
 		}
 	}
@@ -233,6 +238,9 @@ func (s *Store) SaveMonitor(ctx context.Context, m model.Monitor) (model.Monitor
 		return m, err
 	}
 	defer tx.Rollback()
+	if err = s.validateAlertChannels(ctx, tx, m); err != nil {
+		return m, err
+	}
 	if m.GroupID != 0 {
 		var id int64
 		q := "SELECT id FROM monitor_groups WHERE id=?"
@@ -259,6 +267,9 @@ func (s *Store) SaveMonitor(ctx context.Context, m model.Monitor) (model.Monitor
 		}
 	}
 	if err != nil {
+		return m, err
+	}
+	if err = s.resetChangedAlerts(ctx, tx, m); err != nil {
 		return m, err
 	}
 	return m, s.commitChange(tx)
@@ -685,6 +696,9 @@ func (s *Store) Cleanup(ctx context.Context, days int) (map[string]int64, error)
 			case <-time.After(time.Millisecond):
 			}
 		}
+	}
+	if err := s.cleanupNotifications(ctx, cutoff); err != nil {
+		return counts, err
 	}
 	return counts, nil
 }
