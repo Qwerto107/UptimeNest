@@ -1,5 +1,7 @@
 # 部署指南
 
+简体中文 · [English](deployment_en.md)
+
 [文档中心](README.md) · [二进制部署](binary.md) · [使用指南](usage.md)
 
 推荐使用 Docker Compose。一个容器提供状态页、管理后台与 API；直接运行发行程序见 [二进制部署](binary.md)。当前按单应用实例部署。

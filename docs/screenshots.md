@@ -1,5 +1,7 @@
 # 界面截图
 
+简体中文 · [English](screenshots_en.md)
+
 [项目首页](../README.md) · [文档中心](README.md) · [使用指南](usage.md)
 
 截图来自独立演示环境，域名、地址和统计仅作展示，不包含真实凭据。配置说明见 [使用指南](usage.md)，版本变化见 [更新记录](changelog.md)。

@@ -1,5 +1,7 @@
 # 使用指南
 
+简体中文 · [English](usage_en.md)
+
 [文档中心](README.md) · [部署指南](deployment.md) · [API 参考](api.md)
 
 [开始](#首次使用) · [监控](#监控管理) · [WebSocket](#websocket-检测) · [gRPC](#grpc-检测) · [延迟图表](#响应延迟图表) · [HTTP](#http-请求与验证) · [分组](#监控分组) · [面板](#状态面板) · [设置](#系统设置) · [账户](#账户设置)

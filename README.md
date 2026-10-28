@@ -4,6 +4,8 @@
 
 # UptimeNest
 
+简体中文 · [English](README_en.md)
+
 可自托管的服务与网络监控系统。集中检查站点、接口、端口与网络节点，通过独立状态页展示服务可用性。
 
 [快速部署](#快速部署) · [文档中心](docs/README.md) · [API 参考](docs/api.md) · [下载版本](https://github.com/Qwerto107/UptimeNest/releases)

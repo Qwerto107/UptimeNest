@@ -1,5 +1,7 @@
 # API 参考
 
+简体中文 · [English](api_en.md)
+
 [文档中心](README.md) · [使用指南](usage.md) · [部署指南](deployment.md)
 
 | 内容 | 章节 |

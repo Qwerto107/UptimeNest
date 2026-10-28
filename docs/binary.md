@@ -1,5 +1,7 @@
 # 二进制部署
 
+简体中文 · [English](https://github.com/Qwerto107/UptimeNest/blob/main/docs/binary_en.md)
+
 [文档中心](https://github.com/Qwerto107/UptimeNest/blob/main/docs/README.md) · [部署指南](https://github.com/Qwerto107/UptimeNest/blob/main/docs/deployment.md)
 
 UptimeNest 发行程序内嵌前端，解压即可提供页面与 API，无需安装 Go 或 Node.js。Ping 使用原生 ICMP，不依赖系统 `ping` 命令；网络策略需允许 ICMP。本说明随每个安装包提供。

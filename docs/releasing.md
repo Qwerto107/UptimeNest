@@ -1,5 +1,7 @@
 # 发布流程
 
+简体中文 · [English](releasing_en.md)
+
 [文档中心](README.md) · [开发指南](development.md) · [部署指南](deployment.md)
 
 工作流为 [构建、检查与发布](../.github/workflows/ci.yml)。交付内嵌前端的完整程序和统一镜像。源码构建命令见 [开发指南](development.md#完整程序与镜像)。

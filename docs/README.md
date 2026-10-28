@@ -1,5 +1,7 @@
 # 文档中心
 
+简体中文 · [English](README_en.md)
+
 [项目首页](../README.md) · [下载版本](https://github.com/Qwerto107/UptimeNest/releases)
 
 ## 使用
