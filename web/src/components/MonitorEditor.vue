@@ -455,25 +455,25 @@ async function submit(event: Event) {
           >
             <HTTPAuthenticationEditor v-model="form.http" :busy="busy" :configured="retainedSecrets" />
           </TabsContent>
+          <fieldset v-if="configured.length" class="form-section monitor-editor-secrets" :disabled="busy">
+            <legend>{{ t('monitorSecrets.title') }}</legend>
+            <p class="field-hint">{{ t('monitorSecrets.hint') }}</p>
+            <div class="flex flex-wrap gap-2">
+              <Button
+                v-for="field in configured"
+                :key="field"
+                type="button"
+                size="sm"
+                variant="outline"
+                :aria-pressed="clearSecrets.includes(field)"
+                @click="toggleSecret(field)"
+              >
+                {{ t(clearSecrets.includes(field) ? 'monitorSecrets.undoClear' : 'monitorSecrets.clear', { field: t(secretLabels[field] || field) }) }}
+              </Button>
+            </div>
+          </fieldset>
         </div>
       </TabsRoot>
-      <fieldset v-if="configured.length" class="form-section" :disabled="busy">
-        <legend>{{ t('monitorSecrets.title') }}</legend>
-        <p class="field-hint">{{ t('monitorSecrets.hint') }}</p>
-        <div class="flex flex-wrap gap-2">
-          <Button
-            v-for="field in configured"
-            :key="field"
-            type="button"
-            size="sm"
-            variant="outline"
-            :aria-pressed="clearSecrets.includes(field)"
-            @click="toggleSecret(field)"
-          >
-            {{ t(clearSecrets.includes(field) ? 'monitorSecrets.undoClear' : 'monitorSecrets.clear', { field: t(secretLabels[field] || field) }) }}
-          </Button>
-        </div>
-      </fieldset>
       <div class="form-actions">
         <Button type="button" variant="outline" :disabled="busy" @click="open = false">
           {{ t('common.cancel') }}

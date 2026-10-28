@@ -1187,7 +1187,8 @@ svg {
 .editor-tab-scroll [role='tabpanel'] {
   outline: none;
 }
-.monitor-editor-form .form-section > legend {
+/* 页签名称替代重复的分区标题，敏感配置区仍保留自己的标题。 */
+.monitor-editor-form .form-section:not(.monitor-editor-secrets) > legend {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1196,6 +1197,12 @@ svg {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+.monitor-editor-secrets {
+  margin-top: 24px;
+}
+.monitor-editor-secrets > .field-hint {
+  margin-bottom: 12px;
 }
 .monitor-editor-form .form-actions {
   position: static;
