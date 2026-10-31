@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 const { t } = useI18n()
 const { busy, run } = useAction()
 const cleanupOpen = ref(false)
@@ -25,6 +26,7 @@ const form = reactive<Settings>({
   language: 'en-US',
   entryPage: 'status',
   statusPageView: 'detailed',
+  showGitHub: true,
   userAgent: '',
   tlsLatencyWarningMs: 0,
   certExpiryWarningDays: 30,
@@ -148,6 +150,13 @@ async function cleanup() {
         <Field id="status-page-view" :label="t('settings.statusPageView')" :hint="t('settings.statusPageViewHint')">
           <Select id="status-page-view" v-model="form.statusPageView" :disabled="busy" :options="(['compact', 'detailed', 'cards'] as const).map(value => ({ value, label: t(`status.views.${value}`) }))" />
         </Field>
+        <div class="toggle-row">
+          <div>
+            <label for="show-github">{{ t('settings.showGitHub') }}</label>
+            <p id="show-github-hint">{{ t('settings.showGitHubHint') }}</p>
+          </div>
+          <Switch id="show-github" v-model="form.showGitHub" :disabled="busy" aria-describedby="show-github-hint" />
+        </div>
         <div class="field">
           <span class="field-label">{{ t('settings.theme') }}</span>
           <div class="theme-options" role="group" :aria-label="t('settings.theme')">

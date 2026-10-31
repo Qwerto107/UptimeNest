@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ChevronDown, LayoutDashboard, LayoutGrid, List, Rows3 } from 'lucide-vue-next'
+import { ChevronDown, Github, LayoutDashboard, LayoutGrid, List, Rows3 } from 'lucide-vue-next'
 import type { PublicPanel, PublicMonitor, MonitorStatus, StatusPageView } from '@/types'
 import { request } from '@/lib/api'
 import { bootstrap, loadBootstrap, siteName, timezone } from '@/composables/useApp'
@@ -158,6 +158,11 @@ function protocol(monitor: PublicMonitor) {
         </RouterLink>
         <div class="pulse-tools">
           <ThemeToggle />
+          <Button v-if="bootstrap?.showGitHub" variant="ghost" size="icon" as-child>
+            <a href="https://github.com/Qwerto107/UptimeNest" target="_blank" rel="noopener noreferrer" :aria-label="t('nav.github')" :title="t('nav.github')">
+              <Github />
+            </a>
+          </Button>
           <Button variant="ghost" size="icon" as-child>
             <RouterLink to="/admin" :aria-label="t('nav.admin')" :title="t('nav.admin')">
               <LayoutDashboard />

@@ -80,6 +80,7 @@ export default {
     settings: '系统设置',
     account: '账户设置',
     admin: '管理后台',
+    github: 'GitHub 项目仓库',
     public: '查看状态页',
     logout: '退出登录',
     menu: '导航菜单',
@@ -427,6 +428,8 @@ export default {
       '“{name}”的访问路径将失效，监控项及其历史保留。若删除默认面板，将自动选择剩余的第一个面板。',
   },
   settings: {
+    showGitHub: '显示 GitHub 图标',
+    showGitHubHint: '在所有状态页右上角显示项目仓库链接，关闭后隐藏。',
     statusPageView: '状态页默认视图', statusPageViewHint: '访客可以临时切换，刷新页面后恢复此默认视图。不会保存访客的视图偏好。',
     displayCode: '01 · DISPLAY',
     monitoringCode: '02 · PROBE',

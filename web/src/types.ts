@@ -189,6 +189,7 @@ export interface Panel {
 }
 export interface Settings {
   statusPageView: StatusPageView
+  showGitHub: boolean
   tlsLatencyWarningMs: number
   certExpiryWarningDays: number
   siteName: string
@@ -201,6 +202,7 @@ export interface Settings {
 }
 export interface Bootstrap {
   statusPageView: StatusPageView
+  showGitHub: boolean
   tlsLatencyWarningMs: number
   certExpiryWarningDays: number
   siteName: string

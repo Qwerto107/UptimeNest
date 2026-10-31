@@ -83,6 +83,7 @@ const enUS: typeof zhCN = {
     settings: 'System settings',
     account: 'Account settings',
     admin: 'Admin',
+    github: 'GitHub repository',
     public: 'View status page',
     logout: 'Log out',
     menu: 'Navigation menu',
@@ -425,6 +426,8 @@ const enUS: typeof zhCN = {
     deleteDescription: 'The URL for “{name}” will stop working. Monitors and their history are kept. If this is the default page, the first remaining page becomes the default.',
   },
   settings: {
+    showGitHub: 'Show GitHub icon',
+    showGitHubHint: 'Show the project repository link in the top-right corner of all status pages. Turn off to hide it.',
     statusPageView: 'Default status page view', statusPageViewHint: 'Visitors can switch temporarily. Reloading restores this default. Visitor view preferences are not saved.',
     displayCode: '01 · DISPLAY',
     monitoringCode: '02 · PROBE',
