@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, shallowRef, useId, watch } from 'vue'
 import { useDevicePixelRatio, useDocumentVisibility, useEventListener, useIntersectionObserver, usePreferredReducedMotion, useResizeObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import type { HeartbeatPoint } from '@/types'
 import { formatTime, latency } from '@/lib/format'
+import { cancelHeartbeatLayout, scheduleHeartbeatLayout } from '@/lib/heartbeat-layout'
 const props = defineProps<{ beats: HeartbeatPoint[] }>()
 const emit = defineEmits<{ capacity: [count: number] }>()
 const { t } = useI18n()
 const strip = ref<HTMLDivElement>()
-const positions = ref<{ left: string; width: string }[]>([])
+const positions = shallowRef<{ left: string; width: string }[]>([])
 const activeIndex = ref<number>()
 const intro = ref(false)
 const introRunning = ref(false)
@@ -24,16 +25,19 @@ let introFrame = 0
 useIntersectionObserver(strip, ([entry]) => { inView.value = !!entry?.isIntersecting })
 
 const { pixelRatio } = useDevicePixelRatio()
+let previousGeometry: number[] = []
 
-function align() {
+function measure() {
   if (!strip.value) return
   const rect = strip.value.getBoundingClientRect()
   const layoutWidth = parseFloat(getComputedStyle(strip.value).width)
   if (!rect.width || !layoutWidth) return
-  stripWidth.value = layoutWidth
+  const ratio = pixelRatio.value
+  const geometry = [rect.left, rect.width, layoutWidth, ratio]
+  // 观察器可能重复通知；尺寸不变时保留位置和标签，避免整条心跳重新渲染。
+  if (geometry.every((value, index) => value === previousGeometry[index])) return
 
   // 条宽和间距固定为 3px，再对齐物理像素；窗口大小只影响显示数量。
-  const ratio = pixelRatio.value
   const scale = rect.width / layoutWidth
   const start = Math.ceil(rect.left * ratio)
   const end = Math.floor(rect.right * ratio)
@@ -43,19 +47,27 @@ function align() {
   // 剩余空隙留在左侧，让最新记录始终位于条带右端。
   const first = end - count * width - Math.max(0, count - 1) * gap
   const previousCount = positions.value.length
-  positions.value = Array.from({ length: count }, (_, index) => ({
+  const nextPositions = Array.from({ length: count }, (_, index) => ({
     left: `${((first + index * (width + gap)) / ratio - rect.left) / scale}px`,
     width: `${width / ratio / scale}px`,
   }))
-  activeIndex.value = undefined
-  if (count !== previousCount) emit('capacity', count)
+  return () => {
+    previousGeometry = geometry
+    stripWidth.value = layoutWidth
+    positions.value = nextPositions
+    activeIndex.value = undefined
+    if (count !== previousCount) emit('capacity', count)
+  }
 }
 
+function align() { scheduleHeartbeatLayout(measure) }
 useResizeObserver(strip, align)
 useEventListener(window, 'resize', align)
 watch(pixelRatio, align, { flush: 'post' })
+onBeforeUnmount(() => cancelHeartbeatLayout(measure))
+const slotCount = computed(() => positions.value.length)
 const slots = computed(() => {
-  const count = positions.value.length
+  const count = slotCount.value
   if (!count) return []
   const recent = props.beats.slice(-count)
   return [...Array<null>(Math.max(0, count - recent.length)).fill(null), ...recent]
