@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+## v0.6.3 · 2026-10-31
+
+- Render public and admin heartbeat strips with Canvas, reducing per-bar elements and preformatted tooltip text while retaining physical pixel alignment, hover and touch tooltips, theme colors, and entrance animation to reduce loading stalls.
+- Reserve the status page scrollbar gutter to prevent width changes, heartbeat rearrangement, and flicker when expanding or collapsing details.
+- Rotate refresh icons at a constant speed while requests run, then finish the current turn before stopping. Consecutive refreshes retain the current angle. Keep the hand cursor on the status page while preventing duplicate clicks.
+- Add a GitHub repository icon to the right of the theme button on status pages. It is shown by default and can be hidden in system display settings.
+
 ## v0.6.2 · 2026-10-31
 
 - Batch heartbeat strip measurements and updates to avoid repeated layout from interleaved row reads and writes. Retain positions and tooltip labels when dimensions are unchanged, reducing loading stalls on status pages and monitor lists.
