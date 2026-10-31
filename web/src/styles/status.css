@@ -1,4 +1,8 @@
 /* 访客状态页保留独立变量与选择器，避免与后台组件互相覆盖。 */
+/* 详情展开与收起时保留滚动条占位，避免心跳条随页面宽度变化反复重排。 */
+html:has(.pulse-page) {
+  scrollbar-gutter: stable;
+}
 .pulse-page {
   --pulse-background: #f6f7f9;
   --pulse-surface: #ffffff;
