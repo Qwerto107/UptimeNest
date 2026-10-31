@@ -736,66 +736,20 @@ svg {
   min-width: 0;
   height: 16px;
 }
-.heartbeat {
+.heartbeat-canvas {
+  position: absolute;
+  top: -2px;
   display: block;
-  position: relative;
-  flex: 0 0 3px;
-  width: 3px;
-  height: 14px;
-  border-radius: 1px;
-  outline-offset: 2px;
+  height: 20px;
+  touch-action: pan-y;
 }
-.beat-up {
-  background: var(--heartbeat);
-}
-.beat-down {
-  background: var(--heartbeat-down);
-}
-.beat-empty {
-  background: var(--heartbeat-empty);
-}
-.heartbeat-strip-aligned .heartbeat {
-  position: absolute;
-  top: 1px;
-  min-width: 0;
-  max-width: none;
-  background: transparent;
-}
-.heartbeat-shapes {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-.heartbeat-shape {
-  fill: var(--heartbeat-empty);
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 120ms var(--motion-ease);
-}
-.heartbeat-shape.beat-up {
-  fill: var(--heartbeat);
-}
-.heartbeat-shape.beat-down {
-  fill: var(--heartbeat-down);
-}
-.heartbeat-shape-active {
-  transform: scaleY(1.25);
-}
-.heartbeat::after {
+.heartbeat-tooltip {
   display: block;
   --tooltip-x: -50%;
-  opacity: 0;
-  visibility: hidden;
-  content: attr(data-tooltip);
   position: absolute;
   z-index: 10;
   bottom: calc(100% + 9px);
-  left: 50%;
-  transform: translate(var(--tooltip-x), 4px);
-  transition: opacity 120ms var(--motion-ease), transform 120ms var(--motion-ease);
+  transform: translateX(var(--tooltip-x));
   width: max-content;
   max-width: 240px;
   padding: 7px 10px;
@@ -805,21 +759,6 @@ svg {
   font-size: 11px;
   white-space: normal;
   pointer-events: none;
-}
-.heartbeat:hover::after,
-.heartbeat:focus-visible::after {
-  opacity: 1;
-  visibility: visible;
-  transform: translate(var(--tooltip-x), 0);
-}
-.heartbeat-strip > :nth-child(-n + 12)::after {
-  left: 0;
-  --tooltip-x: 0px;
-}
-.heartbeat-strip > :nth-last-child(-n + 12)::after {
-  left: auto;
-  right: 0;
-  --tooltip-x: 0px;
 }
 .entity-list {
   border: 1px solid var(--border);
@@ -1969,7 +1908,7 @@ svg {
   .panel-group-heading > .row-actions {
     margin-left: auto;
   }
-  .heartbeat::after {
+  .heartbeat-tooltip {
     max-width: 190px;
   }
 }
@@ -2027,7 +1966,5 @@ svg {
     transition: none !important;
     scroll-behavior: auto !important;
   }
-  .heartbeat-shape-active, .heartbeat:hover, .heartbeat:focus-visible,
   .metric-enter-from, .metric-leave-to, .toast-enter-from, .toast-leave-to { transform: none !important; }
-  .heartbeat::after { transform: translate(var(--tooltip-x), 0) !important; }
 }

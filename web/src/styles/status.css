@@ -462,57 +462,7 @@
   gap: 0;
   height: 16px;
 }
-.pulse-page .heartbeat {
-  flex: 0 0 3px;
-  width: 3px;
-  height: 14px;
-  border-radius: 1px;
-  transition: transform 120ms var(--motion-ease);
-}
-.pulse-page .heartbeat-strip-aligned .heartbeat {
-  position: absolute;
-  top: 1px;
-  min-width: 0;
-  max-width: none;
-  background: transparent;
-}
-.pulse-page .heartbeat-shapes {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-.pulse-page .heartbeat-shape {
-  fill: var(--pulse-empty);
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 120ms var(--motion-ease);
-}
-.pulse-page .heartbeat-shape.beat-up {
-  fill: var(--pulse-ok);
-}
-.pulse-page .heartbeat-shape.beat-down {
-  fill: var(--pulse-down);
-}
-.pulse-page .heartbeat-shape-active {
-  transform: scaleY(1.25);
-}
-.pulse-page .heartbeat:hover,
-.pulse-page .heartbeat:focus-visible {
-  transform: none;
-}
-.pulse-page .beat-up {
-  background: var(--pulse-ok);
-}
-.pulse-page .beat-down {
-  background: var(--pulse-down);
-}
-.pulse-page .beat-empty {
-  background: var(--pulse-empty);
-}
-.pulse-page .heartbeat::after {
+.pulse-page .heartbeat-tooltip {
   color: var(--pulse-background);
   background: var(--pulse-text);
   font-family: 'Pulse Inter', 'Microsoft YaHei', sans-serif;
@@ -703,9 +653,5 @@
   }
   .pulse-signal-wave {
     display: none;
-  }
-  .pulse-page .heartbeat,
-  .pulse-page .heartbeat-shape {
-    transition: none;
   }
 }

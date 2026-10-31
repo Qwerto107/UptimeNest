@@ -1,60 +1,66 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef, useId, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useDevicePixelRatio, useDocumentVisibility, useEventListener, useIntersectionObserver, usePreferredReducedMotion, useResizeObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import type { HeartbeatPoint } from '@/types'
+import { dark } from '@/composables/useApp'
 import { formatTime, latency } from '@/lib/format'
 import { cancelHeartbeatLayout, scheduleHeartbeatLayout } from '@/lib/heartbeat-layout'
+
 const props = defineProps<{ beats: HeartbeatPoint[] }>()
 const emit = defineEmits<{ capacity: [count: number] }>()
 const { t } = useI18n()
 const strip = ref<HTMLDivElement>()
-const positions = shallowRef<{ left: string; width: string }[]>([])
+const canvas = ref<HTMLCanvasElement>()
 const activeIndex = ref<number>()
-const intro = ref(false)
-const introRunning = ref(false)
 const inView = ref(false)
 const visibility = useDocumentVisibility()
-const introDuration = ref(1000)
-const stripWidth = ref(900)
-const revealId = `heartbeat-reveal-${useId()}`
 const reducedMotion = usePreferredReducedMotion()
-let introduced = false
-let introTimer: ReturnType<typeof setTimeout> | undefined
-let introFrame = 0
-useIntersectionObserver(strip, ([entry]) => { inView.value = !!entry?.isIntersecting })
-
 const { pixelRatio } = useDevicePixelRatio()
-let previousGeometry: number[] = []
+const layout = shallowRef({ left: 0, width: 0, pixels: 0, height: 20, first: 0, bar: 0, gap: 0, count: 0 })
+const slotCount = computed(() => layout.value.count)
+const slots = computed(() => {
+  const count = slotCount.value
+  const recent = props.beats.slice(-count)
+  if (!count) return []
+  return [...Array<null>(Math.max(0, count - recent.length)).fill(null), ...recent]
+})
+const bitmap = document.createElement('canvas')
+let palette = { up: '', down: '', empty: '' }
+let previousGeometry = ''
+let introduced = false
+let revealFrame = 0
+let revealStart = 0
+let revealProgress = 1
 
 function measure() {
   if (!strip.value) return
   const rect = strip.value.getBoundingClientRect()
-  const layoutWidth = parseFloat(getComputedStyle(strip.value).width)
-  if (!rect.width || !layoutWidth) return
+  const style = getComputedStyle(strip.value)
+  const width = parseFloat(style.width)
+  if (!rect.width || !width) return
   const ratio = pixelRatio.value
-  const geometry = [rect.left, rect.width, layoutWidth, ratio]
-  // 观察器可能重复通知；尺寸不变时保留位置和标签，避免整条心跳重新渲染。
-  if (geometry.every((value, index) => value === previousGeometry[index])) return
-
-  // 条宽和间距固定为 3px，再对齐物理像素；窗口大小只影响显示数量。
-  const scale = rect.width / layoutWidth
+  const colors = {
+    up: style.getPropertyValue('--pulse-ok').trim() || style.getPropertyValue('--heartbeat').trim(),
+    down: style.getPropertyValue('--pulse-down').trim() || style.getPropertyValue('--heartbeat-down').trim(),
+    empty: style.getPropertyValue('--pulse-empty').trim() || style.getPropertyValue('--heartbeat-empty').trim(),
+  }
+  const geometry = [rect.left, rect.width, width, ratio, ...Object.values(colors)].join(',')
+  if (geometry === previousGeometry) return
+  const scale = rect.width / width
+  const unit = scale * ratio
   const start = Math.ceil(rect.left * ratio)
   const end = Math.floor(rect.right * ratio)
-  const width = Math.max(1, Math.round(3 * scale * ratio))
-  const gap = Math.max(1, Math.round(3 * scale * ratio))
-  const count = Math.max(0, Math.min(1000, Math.floor((end - start + gap) / (width + gap))))
-  // 剩余空隙留在左侧，让最新记录始终位于条带右端。
-  const first = end - count * width - Math.max(0, count - 1) * gap
-  const previousCount = positions.value.length
-  const nextPositions = Array.from({ length: count }, (_, index) => ({
-    left: `${((first + index * (width + gap)) / ratio - rect.left) / scale}px`,
-    width: `${width / ratio / scale}px`,
-  }))
+  const bar = Math.max(1, Math.round(3 * unit))
+  const gap = bar
+  const count = Math.max(0, Math.min(1000, Math.floor((end - start + gap) / (bar + gap))))
+  const first = end - start - count * bar - Math.max(0, count - 1) * gap
   return () => {
     previousGeometry = geometry
-    stripWidth.value = layoutWidth
-    positions.value = nextPositions
+    palette = colors
+    const previousCount = layout.value.count
+    // 画布边缘和细条都对齐物理像素；最新一条始终贴近右侧。
+    layout.value = { left: (start / ratio - rect.left) / scale, width: (end - start) / unit, pixels: end - start, height: Math.max(1, Math.round(20 * unit)), first, bar, gap, count }
     activeIndex.value = undefined
     if (count !== previousCount) emit('capacity', count)
   }
@@ -63,111 +69,128 @@ function measure() {
 function align() { scheduleHeartbeatLayout(measure) }
 useResizeObserver(strip, align)
 useEventListener(window, 'resize', align)
-watch(pixelRatio, align, { flush: 'post' })
-onBeforeUnmount(() => cancelHeartbeatLayout(measure))
-const slotCount = computed(() => positions.value.length)
-const slots = computed(() => {
-  const count = slotCount.value
-  if (!count) return []
-  const recent = props.beats.slice(-count)
-  return [...Array<null>(Math.max(0, count - recent.length)).fill(null), ...recent]
-})
-watch([() => slots.value.length, inView, visibility], ([count, visible, pageVisibility]) => {
-  if (!count || introduced) return
-  if (reducedMotion.value === 'reduce') { introduced = true; return }
-  if (!visible || pageVisibility !== 'visible') return
-  introduced = true
-  introDuration.value = Math.min(1200, Math.max(800, count * 6 + 200))
-  intro.value = true
-  // 遮罩先停在最左侧，等待内容真正绘制后起播，避免首屏出现时已扫到中间。
-  introFrame = requestAnimationFrame(() => {
-    introFrame = requestAnimationFrame(() => {
-      if (!inView.value || visibility.value !== 'visible') { introduced = false; intro.value = false; return }
-      if (reducedMotion.value === 'reduce') return
-      introRunning.value = true
-      introTimer = setTimeout(stopIntro, introDuration.value + 120)
-    })
-  })
-}, { flush: 'post' })
+watch([pixelRatio, dark], align, { flush: 'post' })
+useIntersectionObserver(strip, ([entry]) => { inView.value = !!entry?.isIntersecting })
+
+function drawBar(context: CanvasRenderingContext2D, index: number, active = false) {
+  const { first, bar, gap, height } = layout.value
+  const beat = slots.value[index]
+  let color = palette.empty
+  if (beat?.status === 'up') color = palette.up
+  if (beat?.status === 'down') color = palette.down
+  const unit = height / 20
+  let barHeight = 14 * unit
+  if (active) barHeight *= 1.25
+  context.fillStyle = color
+  context.beginPath()
+  context.roundRect(first + index * (bar + gap), (height - barHeight) / 2, bar, barHeight, unit)
+  context.fill()
+}
+
+function paint() {
+  const element = canvas.value
+  const context = element?.getContext('2d')
+  if (!context || !layout.value.pixels) return
+  context.clearRect(0, 0, element!.width, element!.height)
+  context.save()
+  context.globalAlpha = revealProgress < 1 ? .5 : 1
+  context.drawImage(bitmap, 0, 0)
+  context.restore()
+  if (revealProgress < 1) {
+    const ease = 1 - (1 - revealProgress) ** 3
+    const edge = -64 + (layout.value.width + 64) * ease
+    const ratio = layout.value.pixels / layout.value.width
+    context.save()
+    context.beginPath()
+    context.moveTo(0, 0)
+    context.lineTo(edge * ratio, 0)
+    context.lineTo((edge + 64) * ratio, bitmap.height)
+    context.lineTo(0, bitmap.height)
+    context.closePath()
+    context.clip()
+    context.drawImage(bitmap, 0, 0)
+    context.restore()
+  }
+  if (activeIndex.value !== undefined) drawBar(context, activeIndex.value, true)
+}
+
+function rebuild() {
+  if (!canvas.value || !layout.value.pixels) return
+  // 静态心跳只绘制一次；入场帧复用位图，避免逐帧重画所有细条。
+  bitmap.width = layout.value.pixels
+  bitmap.height = layout.value.height
+  canvas.value.width = bitmap.width
+  canvas.value.height = bitmap.height
+  const context = bitmap.getContext('2d')
+  if (!context) return
+  for (let index = 0; index < slots.value.length; index++) drawBar(context, index)
+  paint()
+}
+watch([layout, () => props.beats], rebuild, { flush: 'post' })
+watch(activeIndex, paint, { flush: 'post' })
+
 function stopIntro() {
-  cancelAnimationFrame(introFrame)
-  clearTimeout(introTimer)
-  intro.value = false
-  introRunning.value = false
+  cancelAnimationFrame(revealFrame)
+  revealFrame = 0
+  revealProgress = 1
+  paint()
 }
-watch(reducedMotion, (value) => { if (value === 'reduce') { introduced = true; stopIntro() } })
-onBeforeUnmount(stopIntro)
-function label(beat: HeartbeatPoint | null) {
+function reveal(time: number) {
+  const duration = Math.min(1200, Math.max(800, slotCount.value * 6 + 200))
+  revealProgress = Math.max(0, Math.min(1, (time - revealStart) / duration))
+  paint()
+  if (revealProgress < 1) revealFrame = requestAnimationFrame(reveal)
+  else revealFrame = 0
+}
+watch([slotCount, inView, visibility, reducedMotion], ([count, visible, pageVisibility, motion]) => {
+  if (motion === 'reduce') { introduced = true; stopIntro(); return }
+  if (!visible || pageVisibility !== 'visible') { stopIntro(); return }
+  if (!count || introduced) return
+  introduced = true
+  revealStart = performance.now() + 120
+  revealProgress = 0
+  paint()
+  revealFrame = requestAnimationFrame(reveal)
+}, { flush: 'post' })
+
+function selectPoint(event: PointerEvent) {
+  const { pixels, width, first, bar, gap, count } = layout.value
+  if (!count || !width) return
+  // 指针坐标直接换算为记录索引，不扫描元素，也不在移动时重新测量布局。
+  const x = event.offsetX * pixels / width
+  activeIndex.value = Math.max(0, Math.min(count - 1, Math.floor((x - first + gap / 2) / (bar + gap))))
+}
+function clearPoint(event: PointerEvent) {
+  if (event.pointerType !== 'touch') activeIndex.value = undefined
+}
+const activeLabel = computed(() => {
+  if (activeIndex.value === undefined) return ''
+  const beat = slots.value[activeIndex.value]
   if (!beat) return t('common.noData')
-  return t('status.heartbeatPoint', {
-    time: formatTime(beat.time),
-    status: t(`state.${beat.status}`),
-    latency: latency(beat.latency),
-  })
-}
-// 无障碍文本与提示共用标签；悬停和聚焦只更新高亮，不重复格式化时间。
-const labels = computed(() => slots.value.map(label))
+  return t('status.heartbeatPoint', { time: formatTime(beat.time), status: t(`state.${beat.status}`), latency: latency(beat.latency) })
+})
+const tooltipStyle = computed(() => {
+  const index = activeIndex.value ?? 0
+  const { left, pixels, width, first, bar, gap, count } = layout.value
+  const ratio = pixels / width
+  let x = first + index * (bar + gap) + bar / 2
+  let shift = '-50%'
+  if (index < 12) { x -= bar / 2; shift = '0%' }
+  else if (index >= count - 12) { x += bar / 2; shift = '-100%' }
+  return { left: `${left + x / ratio}px`, '--tooltip-x': shift }
+})
+useEventListener(document, 'pointerdown', (event) => {
+  if (!strip.value?.contains(event.target as Node)) activeIndex.value = undefined
+})
+onBeforeUnmount(() => {
+  cancelHeartbeatLayout(measure)
+  cancelAnimationFrame(revealFrame)
+})
 </script>
+
 <template>
-  <div
-    ref="strip"
-    class="heartbeat-strip heartbeat-strip-aligned"
-    :aria-label="t('status.heartbeat', { count: slots.length })"
-  >
-    <!-- 整行共用矢量画布，避免浏览器逐个绘制背景时再次对小数边缘取整。 -->
-    <svg
-      v-if="positions.length"
-      class="heartbeat-shapes"
-      aria-hidden="true"
-      focusable="false"
-      shape-rendering="geometricPrecision"
-    >
-      <!-- 一条遮罩代替逐根独立动画；底层记录从首帧可见，不等待动效结束。 -->
-      <defs v-if="intro"><mask :id="revealId" maskUnits="userSpaceOnUse" x="0" y="0" :width="stripWidth" height="16">
-        <rect :width="stripWidth" height="16" fill="white" fill-opacity=".5" />
-        <path :d="`M0 0H${stripWidth}L${stripWidth + 64} 16H0Z`" fill="white" class="heartbeat-sweep" :style="{ '--sweep-start': `${-stripWidth - 64}px`, animationDuration: `${introDuration}ms`, animationPlayState: introRunning ? 'running' : 'paused' }" />
-      </mask></defs>
-      <g :mask="intro ? `url(#${revealId})` : undefined">
-      <rect
-        v-for="(beat, index) in slots"
-        :key="index"
-        :x="positions[index]?.left"
-        :width="positions[index]?.width"
-        y="1"
-        height="14"
-        rx="1"
-        :class="[
-          'heartbeat-shape',
-          beat ? `beat-${beat.status}` : 'beat-empty',
-          { 'heartbeat-shape-active': activeIndex === index },
-        ]"
-      />
-      </g>
-    </svg>
-    <span
-      v-for="(beat, index) in slots"
-      :key="index"
-      :tabindex="beat ? 0 : undefined"
-      :class="['heartbeat', beat ? `beat-${beat.status}` : 'beat-empty']"
-      :style="positions[index]"
-      :aria-label="labels[index]"
-      :data-tooltip="labels[index]"
-      @mouseenter="activeIndex = index"
-      @mouseleave="activeIndex = undefined"
-      @focus="activeIndex = index"
-      @blur="activeIndex = undefined"
-    >
-      <span class="sr-only">{{ labels[index] }}</span>
-    </span>
+  <div ref="strip" class="heartbeat-strip" role="img" :aria-label="t('status.heartbeat', { count: slotCount })">
+    <canvas ref="canvas" class="heartbeat-canvas" :style="{ left: `${layout.left}px`, width: `${layout.width}px` }" aria-hidden="true" @pointermove="selectPoint" @pointerdown="selectPoint" @pointerleave="clearPoint" @pointercancel="activeIndex = undefined" />
+    <span v-if="activeIndex !== undefined" class="heartbeat-tooltip" :style="tooltipStyle">{{ activeLabel }}</span>
   </div>
 </template>
-
-<style scoped>
-.heartbeat-sweep {
-  animation: heartbeat-sweep var(--motion-ease) 120ms backwards;
-}
-@keyframes heartbeat-sweep {
-  from { transform: translateX(var(--sweep-start)); }
-  to { transform: translateX(0); }
-}
-</style>
