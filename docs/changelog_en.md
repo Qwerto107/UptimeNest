@@ -6,6 +6,9 @@
 
 ## Unreleased
 
+## v0.6.2 · 2026-10-31
+
+- Batch heartbeat strip measurements and updates to avoid repeated layout from interleaved row reads and writes. Retain positions and tooltip labels when dimensions are unchanged, reducing loading stalls on status pages and monitor lists.
 - Add `_en.md` English versions of the project README and official documentation, with language switches, English navigation, actual English interface screenshots, and a matching homepage composite.
 - Fix hidden headings and spacing in the monitor editor's saved sensitive configuration section. Move it into the scroll area while keeping save actions fixed, and update HTTP/WebSocket screenshots.
 - Read the admin sidebar version from frontend package metadata, matching the console and avoiding stale hardcoded version text after releases.
