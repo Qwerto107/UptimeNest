@@ -235,6 +235,7 @@ html:has(.pulse-page) {
   background: var(--pulse-pill);
 }
 .pulse-refresh:disabled {
+  cursor: pointer;
   opacity: 0.5;
 }
 @keyframes pulse-status-signal {
