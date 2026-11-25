@@ -6,6 +6,8 @@
 
 ## Unreleased
 
+## v0.6.4 · 2026-11-25
+
 - Deleting a monitor stops its checks and removes it from lists and panels. Heartbeats and logs are purged in batches in the background, with cleanup resuming after a restart. The database schema advances to version 7.
 
 ## v0.6.3 · 2026-10-31
