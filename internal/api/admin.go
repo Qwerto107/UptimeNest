@@ -129,10 +129,7 @@ func (a *Server) deleteMonitor(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	if err := a.engine.Reload(r.Context()); err != nil {
-		fail(w, err)
-		return
-	}
+	a.engine.StopMonitor(id)
 	writeJSON(w, 200, map[string]bool{"ok": true})
 }
 

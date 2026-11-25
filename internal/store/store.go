@@ -38,6 +38,7 @@ type Store struct {
 	settingsMu    sync.Mutex
 	settings      atomic.Pointer[model.Settings]
 	secrets       cipher.AEAD
+	purgeWake     chan struct{}
 }
 
 func (s *Store) PublicVersion() uint64 { return s.publicVersion.Load() }
@@ -83,12 +84,15 @@ func Open(ctx context.Context, dialect, dsn string, keyFiles ...string) (*Store,
 	} else {
 		db.SetMaxOpenConns(12)
 	}
-	s := &Store{DB: db, readDB: db, dialect: dialect}
+	s := &Store{DB: db, readDB: db, dialect: dialect, purgeWake: make(chan struct{}, 1)}
 	if err = db.PingContext(ctx); err == nil {
 		err = s.migrate(ctx)
 	}
 	if err == nil {
 		err = s.initEncryption(ctx, keyFile)
+	}
+	if err == nil {
+		err = s.migrateMonitorDeletion(ctx)
 	}
 	if err != nil {
 		db.Close()
@@ -162,7 +166,7 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err = tx.QueryRowContext(ctx, "SELECT COALESCE(MAX(version), 0) FROM schema_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 6 {
+	if version > 7 {
 		return errors.New("数据库版本高于当前程序支持的版本")
 	}
 	if version == 0 {
@@ -224,7 +228,7 @@ func (s *Store) migrate(ctx context.Context) error {
 func encode(v any) string { b, _ := json.Marshal(v); return string(b) }
 
 func (s *Store) Monitors(ctx context.Context) ([]model.Monitor, error) {
-	return s.monitors(ctx, "SELECT id, data FROM monitors ORDER BY id")
+	return s.monitors(ctx, "SELECT id, data FROM monitors WHERE deleting=0 ORDER BY id")
 }
 
 // MonitorsByIDs 仅读取面板选中的监控，避免解码无关配置和凭据。
@@ -237,7 +241,7 @@ func (s *Store) MonitorsByIDs(ctx context.Context, ids []int64) ([]model.Monitor
 			args[i] = id
 		}
 		placeholders := strings.TrimSuffix(strings.Repeat("?,", len(batch)), ",")
-		monitors, err := s.monitors(ctx, "SELECT id, data FROM monitors WHERE id IN ("+placeholders+") ORDER BY id", args...)
+		monitors, err := s.monitors(ctx, "SELECT id, data FROM monitors WHERE deleting=0 AND id IN ("+placeholders+") ORDER BY id", args...)
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +276,7 @@ func (s *Store) monitors(ctx context.Context, query string, args ...any) ([]mode
 func (s *Store) Monitor(ctx context.Context, id int64) (model.Monitor, error) {
 	var m model.Monitor
 	var data string
-	err := s.readDB.QueryRowContext(ctx, s.Q("SELECT data FROM monitors WHERE id=?"), id).Scan(&data)
+	err := s.readDB.QueryRowContext(ctx, s.Q("SELECT data FROM monitors WHERE id=? AND deleting=0"), id).Scan(&data)
 	if errors.Is(err, sql.ErrNoRows) {
 		return m, ErrNotFound
 	}
@@ -314,7 +318,7 @@ func (s *Store) SaveMonitor(ctx context.Context, m model.Monitor, snapshots ...m
 		}
 	} else if len(snapshots) > 0 {
 		// 凭据合并后若配置已变化，拒绝保存，避免旧快照覆盖刚更新的凭据。
-		query := "SELECT data FROM monitors WHERE id=?"
+		query := "SELECT data FROM monitors WHERE id=? AND deleting=0"
 		if s.dialect == "postgres" {
 			query += " FOR UPDATE"
 		}
@@ -338,7 +342,7 @@ func (s *Store) SaveMonitor(ctx context.Context, m model.Monitor, snapshots ...m
 	if err != nil {
 		return m, err
 	}
-	result, err := tx.ExecContext(ctx, s.Q("UPDATE monitors SET data=? WHERE id=?"), data, m.ID)
+	result, err := tx.ExecContext(ctx, s.Q("UPDATE monitors SET data=? WHERE id=? AND deleting=0"), data, m.ID)
 	if err != nil {
 		return m, err
 	}
@@ -366,15 +370,18 @@ func (s *Store) DeleteMonitor(ctx context.Context, id int64) error {
 			return err
 		}
 	}
-	result, err := tx.ExecContext(ctx, s.Q("DELETE FROM monitors WHERE id=?"), id)
+	result, err := tx.ExecContext(ctx, s.Q("UPDATE monitors SET deleting=1 WHERE id=? AND deleting=0"), id)
 	if err != nil {
 		return err
 	}
-	n, _ := result.RowsAffected()
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if n == 0 {
 		return ErrNotFound
 	}
-	// 面板配置同步移除已删除的监控 ID，其他监控与历史不受影响。
+	// 面板引用与待删除状态一起提交，后台再清理心跳和日志。
 	rows, err := tx.QueryContext(ctx, "SELECT id, data FROM panels")
 	if err != nil {
 		return err
@@ -393,23 +400,19 @@ func (s *Store) DeleteMonitor(ctx context.Context, id int64) error {
 			return err
 		}
 		p.ID = pid
-		kept := []int64{}
-		for _, mid := range p.MonitorIDs {
-			if mid != id {
-				kept = append(kept, mid)
-			}
-		}
-		p.MonitorIDs = kept
+		matches := func(mid int64) bool { return mid == id }
+		oldLen := len(p.MonitorIDs)
+		p.MonitorIDs = slices.DeleteFunc(p.MonitorIDs, matches)
+		changed := len(p.MonitorIDs) != oldLen
 		for i := range p.Groups {
-			ids := []int64{}
-			for _, mid := range p.Groups[i].MonitorIDs {
-				if mid != id {
-					ids = append(ids, mid)
-				}
-			}
-			p.Groups[i].MonitorIDs = ids
+			group := &p.Groups[i]
+			oldLen := len(group.MonitorIDs)
+			group.MonitorIDs = slices.DeleteFunc(group.MonitorIDs, matches)
+			changed = changed || len(group.MonitorIDs) != oldLen
 		}
-		panels = append(panels, p)
+		if changed {
+			panels = append(panels, p)
+		}
 	}
 	err = rows.Err()
 	rows.Close()
@@ -421,7 +424,14 @@ func (s *Store) DeleteMonitor(ctx context.Context, id int64) error {
 			return err
 		}
 	}
-	return s.commitChange(tx)
+	if err = s.commitChange(tx); err != nil {
+		return err
+	}
+	select {
+	case s.purgeWake <- struct{}{}:
+	default:
+	}
+	return nil
 }
 
 func (s *Store) Groups(ctx context.Context) ([]model.Group, error) {
@@ -500,7 +510,7 @@ func (s *Store) DeleteGroup(ctx context.Context, id int64) error {
 	if n == 0 {
 		return ErrNotFound
 	}
-	q := "SELECT id, data FROM monitors"
+	q := "SELECT id, data FROM monitors WHERE deleting=0"
 	if s.dialect == "postgres" {
 		q += " FOR UPDATE"
 	}
@@ -620,7 +630,7 @@ func (s *Store) SavePanel(ctx context.Context, p model.Panel) (model.Panel, erro
 	}
 	for _, id := range p.MonitorIDs {
 		var found int64
-		q := "SELECT id FROM monitors WHERE id=?"
+		q := "SELECT id FROM monitors WHERE id=? AND deleting=0"
 		if s.dialect == "postgres" {
 			q += " FOR SHARE"
 		}

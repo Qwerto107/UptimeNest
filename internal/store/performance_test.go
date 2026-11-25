@@ -83,7 +83,7 @@ func TestSQLiteReadPoolAndConnectionPragmas(t *testing.T) {
 	}
 	checkSQLitePragmas(t, writer, 0)
 	writer.Close()
-	if err = s.DeleteMonitor(ctx, m.ID); err != nil {
+	if _, err = s.DB.ExecContext(ctx, "DELETE FROM monitors WHERE id=?", m.ID); err != nil {
 		t.Fatal(err)
 	}
 	if err = s.ReadDB().QueryRowContext(ctx, "SELECT COUNT(*) FROM heartbeats").Scan(&count); err != nil || count != 0 {

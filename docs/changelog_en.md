@@ -6,6 +6,8 @@
 
 ## Unreleased
 
+- Deleting a monitor stops its checks and removes it from lists and panels. Heartbeats and logs are purged in batches in the background, with cleanup resuming after a restart. The database schema advances to version 7.
+
 ## v0.6.3 · 2026-10-31
 
 - Render public and admin heartbeat strips with Canvas, reducing per-bar elements and preformatted tooltip text while retaining physical pixel alignment, hover and touch tooltips, theme colors, and entrance animation to reduce loading stalls.

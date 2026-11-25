@@ -65,6 +65,8 @@ func run() error {
 	}
 	cleanupDone := make(chan struct{})
 	go func() { defer close(cleanupDone); monitor.RunCleanup(ctx, s) }()
+	purgeDone := make(chan struct{})
+	go func() { defer close(purgeDone); s.RunMonitorPurge(ctx) }()
 	server := &http.Server{Addr: cfg.Address, Handler: api.New(s, engine, cfg), ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
 	done := make(chan error, 1)
 	go func() {
@@ -86,5 +88,6 @@ func run() error {
 	}
 	engine.Wait()
 	<-cleanupDone
+	<-purgeDone
 	return err
 }

@@ -221,6 +221,8 @@ Restore into a separate directory or instance, and verify login, monitor count, 
 
 Startup automatically applies versioned migrations. Rollback after a schema change requires restoring the pre-upgrade data snapshot as well. Run one monitoring instance; the pipeline does not update server deployments automatically.
 
+Schema version 7 records pending monitor deletions. After you delete a monitor, the application purges its heartbeats and logs in batches. Cleanup resumes after a restart.
+
 v0.6.1 upgrades the schema to version 6: version 4 adds a covering index for heartbeat statistics, version 5 encrypts configuration, and version 6 encrypts notification events. Initial upgrade time depends on history volume, so back up first. Keep the newly generated key file permanently.
 
 v0.6.0 upgrades the schema to version 3, adding notification channels, alert states, and a delivery queue. Back up before upgrading from v0.5.0; restore the pre-upgrade database for rollback. Alerts are disabled by default; configure channels, then enable them per monitor.

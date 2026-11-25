@@ -117,7 +117,7 @@ func (s *Store) DeleteNotificationChannel(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	rows, err := tx.QueryContext(ctx, "SELECT id,data FROM monitors")
+	rows, err := tx.QueryContext(ctx, "SELECT id,data FROM monitors WHERE deleting=0")
 	if err != nil {
 		return err
 	}
@@ -384,7 +384,7 @@ func (s *Store) evaluateAlertTimer(ctx context.Context, m model.Monitor) error {
 		return err
 	}
 	defer tx.Rollback()
-	q := "SELECT data FROM monitors WHERE id=?"
+	q := "SELECT data FROM monitors WHERE id=? AND deleting=0"
 	if s.dialect == "postgres" {
 		q += " FOR UPDATE"
 	}

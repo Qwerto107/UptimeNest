@@ -69,7 +69,7 @@
 | GET | `/api/admin/monitors/:id/config` | 按需读取完整配置结构，敏感字段脱敏 |
 | POST | `/api/admin/monitors` | 创建监控，返回 201 |
 | PUT | `/api/admin/monitors/:id` | 替换监控配置 |
-| DELETE | `/api/admin/monitors/:id` | 删除监控及其心跳、日志和面板引用 |
+| DELETE | `/api/admin/monitors/:id` | 删除监控和面板引用，后台分批清理心跳和日志 |
 | PUT | `/api/admin/monitors/:id/enabled` | `{ "enabled": true }` 或 `false` |
 | GET | `/api/admin/monitors/:id/heartbeats` | 查询心跳，最新优先 |
 | GET | `/api/admin/monitors/:id/latency` | 按时间范围查询聚合延迟曲线和原始记录统计 |

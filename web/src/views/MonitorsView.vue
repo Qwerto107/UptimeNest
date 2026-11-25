@@ -155,12 +155,19 @@ async function removeGroup() {
   })
 }
 async function remove() {
-  if (!deleting.value) return
+  const monitor = deleting.value
+  if (!monitor) return
   await run(async () => {
-    await send(`/admin/monitors/${deleting.value!.id}`, 'DELETE')
+    await send(`/admin/monitors/${monitor.id}`, 'DELETE')
+    if (data.value) {
+      data.value = {
+        ...data.value,
+        monitors: data.value.monitors.filter((item) => item.id !== monitor.id),
+      }
+    }
     deleteOpen.value = false
     notify(t('common.deleted'))
-    await refresh()
+    void refresh()
   })
 }
 async function toggle(monitor: MonitorView) {

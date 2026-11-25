@@ -76,6 +76,16 @@ func (e *Engine) Reload(ctx context.Context) error {
 	return nil
 }
 
+// StopMonitor 取消已删除监控的探测。存储层拒绝提交该监控尚未写入的结果。
+func (e *Engine) StopMonitor(id int64) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if task, ok := e.workers[id]; ok {
+		task.cancel()
+		delete(e.workers, id)
+	}
+}
+
 func (e *Engine) Wait() { e.wg.Wait() }
 
 func (e *Engine) run(ctx context.Context, m model.Monitor) {

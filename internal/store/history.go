@@ -20,7 +20,7 @@ func (s *Store) Append(ctx context.Context, snapshot model.Monitor, h model.Hear
 		return "", err
 	}
 	defer tx.Rollback()
-	q := "SELECT data FROM monitors WHERE id=?"
+	q := "SELECT data FROM monitors WHERE id=? AND deleting=0"
 	if s.dialect == "postgres" {
 		q += " FOR UPDATE"
 	}

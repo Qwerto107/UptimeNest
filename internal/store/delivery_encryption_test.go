@@ -32,6 +32,9 @@ func TestDeliveryEventsAreEncryptedAndMigrated(t *testing.T) {
 	if _, err = s.DB.Exec("UPDATE notification_deliveries SET event=? WHERE id=?", encode(records[0].Event), id); err != nil {
 		t.Fatal(err)
 	}
+	if _, err = s.DB.Exec("ALTER TABLE monitors DROP COLUMN deleting"); err != nil {
+		t.Fatal(err)
+	}
 	if _, err = s.DB.Exec("DELETE FROM schema_version WHERE version>=6"); err != nil {
 		t.Fatal(err)
 	}

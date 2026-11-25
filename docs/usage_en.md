@@ -98,7 +98,7 @@ The following screenshot shows the English interface.
 | --- | --- |
 | Clear heartbeats | Delete only this monitor's heartbeats and recalculate statistics |
 | Clear logs | Delete only this monitor's logs |
-| Delete monitor | Delete configuration and history, removing references from every panel |
+| Delete monitor | Stop checks and remove the monitor from lists and panels. History is purged in the background. |
 | Pause monitor | Keep configuration and history while stopping checks |
 
 ## HTTP requests and authentication

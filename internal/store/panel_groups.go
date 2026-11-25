@@ -52,7 +52,11 @@ func normalizePanelGroups(p *model.Panel) error {
 // legacyGroupData 只用于旧面板首次转为独立分组，后续不再跟随后台分组变化。
 func (s *Store) legacyGroupData(ctx context.Context, tx *sql.Tx) (map[int64]int64, map[int64]string, error) {
 	monitors := map[int64]int64{}
-	rows, err := tx.QueryContext(ctx, "SELECT id,data FROM monitors")
+	query := "SELECT id,data FROM monitors"
+	if s.secrets != nil {
+		query += " WHERE deleting=0"
+	}
+	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, err
 	}

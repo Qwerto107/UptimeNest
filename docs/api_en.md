@@ -69,7 +69,7 @@ The setup token appears only in startup logs while the database has no administr
 | GET | `/api/admin/monitors/:id/config` | Full configuration structure on demand, with secrets redacted |
 | POST | `/api/admin/monitors` | Create a monitor; returns 201 |
 | PUT | `/api/admin/monitors/:id` | Replace monitor configuration |
-| DELETE | `/api/admin/monitors/:id` | Delete monitor, heartbeats, logs, and panel references |
+| DELETE | `/api/admin/monitors/:id` | Remove the monitor and its panel references, then purge heartbeats and logs in the background |
 | PUT | `/api/admin/monitors/:id/enabled` | `{ "enabled": true }` or `false` |
 | GET | `/api/admin/monitors/:id/heartbeats` | Heartbeat history, newest first |
 | GET | `/api/admin/monitors/:id/latency` | Time-range latency aggregates and raw-sample statistics |
