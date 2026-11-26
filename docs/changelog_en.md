@@ -6,9 +6,10 @@
 
 ## Unreleased
 
-## v0.6.4 · 2026-11-25
+## v0.6.5 · 2026-11-26
 
 - Deleting a monitor stops its checks and removes it from lists and panels. Heartbeats and logs are purged in batches in the background, with cleanup resuming after a restart. The database schema advances to version 7.
+- Upgrade Go to 1.27.4 and apply the Gorilla WebSocket fix for GO-2026-6859 and GO-2026-6278.
 
 ## v0.6.3 · 2026-10-31
 
