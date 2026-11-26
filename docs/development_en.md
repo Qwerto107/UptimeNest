@@ -8,7 +8,7 @@
 
 ## Environment and structure
 
-Use Go 1.27.3 or newer (see `go.mod` for the toolchain), Node.js 24, and npm. Database drivers and native ICMP support release builds without CGO or a system `ping`. Dependencies are locked by `go.sum` and `web/package-lock.json`.
+Use Go 1.27.4 or newer (see `go.mod` for the toolchain), Node.js 24, and npm. Database drivers and native ICMP support release builds without CGO or a system `ping`. Dependencies are locked by `go.sum` and `web/package-lock.json`.
 
 ```text
 cmd/uptimenest/       Startup and healthcheck commands

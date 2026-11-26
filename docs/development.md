@@ -8,7 +8,7 @@
 
 ## 环境与结构
 
-使用 Go 1.27.3 或更高版本（工具链见 `go.mod`）、Node.js 24 和 npm。数据库驱动和原生 ICMP 均支持无 CGO 发行构建，不依赖系统 `ping`。依赖由 `go.sum` 和 `web/package-lock.json` 固定。
+使用 Go 1.27.4 或更高版本（工具链见 `go.mod`）、Node.js 24 和 npm。数据库驱动和原生 ICMP 均支持无 CGO 发行构建，不依赖系统 `ping`。依赖由 `go.sum` 和 `web/package-lock.json` 固定。
 
 ```text
 cmd/uptimenest/       启动与健康检查命令
